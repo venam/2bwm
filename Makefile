@@ -10,7 +10,7 @@ LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm \
 RM=/bin/rm
 PREFIX=/usr/local
 
-TARGETS=mcwm hidden
+TARGETS=mcwm 
 OBJS=mcwm.o list.o
 
 all: $(TARGETS)
