@@ -28,16 +28,11 @@ list.o: list.c list.h Makefile
 
 install: $(TARGETS)
 	install -m 755 mcwm $(PREFIX)/bin
-	install -m 644 mcwm.man $(PREFIX)/man/man1/mcwm.1
-	install -m 755 hidden $(PREFIX)/bin
-	install -m 644 hidden.man $(PREFIX)/man/man1/hidden.1
 
 uninstall: deinstall
 deinstall:
 	$(RM) $(PREFIX)/bin/mcwm
-	$(RM) $(PREFIX)/man/man1/mcwm.1
 	$(RM) $(PREFIX)/bin/hidden
-	$(RM) $(PREFIX)/man/man1/hidden.1
 
 $(DIST).tar.bz2:
 	mkdir $(DIST)
