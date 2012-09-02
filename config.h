@@ -60,10 +60,10 @@
 #define FOCUSCOL "#336699"
 
 /* Ditto for unfocused. Use "-u colour". */
-#define UNFOCUSCOL "grey40"
+#define UNFOCUSCOL "#333333"
 
 /* Ditto for fixed windows. Use "-x colour". */
-#define FIXEDCOL "grey90"
+#define FIXEDCOL "#fedd26"
 
 /* Default width of border window, in pixels. Used unless -b width. */
 #define BORDERWIDTH 1
