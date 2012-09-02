@@ -44,12 +44,12 @@
  * Do we allow windows to be iconified? Set to true if you want this
  * behaviour to be default. Can also be set by calling mcwm with -i.
  */ 
-#define ALLOWICONS false
+#define ALLOWICONS true
 
 /*
  * Start these programs when pressing MODKEY and mouse buttons on root window.
  */
-#define MOUSE1 ""
+#define MOUSE1 "mcicon"
 #define MOUSE2 ""
 #define MOUSE3 "mcmenu"
 
