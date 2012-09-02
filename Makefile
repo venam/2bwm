@@ -32,7 +32,6 @@ install: $(TARGETS)
 uninstall: deinstall
 deinstall:
 	$(RM) $(PREFIX)/bin/mcwm
-	$(RM) $(PREFIX)/bin/hidden
 
 $(DIST).tar.bz2:
 	mkdir $(DIST)
