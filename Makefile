@@ -3,9 +3,8 @@ DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.c config.h events.h list.h
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
 
-CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include #-DDEBUG #-DDMALLOC
-LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm \
-	-lxcb-util #-ldmalloc
+CFLAGS+=-g -std=c99 -Wall -O3 -march=i686 -mtune=i686 -Wextra -I/usr/local/include -DNDEBUG -DNDMALLOC #-DDEBUG #-DDMALLOC
+LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util #-ldmalloc
 
 RM=/bin/rm
 PREFIX=/usr/local
@@ -16,11 +15,11 @@ OBJS=mcwm.o list.o
 all: $(TARGETS)
 
 mcwm: $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
+	clang $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
 
 mcwm-static: $(OBJS)
 	$(CC) -o $@ $(OBJS) -static $(CFLAGS) $(LDFLAGS) \
-	-lXau -lXdmcp
+	-lXau -lpthread -lxcb-util
 
 mcwm.o: mcwm.c events.h list.h config.h Makefile
 

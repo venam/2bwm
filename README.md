@@ -13,11 +13,13 @@ Patches
 - hexcolors, use hex colors, like #004455
 - maxoffsets, offset for fullscreen mode if using bar or bars
 - menu, a patch to bind mod+p to dmenu or another application
-- moveslow, move the windows slower
+- moveslow, move the windows slower better
 - sendtoworkspace, send  a window to another workspace. will unmap from current workspace.
+- Unkillable Window
+- Fast Resize and keep aspect
 
 
-Author:
+Authors:
 =======
 
-`Beastie | Youri Mouton`
+`Beastie | Youri Mouton + Venam | Patrick Louis`
