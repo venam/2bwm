@@ -23,15 +23,17 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  * the num lock problem
- * Bug: Ignore other modifiers, such as NumLock and CapsLock.
+ * * Bug: Ignore other modifiers, such as NumLock and CapsLock.
  * xcb_keycode_t *num_lock;
- * num_lock = xcb_key_symbols_get_keycode(symbols, XK_Num_Lock);
- * and get an array of keycodes finished by XCB_NO_SYMBOL.
- * then compare the keycodes in the array with the keycodes all the
- * modifier masks give. See getmodkeys().
- * Bug: We grab MODKEY all the time! We can grab it only when we start
- * A separate workspace list for every monitor.
- * tabbing instead and release it when tabbing is complete.
+  num_lock = xcb_key_symbols_get_keycode(symbols, XK_Num_Lock);
+
+  and get an array of keycodes finished by XCB_NO_SYMBOL.
+
+  then compare the keycodes in the array with the keycodes all the
+  modifier masks give. See getmodkeys().
+ * * Bug: We grab MODKEY all the time! We can grab it only when we start
+ * * A separate workspace list for every monitor.
+  tabbing instead and release it when tabbing is complete.
  * the keep aspect ratio with mouse
  * the keep aspect ratio fast resizer - binding
  * the center problem with multiple screens
@@ -63,6 +65,7 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
 #include <xcb/xcb_ewmh.h>
+
 
 #ifdef DEBUG
 #include "events.h"
@@ -427,6 +430,53 @@ void finishtabbing(void)
     movetohead(&wslist[curws], focuswin->wsitem[curws]);
 }
 
+unsigned int xcb_numlock_mask;
+void xcb_get_numlock_mask   (xcb_connection_t *      conn)
+{
+        xcb_key_symbols_t *keysyms;
+        xcb_get_modifier_mapping_cookie_t cookie;
+        xcb_get_modifier_mapping_reply_t *reply;
+        xcb_keycode_t *modmap;
+        int mask, i;
+        const int masks[8] = { XCB_MOD_MASK_SHIFT,
+                               XCB_MOD_MASK_LOCK,
+                               XCB_MOD_MASK_CONTROL,
+                               XCB_MOD_MASK_1,
+                               XCB_MOD_MASK_2,
+                               XCB_MOD_MASK_3,
+                               XCB_MOD_MASK_4,
+                               XCB_MOD_MASK_5 };
+
+        /* Request the modifier map */
+        cookie = xcb_get_modifier_mapping_unchecked(conn);
+
+        /* Get the keysymbols */
+        keysyms = xcb_key_symbols_alloc(conn);
+
+        if ((reply = xcb_get_modifier_mapping_reply(conn, cookie, NULL)) == NULL) {
+                xcb_key_symbols_free(keysyms);
+                return;
+        }
+
+        modmap = xcb_get_modifier_mapping_keycodes(reply);
+
+        /* Get the keycode for numlock */
+        /* For now, we only use the first keysymbol. */
+        xcb_keycode_t *numlock_syms = xcb_key_symbols_get_keycode(keysyms, NUM_LOCK);
+        xcb_keycode_t numlock = *numlock_syms;
+        free(numlock_syms);
+
+        /* Check all modifiers (Mod1-Mod5, Shift, Control, Lock) */
+        for (mask = 0; mask < 8; mask++)
+                for (i = 0; i < reply->keycodes_per_modifier; i++)
+                        if (modmap[(mask * reply->keycodes_per_modifier) + i] == numlock)
+                                xcb_numlock_mask = masks[mask];
+
+        xcb_key_symbols_free(keysyms);
+        free(reply);
+}
+
+
 /*
  * Find out what keycode modmask is bound to. Returns a struct. If the
  * len in the struct is 0 something went wrong.
@@ -634,7 +684,7 @@ void delfromworkspace(struct client *client, uint32_t ws)
 
     /* Reset our place in the workspace window list. */
     client->wsitem[ws] = NULL;
-        focusnext();
+        //focusnext();
 }
 
 /* Change current workspace to ws. */
@@ -3185,7 +3235,6 @@ void handle_keypress(xcb_key_press_event_t *ev)
     if (key == KEY_MAX)
     {
         PDEBUG("Unknown key pressed.\n");
-
         /*
          * We don't know what to do with this key. Send this key press
          * event to the focused window.
@@ -3709,6 +3758,7 @@ void print_modifiers (uint32_t mask)
 
 void events(void)
 {
+
     xcb_generic_event_t *ev;
 
     int16_t mode_x = 0;             /* X coord when in special mode */
@@ -3795,23 +3845,19 @@ void events(void)
             continue;
         }
 
-        //Num lock
-        //ev->response_type & ~0x10
-
         switch (ev->response_type & ~0x80)
         {
 
-        case XCB_BUTTON_PRESS:
+        case XCB_EVENT_MASK_BUTTON_PRESS:
         {
             xcb_button_press_event_t *e = (xcb_button_press_event_t *)ev;
+
             PDEBUG("Button %d pressed in window %ld, subwindow %d "
                     "coordinates (%d,%d)\n",
                    e->detail, (long)e->event, e->child, e->event_x,
                    e->event_y);
 
-            print_modifiers(e->state);
-
-
+            //print_modifiers(e->state);
             if (0 == e->child)
             {
                 switch (e->detail)
@@ -4095,8 +4141,7 @@ void events(void)
                     y = mode_y;
                 }
 
-                xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
-                                 x, y);
+                //xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, x, y);
                 xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
                 xcb_flush(conn); /* Important! */
 
@@ -4109,6 +4154,11 @@ void events(void)
         case XCB_KEY_PRESS:
         {
             xcb_key_press_event_t *e = (xcb_key_press_event_t *)ev;
+            /* Remove the numlock bit, all other bits are modifiers we can bind to */
+            e->state = e->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
+            /* Only use the lower 8 bits of the state (modifier masks) so that mouse
+             * button masks are filtered out */
+            e->state &= 0xFF;
 
             PDEBUG("Key %d pressed\n", e->detail);
 
@@ -4329,6 +4379,10 @@ void events(void)
             {
                 break;
             }
+            else
+            {
+                xcb_get_numlock_mask(conn);
+            }
 
             /* Forget old key bindings. */
             xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
@@ -4481,7 +4535,7 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        ch = getopt(argc, argv, "b:it:m:f:u:x:");
+        ch = getopt(argc, argv, "b:it:m:f:u:x:k:");
         if (-1 == ch)
         {
 
@@ -4612,6 +4666,7 @@ int main(int argc, char **argv)
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
                     3 /* right mouse button */,
                     MOUSEMODKEY);
+
 
     /* Subscribe to events. */
     mask = XCB_CW_EVENT_MASK;
