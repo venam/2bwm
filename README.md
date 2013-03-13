@@ -17,7 +17,6 @@ Patches
 - sendtoworkspace, send  a window to another workspace. will unmap from current workspace.
 - Unkillable Window
 - Fast Resize and keep aspect
-- Don't focus next after killing a window
 
 
 Authors:

@@ -1268,6 +1268,7 @@ struct client *setupwin(xcb_window_t win)
     client->height_inc = 1;
     client->vertmaxed = false;
     client->maxed = false;
+    client->unkillable=false;
     client->fixed = false;
     client->monitor = NULL;
 
@@ -3072,46 +3073,63 @@ void botright(void)
 
 void center(void)
 {
-    int16_t  mon_x;
-    int16_t  mon_y;
-    uint16_t mon_width;
+    int16_t pointx;
+    int16_t pointy;
+    int16_t mon_x;
+    int16_t mon_y;
     uint16_t mon_height;
-    int16_t start_x;
-    int16_t start_y;
+    uint16_t mon_width;
 
-    if (focuswin->maxed ||NULL == focuswin || NULL == focuswin->monitor)
+    if (NULL == focuswin)
     {
         return;
     }
 
-    mon_x      = focuswin->monitor->x;
-    mon_y      = focuswin->monitor->y;
-    mon_width  = focuswin->monitor->width;
-    mon_height = focuswin->monitor->height;
+    if (focuswin->maxed || NULL == focuswin->monitor)
+    {
+        mon_x = 0;
+        mon_y = 0;
+        mon_height = screen->height_in_pixels;
+        mon_width = screen->width_in_pixels;
+    }
+    else
+    {
+        mon_x = focuswin->monitor->x;
+        mon_y = focuswin->monitor->y;
+        mon_height = focuswin->monitor->height;
+        mon_width = focuswin->monitor->width;
+    }
 
     /* Save pointer position so we can warp pointer here later. */
-    if (!getpointer(focuswin->id, &start_x, &start_y))
+    if (!getpointer(focuswin->id, &pointx, &pointy))
     {
         return;
     }
+
     raisewindow(focuswin->id);
 
-    focuswin->x =  (mon_x + mon_width  - focuswin->width )/2;
-    focuswin->y =  (mon_y + mon_height - focuswin->height)/2;
+    if (!getpointer(focuswin->id, &pointx, &pointy))
+    {
+        return;
+    }
+
+    focuswin->x = mon_x;
+    focuswin->x += mon_x + mon_width -
+        (focuswin->width + conf.borderwidth * 2);
+    focuswin->y = mon_y + mon_height - (focuswin->height + conf.borderwidth
+                                        * 2);
+    focuswin->y += mon_y;
+
+    focuswin->y     = focuswin->y /2;
+    focuswin->x     = focuswin->x /2;
 
     movewindow(focuswin->id, focuswin->x, focuswin->y);
 
-    movelim(focuswin);
-
-    /*
-     * If the pointer was inside the window to begin with, move
-     * pointer back to where it was, relative to the window.
-     */
-    if (start_x > 0 - conf.borderwidth && start_x < focuswin->width + conf.borderwidth
-        && start_y > 0 - conf.borderwidth && start_y < focuswin->height + conf.borderwidth )
+    if (pointx > 0 - conf.borderwidth && pointx < focuswin->width + conf.borderwidth
+        && pointy > 0 - conf.borderwidth && pointy < focuswin->height + conf.borderwidth )
     {
         xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
-                         start_x, start_y);
+                         pointx, pointy);
         xcb_flush(conn);
     }
 }
@@ -4453,6 +4471,7 @@ void printhelp(void)
            "to a named color.\n");
     printf("  -u colour sets colour for unfocused window borders.");
     printf("  -x color sets colour for fixed window borders.\n");
+    printf("  -k color sets colour for unkillable window borders.\n");
         printf("Mcwm patched by Beastie, enjoy ;)\n");
 }
 
