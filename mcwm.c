@@ -3852,24 +3852,6 @@ void configurerequest(xcb_configure_request_event_t *e)
     }
 }
 
-/* print names of modifiers present in mask */
-void print_modifiers (uint32_t mask)
-{
-    const char *MODIFIERS[] = {
-            "Shift", "Lock", "Ctrl", "Alt",
-            "Mod2", "Mod3", "Mod4", "Mod5",
-            "Button1", "Button2", "Button3", "Button4", "Button5"
-    };
-
-    printf ("Modifier mask: ");
-    for (char **modifier = MODIFIERS ; mask; mask >>= 1, ++modifier) {
-        if (mask & 1) {
-            printf (*modifier);
-        }
-    }
-    printf ("\n");
-}
-
 
 void events(void)
 {
@@ -3972,7 +3954,6 @@ void events(void)
                    e->detail, (long)e->event, e->child, e->event_x,
                    e->event_y);
 
-            //print_modifiers(e->state);
             if (0 == e->child)
             {
                 switch (e->detail)
