@@ -29,6 +29,7 @@
   and get an array of keycodes finished by XCB_NO_SYMBOL.
   then compare the keycodes in the array with the keycodes all the
   modifier masks give. See getmodkeys().
+  0x4d==Num_Lock;
  * * Bug: We grab MODKEY all the time! We can grab it only when we start
  * * A separate workspace list for every monitor.
   tabbing instead and release it when tabbing is complete.
@@ -4790,6 +4791,24 @@ int main(int argc, char **argv)
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
                     3 /* right mouse button */,
                     MOUSEMODKEY);
+
+    xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
+                | XCB_EVENT_MASK_BUTTON_RELEASE,
+                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                1 /* left mouse button */,
+                XCB_MOD_MASK_2| MOUSEMODKEY);
+
+    xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
+                | XCB_EVENT_MASK_BUTTON_RELEASE,
+                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                2 /* middle mouse button */,
+                XCB_MOD_MASK_2| MOUSEMODKEY);
+
+    xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
+                | XCB_EVENT_MASK_BUTTON_RELEASE,
+                XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                3 /* right mouse button */,
+                XCB_MOD_MASK_2| MOUSEMODKEY);
 
 
     /* Subscribe to events. */
