@@ -64,7 +64,7 @@
 
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
-#include <xcb/xcb_ewmh.h>
+//#include <xcb/xcb_ewmh.h>
 
 
 #ifdef DEBUG
@@ -129,6 +129,7 @@ typedef enum {
     KEY_P,
     KEY_X,
     KEY_TAB,
+    KEY_BACKTAB,
     KEY_1,
     KEY_2,
     KEY_3,
@@ -148,6 +149,8 @@ typedef enum {
     KEY_PREVSCR,
     KEY_NEXTSCR,
     KEY_ICONIFY,
+    KEY_PREVWS,
+    KEY_NEXTWS,
     KEY_GROW,
     KEY_SHRINK,
     KEY_UNKILLABLE,
@@ -264,6 +267,7 @@ struct keys
     { USERKEY_MENU, 0 },
     { USERKEY_MAX, 0 },
     { USERKEY_CHANGE, 0 },
+    { USERKEY_BACKCHANGE, 0 },
     { USERKEY_WS1, 0 },
     { USERKEY_WS2, 0 },
     { USERKEY_WS3, 0 },
@@ -283,6 +287,8 @@ struct keys
     { USERKEY_PREVSCREEN, 0 },
     { USERKEY_NEXTSCREEN, 0 },
     { USERKEY_ICONIFY, 0 },
+    { USERKEY_PREVWS, 0 },
+    { USERKEY_NEXTWS, 0 },
     { USERKEY_GROW, 0 },
     { USERKEY_SHRINK, 0 },
     { USERKEY_UNKILLABLE, 0},
@@ -338,7 +344,7 @@ static void delfromworkspace(struct client *client, uint32_t ws);
 static void changeworkspace(uint32_t ws);
 static void sendtoworkspace(struct client *client, uint32_t ws);
 static void fixwindow(struct client *client, bool setcolour);
-static uint32_t getcolor(char *hex);
+static uint32_t getcolor(const char *hex);
 static void forgetclient(struct client *client);
 static void forgetwin(xcb_window_t win);
 static void fitonscreen(struct client *client);
@@ -365,7 +371,7 @@ static void raiseorlower(struct client *client);
 static void movelim(struct client *client);
 static void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y);
 static struct client *findclient(xcb_drawable_t win);
-static void focusnext(void);
+static void focusnext(bool reverse);
 static void setunfocus(xcb_drawable_t win);
 static void setfocus(struct client *client);
 static int start(char *program);
@@ -746,7 +752,7 @@ void changeworkspace(uint32_t ws)
     }
 
     xcb_flush(conn);
-    focusnext();
+    focusnext(false);
     curws = ws;
 }
 
@@ -887,7 +893,7 @@ void sendtoworkspace(struct client *client, uint32_t ws)
  *
  * Returns pixel values.
  * */
-uint32_t getcolor(char *hex)
+uint32_t getcolor(const char *hex)
 {
          char strgroups[3][3] = {{hex[1], hex[2], '\0'},
                                  {hex[3], hex[4], '\0'},
@@ -1407,6 +1413,12 @@ int setupkeys(void)
     /* Now grab the rest of the keys with the MODKEY modifier. */
     for (i = KEY_F; i < KEY_MAX; i ++)
     {
+     if  (XK_VoidSymbol == keys[i].keysym)
+     {
+         keys[i].keycode = 0;
+         continue;
+     }
+
         keys[i].keycode = keysymtokeycode(keys[i].keysym, keysyms);
         if (0 == keys[i].keycode)
         {
@@ -1601,7 +1613,7 @@ int setuprandr(void)
     extension = xcb_get_extension_data(conn, &xcb_randr_id);
     if (!extension->present)
     {
-        printf("No RANDR.\n");
+        printf("No RANDR extension.\n");
         return -1;
     }
     else
@@ -1989,6 +2001,28 @@ void raiseorlower(struct client *client)
 
 void movelim(struct client *client)
 {
+    /*
+    int16_t mon_x;
+    int16_t mon_y;
+    uint16_t mon_width;
+    uint16_t mon_height;
+
+    if (NULL == client->monitor)
+    {
+        mon_x = 0;
+        mon_y = 0;
+        mon_width = screen->width_in_pixels;
+        mon_height = screen->height_in_pixels;
+    }
+    else
+    {
+        mon_x = client->monitor->x;
+        mon_y = client->monitor->y;
+        mon_width = client->monitor->width;
+        mon_height = client->monitor->height;
+    
+    }
+    */ 
 
     movewindow(client->id, client->x, client->y);
 }
@@ -2014,7 +2048,7 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
 }
 
 /* Change focus to next in window ring. */
-void focusnext(void)
+void focusnext(bool reverse)
 {
     struct client *client = NULL;
 
@@ -2058,25 +2092,54 @@ void focusnext(void)
     }
     else
     {
-        if (NULL == focuswin->wsitem[curws]->next)
+        if (reverse)
         {
-            /*
-             * We were at the end of list. Focusing on first window in
-             * list unless we were already there.
-             */
-            if (focuswin->wsitem[curws] != wslist[curws]->data)
+            if (NULL == focuswin->wsitem[curws]->prev)
             {
-                PDEBUG("End of list. Focusing first in list: %p\n",
-                       wslist[curws]);
-                client = wslist[curws]->data;
+                /*
+                 * We were at the head of list. Focusing on last
+                 * window in list unless we were already there.
+                 */
+                struct item *last = wslist[curws];
+                while (NULL != last->next)
+                    last = last->next;
+                if (focuswin->wsitem[curws] != last->data)
+                {
+                    PDEBUG("Beginning of list. Focusing last in list: %p\n",
+                            last);
+                    client = last->data;
+                }
+            }
+            else
+            {
+                /* Otherwise, focus the next in list. */
+                PDEBUG("Tabbing. Focusing next: %p.\n",
+                       focuswin->wsitem[curws]->prev);
+                client = focuswin->wsitem[curws]->prev->data;
             }
         }
         else
         {
-            /* Otherwise, focus the next in list. */
-            PDEBUG("Tabbing. Focusing next: %p.\n",
-                   focuswin->wsitem[curws]->next);
-            client = focuswin->wsitem[curws]->next->data;
+            if (NULL == focuswin->wsitem[curws]->next)
+            {
+                /*
+                 * We were at the end of list. Focusing on first window in
+                 * list unless we were already there.
+                 */
+                if (focuswin->wsitem[curws] != wslist[curws]->data)
+                {
+                    PDEBUG("End of list. Focusing first in list: %p\n",
+                           wslist[curws]);
+                    client = wslist[curws]->data;
+                }
+            }
+            else
+            {
+                /* Otherwise, focus the next in list. */
+                PDEBUG("Tabbing. Focusing next: %p.\n",
+                       focuswin->wsitem[curws]->next);
+                client = focuswin->wsitem[curws]->next->data;
+            }
         }
     } /* if NULL focuswin */
 
@@ -2501,7 +2564,7 @@ void mouseresize(struct client *client, int rel_x, int rel_y)
     client->width = abs(rel_x - client->x);
     client->height = abs(rel_y - client->y);
 
-    client->width  -= (client->width  - client->base_width ) % client->width_inc;
+    client->width -= (client->width - client->base_width ) % client->width_inc;
     client->height -= (client->height - client->base_height) % client->height_inc;
 
     PDEBUG("Trying to resize to %dx%d (%dx%d)\n", client->width, client->height,
@@ -3245,14 +3308,16 @@ void handle_keypress(xcb_key_press_event_t *ev)
 
     for (key = KEY_MAX, i = KEY_F; i < KEY_MAX; i ++)
     {
-        if (ev->detail == keys[i].keycode)
+        if (ev->detail == keys[i].keycode && 0 != keys[i].keycode)
         {
             key = i;
+            break;
         }
     }
     if (key == KEY_MAX)
     {
         PDEBUG("Unknown key pressed.\n");
+
         /*
          * We don't know what to do with this key. Send this key press
          * event to the focused window.
@@ -3263,7 +3328,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
         return;
     }
 
-    if (MCWM_TABBING == mode && key != KEY_TAB)
+    if (MCWM_TABBING == mode && key != KEY_TAB && key != KEY_BACKTAB)
     {
         /* First finish tabbing around. Then deal with the next key. */
         finishtabbing();
@@ -3333,7 +3398,11 @@ void handle_keypress(xcb_key_press_event_t *ev)
             resizestep(focuswin, 'l');
             break;
 
-                case KEY_1:
+        case KEY_TAB: /* shifted tab counts as backtab */
+            focusnext(true);
+            break;
+
+        case KEY_1:
             sendtoworkspace(focuswin, 0);
             break;
 
@@ -3410,7 +3479,11 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
 
         case KEY_TAB: /* tab */
-            focusnext();
+            focusnext(false);
+            break;
+        
+        case KEY_BACKTAB: /* backtab */
+            focusnext(true);
             break;
 
         case KEY_M: /* m */
@@ -3502,6 +3575,20 @@ void handle_keypress(xcb_key_press_event_t *ev)
             {
                 hide(focuswin);
             }
+            break;
+
+        case KEY_PREVWS:
+            if( curws >0)
+            {
+                changeworkspace(curws -1);
+            }
+            else
+            {
+                changeworkspace(WORKSPACES -1);
+            }
+            break;
+        case KEY_NEXTWS:
+            changeworkspace(( curws +1) % WORKSPACES);
             break;
 
         case KEY_GROW:
@@ -4397,10 +4484,11 @@ void events(void)
             {
                 break;
             }
-            else
-            {
-                xcb_get_numlock_mask(conn);
-            }
+            //This is useless for now
+            //else
+            //{
+                //xcb_get_numlock_mask(conn);
+            //}
 
             /* Forget old key bindings. */
             xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
@@ -4577,9 +4665,9 @@ int main(int argc, char **argv)
             conf.terminal = optarg;
             break;
 
-                case 'm':
-                        conf.menu = optarg;
-                        break;
+        case 'm':
+            conf.menu = optarg;
+            break;
 
         case 'f':
             focuscol = optarg;

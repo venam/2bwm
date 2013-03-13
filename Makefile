@@ -18,8 +18,8 @@ mcwm: $(OBJS)
 	clang $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
 
 mcwm-static: $(OBJS)
-	$(CC) -o $@ $(OBJS) -static $(CFLAGS) $(LDFLAGS) \
-	-lXau -lpthread -lxcb-util
+	$(CC) $(OBJS) -static $(CFLAGS) $(LDFLAGS) \
+	-lXau -lXdmcp -o $@ -lpthread
 
 mcwm.o: mcwm.c events.h list.h config.h Makefile
 

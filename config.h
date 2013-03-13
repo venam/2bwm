@@ -92,6 +92,8 @@
 #define USERKEY_MENU        XK_W
 #define USERKEY_MAX         XK_X
 #define USERKEY_CHANGE      XK_Tab
+#define USERKEY_BACKCHANGE  XK_VoidSymbol
+#define USERKEY_CHANGE      XK_Tab
 #define USERKEY_WS1         XK_1
 #define USERKEY_WS2         XK_2
 #define USERKEY_WS3         XK_3
@@ -102,6 +104,8 @@
 #define USERKEY_WS8         XK_8
 #define USERKEY_WS9         XK_9
 #define USERKEY_WS10        XK_0
+#define USERKEY_PREVWS      XK_C
+#define USERKEY_NEXTWS      XK_V
 #define USERKEY_TOPLEFT     XK_Y
 #define USERKEY_TOPRIGHT    XK_U
 #define USERKEY_BOTLEFT     XK_B
