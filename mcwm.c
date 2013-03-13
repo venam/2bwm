@@ -26,9 +26,7 @@
  * * Bug: Ignore other modifiers, such as NumLock and CapsLock.
  * xcb_keycode_t *num_lock;
   num_lock = xcb_key_symbols_get_keycode(symbols, XK_Num_Lock);
-
   and get an array of keycodes finished by XCB_NO_SYMBOL.
-
   then compare the keycodes in the array with the keycodes all the
   modifier masks give. See getmodkeys().
  * * Bug: We grab MODKEY all the time! We can grab it only when we start
@@ -36,8 +34,9 @@
   tabbing instead and release it when tabbing is complete.
  * the keep aspect ratio with mouse
  * the keep aspect ratio fast resizer - binding
- * the center problem with multiple screens
  * static Makefile problem
+ * SHIFT+CTRL+Q to exit
+ * SHIFT+CTRL+R to restart
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -2910,8 +2909,8 @@ void maxvert(struct client *client)
     client->y = mon_y;
     /* Compute new height considering height increments and screen height. */
     client->height = mon_height - conf.borderwidth * 2;
-    client->height -= (client->height - client->base_height)
-        % client->height_inc;
+    //client->height -= (client->height - client->base_height)
+    //   % client->height_inc;
 
     /* Move to top of screen and resize. */
     values[0] = client->y;
