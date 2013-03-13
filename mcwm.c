@@ -22,14 +22,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * the num lock problem
- * * Bug: Ignore other modifiers, such as NumLock and CapsLock.
- * xcb_keycode_t *num_lock;
-  num_lock = xcb_key_symbols_get_keycode(symbols, XK_Num_Lock);
-  and get an array of keycodes finished by XCB_NO_SYMBOL.
-  then compare the keycodes in the array with the keycodes all the
-  modifier masks give. See getmodkeys().
-  0x4d==Num_Lock;
  * * Bug: We grab MODKEY all the time! We can grab it only when we start
  * * A separate workspace list for every monitor.
   tabbing instead and release it when tabbing is complete.
