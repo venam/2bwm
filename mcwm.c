@@ -4792,6 +4792,7 @@ int main(int argc, char **argv)
                     3 /* right mouse button */,
                     MOUSEMODKEY);
 
+    //This fixes the numlock issue
     xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
                 | XCB_EVENT_MASK_BUTTON_RELEASE,
                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
