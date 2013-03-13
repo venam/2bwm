@@ -6,7 +6,7 @@ mcwm full of patches.
 Patches
 =======
 
-- Center, put the window to the center of the screen with mod+g
+- Center, put the window to the center of the screen with mod+g (patched -- now center well with 2 monitors)
 - chwfocus, focus a window when changing workspace
 - focuslast, focus the next window when deleting one
 - freemove, move the windows outside the screen
