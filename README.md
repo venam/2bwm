@@ -16,8 +16,8 @@ Patches
 - sendtoworkspace, send  a window to another workspace. will unmap from current workspace.
 - Unkillable Window
 - Fast Resize and keep aspect
-- mod +c or mod+v to move to next or previous workspace
-- TAB or SHIFT+TAB to switch between windows
+- Patched the maxvert
+- Patched the numlock issue
 
 
 Authors:
