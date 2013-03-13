@@ -2001,7 +2001,6 @@ void raiseorlower(struct client *client)
 
 void movelim(struct client *client)
 {
-    /*
     int16_t mon_x;
     int16_t mon_y;
     uint16_t mon_width;
@@ -2019,10 +2018,29 @@ void movelim(struct client *client)
         mon_x = client->monitor->x;
         mon_y = client->monitor->y;
         mon_width = client->monitor->width;
-        mon_height = client->monitor->height;
-    
+        mon_height = client->monitor->height;   
     }
-    */ 
+
+    /* Is it outside the physical monitor? */
+
+
+
+
+    if (client->y < mon_y)
+    {
+        client->y = mon_y;
+    }
+
+
+
+
+    
+ 
+    if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
+    {
+        client->y = (mon_y + mon_height - conf.borderwidth * 2)
+            - client->height;
+    }
 
     movewindow(client->id, client->x, client->y);
 }
