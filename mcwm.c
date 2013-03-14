@@ -321,7 +321,7 @@ static void finishtabbing(void);
 void mcwm_restart(void);
 void mcwm_exit(void);
 static struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
-static void cleanup(int code);
+static void cleanup(const int code);
 void mcwm_exit(void);
 static void arrangewindows(void);
 static void setwmdesktop(xcb_drawable_t win, uint32_t ws);
@@ -343,7 +343,7 @@ static int setupkeys(void);
 static int setupscreen(void);
 static int setuprandr(void);
 static void getrandr(void);
-static void getoutputs(xcb_randr_output_t *outputs, int len,
+static void getoutputs(xcb_randr_output_t *outputs,const int len,
                        xcb_timestamp_t timestamp);
 void arrbymon(struct monitor *monitor);
 static struct monitor *findmonitor(xcb_randr_output_t id);
@@ -358,7 +358,7 @@ static void raiseorlower(struct client *client);
 static void movelim(struct client *client);
 static void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y);
 static struct client *findclient(xcb_drawable_t win);
-static void focusnext(bool reverse);
+static void focusnext(const bool reverse);
 static void setunfocus(xcb_drawable_t win);
 static void setfocus(struct client *client);
 static int start(char *program);
@@ -393,7 +393,7 @@ static void configwin(xcb_window_t win, uint16_t mask, struct winconf wc);
 static void configurerequest(xcb_configure_request_event_t *e);
 static void events(void);
 static void printhelp(void);
-static void sigcatch(int sig);
+static void sigcatch(const int sig);
 static xcb_atom_t getatom(char *atom_name);
 
 
@@ -507,7 +507,7 @@ struct modkeycodes getmodkeys(xcb_mod_mask_t modmask)
  * should all be in the X server's Save Set and should be mapped
  * automagically.
  */
-void cleanup(int code)
+void cleanup(const int code)
 {
     xcb_set_input_focus(conn, XCB_NONE,
                         XCB_INPUT_FOCUS_POINTER_ROOT,
@@ -1636,7 +1636,7 @@ void getrandr(void)
  * Walk through all the RANDR outputs (number of outputs == len) there
  * was at time timestamp.
  */
-void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
+void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t timestamp)
 {
     char *name;
     xcb_randr_get_crtc_info_cookie_t icookie;
@@ -2032,7 +2032,7 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
 }
 
 /* Change focus to next in window ring. */
-void focusnext(bool reverse)
+void focusnext(const bool reverse)
 {
     struct client *client = NULL;
 
@@ -4523,7 +4523,7 @@ void printhelp(void)
         printf("Mcwm patched by Beastie, enjoy ;)\n");
 }
 
-void sigcatch(int sig)
+void sigcatch(const int sig)
 {
     sigcode = sig;
 }
