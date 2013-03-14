@@ -207,6 +207,7 @@ struct winconf
 
 /* Globals */
 
+char **user_argv;
 int sigcode;                    /* Signal code. Non-zero if we've been
                                  * interruped by a signal. */
 xcb_connection_t *conn;         /* Connection to X server. */
@@ -4561,13 +4562,12 @@ xcb_atom_t getatom(char *atom_name)
 
 /*
  * Here I want to have restart and exit.
- * Problems: I want restart to keep the initial argv we gave 
  * Problems: I want exit to kill the X session, xinit,  main terminal 
  *           so that we quit X at the same time.
  */
 void mcwm_restart(void)
-{ 
-    execvp("/usr/local/bin/mcwm", NULL);
+{
+    execvp("/usr/local/bin/mcwm", user_argv);
 }
 void mcwm_exit(void)
 {
@@ -4578,6 +4578,8 @@ void mcwm_exit(void)
 
 int main(int argc, char **argv)
 {
+    user_argv = argv;
+
     uint32_t mask = 0;
     uint32_t values[2];
     int ch;                    /* Option character */
