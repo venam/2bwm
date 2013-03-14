@@ -324,6 +324,8 @@ xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 /* Functions declerations. */
 
 static void finishtabbing(void);
+void mcwm_restart(void);
+void mcwm_exit(void);
 static struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
 static void cleanup(int code);
 void mcwm_exit(void);
@@ -1971,23 +1973,23 @@ void raiseorlower(struct client *client)
 
 void movelim(struct client *client)
 {
-    int16_t mon_x;
+//    int16_t mon_x;
     int16_t mon_y;
-    uint16_t mon_width;
+//    uint16_t mon_width;
     uint16_t mon_height;
 
     if (NULL == client->monitor)
     {
-        mon_x = 0;
+//        mon_x = 0;
         mon_y = 0;
-        mon_width = screen->width_in_pixels;
+//        mon_width = screen->width_in_pixels;
         mon_height = screen->height_in_pixels;
     }
     else
     {
-        mon_x = client->monitor->x;
+//        mon_x = client->monitor->x;
         mon_y = client->monitor->y;
-        mon_width = client->monitor->width;
+//        mon_width = client->monitor->width;
         mon_height = client->monitor->height;   
     }
 
@@ -3347,7 +3349,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
             case KEY_END:
                 mcwm_exit();
                 break;
-            case KEY_TAB:
+            case KEY_R:
                 mcwm_restart();
                 break;
             case KEY_H: /* h */
@@ -4557,35 +4559,16 @@ xcb_atom_t getatom(char *atom_name)
     return 0;
 }
 
+/*
+ * Here I want to have restart and exit.
+ * Problems: I want restart to keep the initial argv we gave 
+ * Problems: I want exit to kill the X session, xinit,  main terminal 
+ *           so that we quit X at the same time.
+ */
 void mcwm_restart(void)
 { 
-    execvp("mcwm&", NULL);
+    execvp("/usr/local/bin/mcwm", NULL);
 }
-
-char* exec_command(char* cmd)
-{
-    FILE* pipe = popen(cmd, "r");
-
-    if (!pipe) return "ERROR";
-        char buffer[128];
-
-    char* result = NULL;
-    int i=0;
-    while(!feof(pipe))
-    {
-        i+=1;
-        if(fgets(buffer, 128, pipe) != NULL)
-            result = buffer;
-        if(i==2)
-        {
-            pclose(pipe);
-            return result;
-        }
-    }
-    pclose(pipe);
-    return result;
-}
-
 void mcwm_exit(void)
 {
     cleanup(0);
