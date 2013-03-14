@@ -27,8 +27,6 @@
  * the keep aspect ratio with mouse
  * the keep aspect ratio fast resizer - binding
  * static Makefile problem
- * MOD+CTRL+Q to exit
- * MOD+CTRL+R to restart
  * Double border patch
  * configs in a text file, dynamically updated
  */
