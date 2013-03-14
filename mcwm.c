@@ -40,23 +40,18 @@
 #include <string.h>
 #include <signal.h>
 //#include <assert.h>
-
+//#include <xcb/xcb_ewmh.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/select.h>
-
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
-
 #include <X11/keysym.h>
-
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
-//#include <xcb/xcb_ewmh.h>
-
 
 #ifdef DEBUG
 #include "events.h"
