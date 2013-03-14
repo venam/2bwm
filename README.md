@@ -18,6 +18,8 @@ Patches
 - Fast Resize and keep aspect
 - Patched the maxvert
 - Patched the numlock issue
+- Restart/Exit patch with CTRL-R CTRL-Q 
+    (or whatever you set for the USERKEY_RAISE and USERKEY_DELETE respectivelly)
 
 
 Authors:
