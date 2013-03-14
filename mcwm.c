@@ -22,14 +22,15 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * * Bug: We grab MODKEY all the time! We can grab it only when we start
- * * A separate workspace list for every monitor.
-  tabbing instead and release it when tabbing is complete.
+ * We grab MODKEY all the time! We can grab it only when we start
+ * A separate workspace list for every monitor.
  * the keep aspect ratio with mouse
  * the keep aspect ratio fast resizer - binding
  * static Makefile problem
- * SHIFT+CTRL+Q to exit
- * SHIFT+CTRL+R to restart
+ * MOD+CTRL+Q to exit
+ * MOD+CTRL+R to restart
+ * Double border patch
+ * configs in a text file, dynamically updated
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -104,7 +105,6 @@
 /* This means we didn't get any window hint at all. */
 #define MCWM_NOWS 0xfffffffe
 
-#define THE_NUM_LOCK XK_Num_Lock
 /* Types. */
 
 
@@ -146,7 +146,6 @@ typedef enum {
     KEY_GROW,
     KEY_SHRINK,
     KEY_UNKILLABLE,
-    NUM_LOCK,
     KEY_MAX
 } key_enum_t;
 
@@ -284,7 +283,6 @@ struct keys
     { USERKEY_GROW, 0 },
     { USERKEY_SHRINK, 0 },
     { USERKEY_UNKILLABLE, 0},
-    { THE_NUM_LOCK, 0},
 };
 
 /* All keycodes generating our MODKEY mask. */
@@ -328,6 +326,7 @@ xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 static void finishtabbing(void);
 static struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
 static void cleanup(int code);
+void mcwm_exit(void);
 static void arrangewindows(void);
 static void setwmdesktop(xcb_drawable_t win, uint32_t ws);
 static int32_t getwmdesktop(xcb_drawable_t win);
@@ -427,53 +426,6 @@ void finishtabbing(void)
 
     movetohead(&wslist[curws], focuswin->wsitem[curws]);
 }
-
-unsigned int xcb_numlock_mask;
-void xcb_get_numlock_mask   (xcb_connection_t *      conn)
-{
-        xcb_key_symbols_t *keysyms;
-        xcb_get_modifier_mapping_cookie_t cookie;
-        xcb_get_modifier_mapping_reply_t *reply;
-        xcb_keycode_t *modmap;
-        int mask, i;
-        const int masks[8] = { XCB_MOD_MASK_SHIFT,
-                               XCB_MOD_MASK_LOCK,
-                               XCB_MOD_MASK_CONTROL,
-                               XCB_MOD_MASK_1,
-                               XCB_MOD_MASK_2,
-                               XCB_MOD_MASK_3,
-                               XCB_MOD_MASK_4,
-                               XCB_MOD_MASK_5 };
-
-        /* Request the modifier map */
-        cookie = xcb_get_modifier_mapping_unchecked(conn);
-
-        /* Get the keysymbols */
-        keysyms = xcb_key_symbols_alloc(conn);
-
-        if ((reply = xcb_get_modifier_mapping_reply(conn, cookie, NULL)) == NULL) {
-                xcb_key_symbols_free(keysyms);
-                return;
-        }
-
-        modmap = xcb_get_modifier_mapping_keycodes(reply);
-
-        /* Get the keycode for numlock */
-        /* For now, we only use the first keysymbol. */
-        xcb_keycode_t *numlock_syms = xcb_key_symbols_get_keycode(keysyms, NUM_LOCK);
-        xcb_keycode_t numlock = *numlock_syms;
-        free(numlock_syms);
-
-        /* Check all modifiers (Mod1-Mod5, Shift, Control, Lock) */
-        for (mask = 0; mask < 8; mask++)
-                for (i = 0; i < reply->keycodes_per_modifier; i++)
-                        if (modmap[(mask * reply->keycodes_per_modifier) + i] == numlock)
-                                xcb_numlock_mask = masks[mask];
-
-        xcb_key_symbols_free(keysyms);
-        free(reply);
-}
-
 
 /*
  * Find out what keycode modmask is bound to. Returns a struct. If the
@@ -766,13 +718,26 @@ void fixwindow(struct client *client, bool setcolour)
     {
         client->fixed = false;
         setwmdesktop(client->id, curws);
-
-        if (setcolour)
+        
+        if(!client->unkillable)
         {
-            /* Set border color to ordinary focus colour. */
-            values[0] = conf.focuscol;
-            xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
-                                         values);
+            if (setcolour)
+            {
+                /* Set border color to ordinary focus colour. */
+                values[0] = conf.focuscol;
+                xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                            values);
+            }
+        }
+        else
+        {
+            if (setcolour)
+            {
+                /* Set border color to ordinary focus colour. */
+                values[0] = conf.unkillcol;
+                xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                            values);
+            }
         }
 
         /* Delete from all workspace lists except current. */
@@ -804,13 +769,13 @@ void fixwindow(struct client *client, bool setcolour)
                 addtoworkspace(client, ws);
             }
         }
-
+        
         if (setcolour)
         {
             /* Set border color to fixed colour. */
             values[0] = conf.fixedcol;
             xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
-                                         values);
+                                        values);
         }
     }
 
@@ -833,12 +798,25 @@ void unkillablewindow(struct client *client, bool setcolour)
     if (client->unkillable)
     {
         client->unkillable = false;
-        if (setcolour)
+        if(!client->fixed)
         {
-            /* Set border color to ordinary focus colour. */
-            values[0] = conf.focuscol;
-            xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
-                                         values);
+            if (setcolour)
+            {
+                /* Set border color to ordinary focus colour. */
+                values[0] = conf.focuscol;
+                xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                            values);
+            }
+        }
+        else
+        {
+            if (setcolour)
+            {
+                /* Set border color to ordinary focus colour. */
+                values[0] = conf.fixedcol;
+                xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                            values);
+            }
         }
     }
     else
@@ -855,7 +833,7 @@ void unkillablewindow(struct client *client, bool setcolour)
             /* Set border color to unkillable colour. */
             values[0] = conf.unkillcol;
             xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
-                                         values);
+                                        values);
         }
     }
 
@@ -3361,12 +3339,17 @@ void handle_keypress(xcb_key_press_event_t *ev)
                 break;
         }
     }
-
-    /* control mask? */
+   /* control mask? */
     else if (ev->state & CONTROLMOD)
     {
         switch (key)
-        {
+        {    
+            case KEY_END:
+                mcwm_exit();
+                break;
+            case KEY_TAB:
+                mcwm_restart();
+                break;
             case KEY_H: /* h */
                 movestepslow(focuswin, 'l');
                 break;
@@ -4250,11 +4233,6 @@ void events(void)
         case XCB_KEY_PRESS:
         {
             xcb_key_press_event_t *e = (xcb_key_press_event_t *)ev;
-            /* Remove the numlock bit, all other bits are modifiers we can bind to */
-            e->state = e->state & ~(xcb_numlock_mask | XCB_MOD_MASK_LOCK);
-            /* Only use the lower 8 bits of the state (modifier masks) so that mouse
-             * button masks are filtered out */
-            e->state &= 0xFF;
 
             PDEBUG("Key %d pressed\n", e->detail);
 
@@ -4475,11 +4453,6 @@ void events(void)
             {
                 break;
             }
-            //This is useless for now
-            //else
-            //{
-                //xcb_get_numlock_mask(conn);
-            //}
 
             /* Forget old key bindings. */
             xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
@@ -4583,6 +4556,42 @@ xcb_atom_t getatom(char *atom_name)
      */
     return 0;
 }
+
+void mcwm_restart(void)
+{ 
+    execvp("mcwm&", NULL);
+}
+
+char* exec_command(char* cmd)
+{
+    FILE* pipe = popen(cmd, "r");
+
+    if (!pipe) return "ERROR";
+        char buffer[128];
+
+    char* result = NULL;
+    int i=0;
+    while(!feof(pipe))
+    {
+        i+=1;
+        if(fgets(buffer, 128, pipe) != NULL)
+            result = buffer;
+        if(i==2)
+        {
+            pclose(pipe);
+            return result;
+        }
+    }
+    pclose(pipe);
+    return result;
+}
+
+void mcwm_exit(void)
+{
+    cleanup(0);
+    exit(0);
+}
+
 
 int main(int argc, char **argv)
 {

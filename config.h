@@ -69,10 +69,10 @@
 #define UNFOCUSCOL "#323232"
 
 /* Ditto for fixed windows. Use "-x colour". */
-#define FIXEDCOL "#655444"
+#define FIXEDCOL "#526310"
 
 /* Ditto for unkillable windows. */
-#define UNKILLCOL "#000000"
+#define UNKILLCOL "#5c0202"
 
 /* Default width of border window, in pixels. Used unless -b width. */
 #define BORDERWIDTH 1
