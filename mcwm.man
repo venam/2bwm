@@ -12,14 +12,25 @@ mcwm \- MC's Window Manager for X11.
 [ 
 .B \-t 
 .I terminal-program
-] [ 
+]
+[
+.B \-m
+.I menu-program 
+]
+[ 
 .B \-f 
 .I colour
-] [ 
+] 
+[ 
 .B \-u 
 .I colour
-] [ 
+] 
+[ 
 .B \-x
+.I colour
+]
+[
+.B \-k
 .I colour
 ]
 
@@ -39,6 +50,9 @@ scripts (see below) to get the window mapped again.
 \-t urxvt will start urxvt when MODKEY + Return is pressed. Change to
 your prefered terminal program or something else entirely.
 .PP
+\-m Set a menu program you can start with MODKEY + w .
+.B Set the key in the configs.
+.PP
 \-f colour sets border colour for focused window to a named colour,
 such as "red".
 .PP
@@ -46,6 +60,8 @@ such as "red".
 .PP
 \-x colour sets border colour for fixed windows, that is, windows that
 are visible on all workspaces.
+\-k colour sets border colour for unkillable windows, that is, windows that
+cannot be killed with the MODKEY + Q (or whatever the user has set).
 
 .SH USE
 Nota bene: For mcwm to be at all useful you need to know how what keys
