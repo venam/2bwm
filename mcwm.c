@@ -2936,8 +2936,7 @@ bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
 {
     xcb_get_geometry_reply_t *geom;
 
-    geom
-        = xcb_get_geometry_reply(conn, xcb_get_geometry(conn, win), NULL);
+    geom = xcb_get_geometry_reply(conn, xcb_get_geometry(conn, win), NULL);
     if (NULL == geom)
     {
         return false;

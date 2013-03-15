@@ -20,7 +20,6 @@ Patches
 - Patched the numlock issue
 - Restart/Exit patch with mod+ctrl+r mod+ctrl+q 
     (or whatever you set for the USERKEY_RAISE and USERKEY_DELETE respectivelly)
-- Video patch, they keep their aspect when resized.
 
 
 Authors:
