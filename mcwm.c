@@ -29,6 +29,7 @@
  * static Makefile problem
  * Double border patch
  * configs in a text file, dynamically updated
+ * little bug while changing workspace and not focusing a window
  */
 #include <stdlib.h>
 #include <stdio.h>
