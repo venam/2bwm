@@ -1190,9 +1190,12 @@ struct client *setupwin(xcb_window_t win)
     values[0] = conf.unfocuscol;
     xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
+    /* Don't populate the back of windows with bad redra of the last frame
+     * Use the background frame instead.
+     * This is really good for videos because we keep their aspect ratio.
+     */
     values[0] = 1;
     xcb_change_window_attributes(conn, win, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
-
 
     /* Set border width. */
     values[0] = conf.borderwidth;
@@ -1202,7 +1205,6 @@ struct client *setupwin(xcb_window_t win)
     mask = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes_checked(conn, win, mask, values);
-
 
     /* Add this window to the X Save Set. */
     xcb_change_save_set(conn, XCB_SET_MODE_INSERT, win);
