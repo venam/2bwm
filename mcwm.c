@@ -630,7 +630,7 @@ void delfromworkspace(struct client *client, uint32_t ws)
 
     /* Reset our place in the workspace window list. */
     client->wsitem[ws] = NULL;
-        //focusnext();
+    //focusnext();
 }
 
 /* Change current workspace to ws. */
@@ -656,6 +656,7 @@ void changeworkspace(uint32_t ws)
         setunfocus(focuswin->id);
         focuswin = NULL;
     }
+
 
     /* Go through list of current ws. Unmap everything that isn't fixed. */
     for (item = wslist[curws]; item != NULL; item = item->next)
@@ -2961,7 +2962,7 @@ void topleft(void)
     int16_t mon_x;
     int16_t mon_y;
 
-    if (NULL == focuswin)
+    if (NULL == focuswin|| NULL == wslist[curws])
     {
         return;
     }
@@ -3000,7 +3001,7 @@ void topright(void)
     uint16_t mon_y;
     uint16_t mon_width;
 
-    if (NULL == focuswin)
+    if (NULL == focuswin || NULL == wslist[curws])
     {
         return;
     }
@@ -3050,7 +3051,7 @@ void botleft(void)
         return;
     }
 
-    if (NULL == focuswin->monitor)
+    if (NULL == focuswin->monitor || NULL == wslist[curws])
     {
         mon_x = 0;
         mon_y = 0;
@@ -3088,7 +3089,7 @@ void botright(void)
     uint16_t mon_width;
     uint16_t mon_height;
 
-    if (NULL == focuswin)
+    if (NULL == focuswin || NULL == wslist[curws])
     {
         return;
     }
@@ -3133,7 +3134,7 @@ void center(void)
     uint16_t mon_height;
     uint16_t mon_width;
 
-    if (NULL == focuswin)
+    if (NULL == focuswin|| NULL == wslist[curws])
     {
         return;
     }
