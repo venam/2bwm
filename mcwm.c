@@ -39,8 +39,6 @@
 #include <getopt.h>
 #include <string.h>
 #include <signal.h>
-//#include <assert.h>
-//#include <xcb/xcb_ewmh.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/select.h>
@@ -650,12 +648,13 @@ void changeworkspace(uint32_t ws)
     /*
      * We lose our focus if the window we focus isn't fixed. An
      * EnterNotify event will set focus later.
+     * we are going to focusnext() so we don't need that shit test
      */
-    if (NULL != focuswin && !focuswin->fixed)
-    {
-        setunfocus(focuswin->id);
-        focuswin = NULL;
-    }
+    //if (NULL != focuswin && !focuswin->fixed)
+    //{
+    //    setunfocus(focuswin->id);
+    //    focuswin = NULL;
+    //}
 
 
     /* Go through list of current ws. Unmap everything that isn't fixed. */
