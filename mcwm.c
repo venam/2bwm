@@ -1190,6 +1190,10 @@ struct client *setupwin(xcb_window_t win)
     values[0] = conf.unfocuscol;
     xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
+    values[0] = 1;
+    xcb_change_window_attributes(conn, win, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
+
+
     /* Set border width. */
     values[0] = conf.borderwidth;
     mask = XCB_CONFIG_WINDOW_BORDER_WIDTH;
@@ -1198,6 +1202,7 @@ struct client *setupwin(xcb_window_t win)
     mask = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes_checked(conn, win, mask, values);
+
 
     /* Add this window to the X Save Set. */
     xcb_change_save_set(conn, XCB_SET_MODE_INSERT, win);
