@@ -168,6 +168,9 @@ move to lower right corner of monitor.
 .B g
 move to the center of the monitor.
 .IP \(bu 2
+.B SHIFT+y/SHIFT+u
+move to the left/right while maxvert and half max horizontal
+.IP \(bu 2
 .B Return
 start terminal or whatever program you have configured with -t or in
 the config.h.

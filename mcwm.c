@@ -28,7 +28,6 @@
  * the keep aspect ratio fast resizer - binding
  * static Makefile problem
  * Double border patch
- * maxvert + maxhoriz-half screen
  * configs in a text file, dynamically updated
  * The unkillable status disappear when restarting
  * little bug while changing workspace and not focusing a window
@@ -2888,8 +2887,6 @@ void maxvert(struct client *client)
     client->y = mon_y;
     /* Compute new height considering height increments and screen height. */
     client->height = mon_height - conf.borderwidth * 2;
-    //client->height -= (client->height - client->base_height)
-    //   % client->height_inc;
 
     /* Move to top of screen and resize. */
     values[0] = client->y;
