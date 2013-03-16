@@ -696,7 +696,7 @@ void changeworkspace(uint32_t ws)
     }
 
     xcb_flush(conn);
-    focusnext(false);
+    //focusnext(false);
     curws = ws;
 }
 
@@ -2575,6 +2575,36 @@ void mouseresize(struct client *client, int rel_x, int rel_y)
     }
 }
 
+void mouseresize_keepaspect(struct client *client, int rel_x, int rel_y)
+{
+    if( abs(rel_x -client->x) > abs(rel_x - client->x))
+    {
+        client->height = client->height + client->height * (abs(rel_x - client->x)/(client->width));
+        client->width  = abs(rel_x - client->x);
+    }
+    else
+    {
+        client->width = client->width + client->width * (abs(rel_y - client->y)/(client->height));
+        client->height= abs(rel_y - client->y);
+
+    }
+    client->width -= (client->width - client->base_width ) % client->width_inc;
+    client->height -= (client->height - client->base_height) % client->height_inc;
+
+    PDEBUG("Trying to resize to %dx%d (%dx%d)\n", client->width, client->height,
+           (client->width - client->base_width) / client->width_inc,
+           (client->height - client->base_height) / client->height_inc);
+
+    resizelim(client);
+
+    /* If this window was vertically maximized, remember that it isn't now. */
+    if (client->vertmaxed)
+    {
+        client->vertmaxed = false;
+    }
+}
+
+
 void movestep(struct client *client, char direction)
 {
     int16_t start_x;
@@ -2895,7 +2925,6 @@ void maxvert(struct client *client)
     xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_Y
                          | XCB_CONFIG_WINDOW_HEIGHT, values);
     xcb_flush(conn);
-
     /* Remember that this client is vertically maximized. */
     client->vertmaxed = true;
 }
@@ -2951,7 +2980,7 @@ void maxverthor(struct client *client, bool right_left)
 
     /* Move to top left and resize. */
     client->y = mon_y+OFFSETY;
-    client->width = (mon_width-MAXWIDTH)/2;
+    client->width = ((mon_width-MAXWIDTH-4)/2)-1;
     client->height = mon_height+MAXHEIGHT;
     if(right_left)
     {
@@ -4106,8 +4135,11 @@ void events(void)
                 }
                 else
                 {
-                    /* Mouse button 3 was pressed. */
-                    mode = MCWM_RESIZE;
+                    //if(e->state & CONTROLMOD)
+
+                    //else
+                        /* Mouse button 3 was pressed. */
+                        mode = MCWM_RESIZE;
 
                     /* Warp pointer to lower right. */
                     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0,
