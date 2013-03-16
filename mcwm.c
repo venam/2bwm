@@ -326,6 +326,7 @@ static void cleanup(const int code);
 void mcwm_exit(void);
 static void arrangewindows(void);
 static void setwmdesktop(xcb_drawable_t win, uint32_t ws);
+void maxverthor(struct client *client, bool right_left);
 static int32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void delfromworkspace(struct client *client, uint32_t ws);
@@ -2901,6 +2902,64 @@ void maxvert(struct client *client)
     client->vertmaxed = true;
 }
 
+void maxverthor(struct client *client, bool right_left)
+{    
+    uint32_t values[4];
+    int16_t mon_x;
+    int16_t mon_y;
+    uint16_t mon_width;
+    uint16_t mon_height;
+
+    if (NULL == client)
+    {
+        PDEBUG("maximize: client was NULL!\n");
+        return;
+    }
+
+    if (NULL == client->monitor)
+    {
+        mon_x = 0;
+        mon_y = 0;
+        mon_width = screen->width_in_pixels;
+        mon_height = screen->height_in_pixels;
+    }
+    else
+    {
+        mon_x = client->monitor->x;
+        mon_y = client->monitor->y;
+        mon_width = client->monitor->width;
+        mon_height = client->monitor->height;
+    }
+
+    /* Raise first. Pretty silly to maximize below something else. */
+    raisewindow(client->id);
+
+    /* FIXME: Store original geom in property as well? */
+    client->origsize.x = client->x;
+    client->origsize.y = client->y;
+    client->origsize.width = client->width;
+    client->origsize.height = client->height;
+
+    /* Move to top left and resize. */
+    client->y = mon_y+OFFSETY;
+    client->width = (mon_width-MAXWIDTH)/2;
+    client->height = mon_height+MAXHEIGHT;
+    if(right_left)
+        client->x = mon_x+OFFSETX;
+    else
+        client->x = mon_x - OFFSETX + mon_width -(client->width + conf.borderwidth * 2);
+        values[0] = client->width;
+    values[1] = client->height;
+    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_WIDTH
+                        | XCB_CONFIG_WINDOW_HEIGHT, values);
+
+    xcb_flush(conn);
+
+    movewindow(focuswin->id, client->x, client->y);
+}
+
+
+
 void hide(struct client *client)
 {
     long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
@@ -3443,6 +3502,12 @@ void handle_keypress(xcb_key_press_event_t *ev)
         case KEY_0:
             sendtoworkspace(focuswin, 9);
                         break;
+        case KEY_U:
+            maxverthor(focuswin,false);
+            break;
+        case KEY_Y:
+            maxverthor(focuswin,true);
+            break;
         default:
             /* Ignore other shifted keys. */
             break;
