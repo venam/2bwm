@@ -28,6 +28,7 @@
  * the keep aspect ratio fast resizer - binding
  * static Makefile problem
  * Double border patch
+ * maxvert + maxhoriz-half screen
  * configs in a text file, dynamically updated
  * The unkillable status disappear when restarting
  * little bug while changing workspace and not focusing a window
@@ -2963,7 +2964,7 @@ void topleft(void)
     int16_t mon_x;
     int16_t mon_y;
 
-    if (NULL == focuswin|| NULL == wslist[curws])
+    if (NULL == focuswin|| NULL == wslist[curws]|| focuswin->maxed )
     {
         return;
     }
@@ -3002,7 +3003,7 @@ void topright(void)
     uint16_t mon_y;
     uint16_t mon_width;
 
-    if (NULL == focuswin || NULL == wslist[curws])
+    if (NULL == focuswin || NULL == wslist[curws] || focuswin->maxed)
     {
         return;
     }
@@ -3047,7 +3048,7 @@ void botleft(void)
     int16_t mon_y;
     uint16_t mon_height;
 
-    if (NULL == focuswin)
+    if (NULL == focuswin || focuswin->maxed)
     {
         return;
     }
@@ -3090,7 +3091,7 @@ void botright(void)
     uint16_t mon_width;
     uint16_t mon_height;
 
-    if (NULL == focuswin || NULL == wslist[curws])
+    if (NULL == focuswin || NULL == wslist[curws] || focuswin->maxed)
     {
         return;
     }
@@ -3140,7 +3141,11 @@ void center(void)
         return;
     }
 
-    if (focuswin->maxed || NULL == focuswin->monitor)
+    if(focuswin->maxed)
+    {
+        return;
+    }
+    if (NULL == focuswin->monitor)
     {
         mon_x = 0;
         mon_y = 0;
