@@ -178,6 +178,7 @@ struct client
     int32_t base_width, base_height;
     bool vertmaxed;                  /* Vertically maximized? */
     bool maxed;                      /* Totally maximized? */
+    bool  verthor;                   /* half horizontally maxed, full vert*/
     bool fixed;                      /* Visible on all workspaces? */
     bool unkillable;                 /* Make a window unkillable by MODKEY+Q. */
     struct monitor *monitor;         /* The physical output this window is on. */
@@ -2845,7 +2846,7 @@ void maxvert(struct client *client)
     int16_t mon_y;
     uint16_t mon_height;
 
-    if (NULL == client)
+    if (NULL == client )
     {
         PDEBUG("maxvert: client was NULL\n");
         return;
@@ -2931,6 +2932,17 @@ void maxverthor(struct client *client, bool right_left)
         mon_height = client->monitor->height;
     }
 
+
+    /*
+    * Check if maximized already. If so, revert to stored geometry.
+    */
+    if (client->verthor)
+    {
+        unmax(client);
+        client->verthor = false;
+        return;
+    }
+
     /* Raise first. Pretty silly to maximize below something else. */
     raisewindow(client->id);
 
@@ -2945,10 +2957,14 @@ void maxverthor(struct client *client, bool right_left)
     client->width = (mon_width-MAXWIDTH)/2;
     client->height = mon_height+MAXHEIGHT;
     if(right_left)
+    {
         client->x = mon_x+OFFSETX;
+    }
     else
+    {
         client->x = mon_x - OFFSETX + mon_width -(client->width + conf.borderwidth * 2);
-        values[0] = client->width;
+    }
+    values[0] = client->width;
     values[1] = client->height;
     xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_WIDTH
                         | XCB_CONFIG_WINDOW_HEIGHT, values);
@@ -2956,6 +2972,7 @@ void maxverthor(struct client *client, bool right_left)
     xcb_flush(conn);
 
     movewindow(focuswin->id, client->x, client->y);
+    client->verthor = true;
 }
 
 
