@@ -2980,7 +2980,7 @@ void maxverthor(struct client *client, bool right_left)
 
     /* Move to top left and resize. */
     client->y = mon_y+OFFSETY;
-    client->width = ((mon_width-MAXWIDTH-4)/2)-1;
+    client->width = ((mon_width-MAXWIDTH)/2)- conf.borderwidth *2;
     client->height = mon_height+MAXHEIGHT;
     if(right_left)
     {
