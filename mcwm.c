@@ -139,6 +139,10 @@ typedef enum {
     KEY_GROW,
     KEY_SHRINK,
     KEY_UNKILLABLE,
+    KEY_UP,
+    KEY_DOWN,
+    KEY_RIGHT,
+    KEY_LEFT,
     KEY_MAX
 } key_enum_t;
 
@@ -278,6 +282,10 @@ struct keys
     { USERKEY_GROW, 0 },
     { USERKEY_SHRINK, 0 },
     { USERKEY_UNKILLABLE, 0},
+    { USERKEY_UP, 0},
+    { USERKEY_DOWN, 0},
+    { USERKEY_RIGHT, 0},
+    { USERKEY_LEFT, 0},
 };
 
 /* All keycodes generating our MODKEY mask. */
@@ -330,6 +338,7 @@ void maxverthor(struct client *client, bool right_left);
 static int32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void delfromworkspace(struct client *client, uint32_t ws);
+void cursor_move(int direction, bool fast);
 static void changeworkspace(uint32_t ws);
 static void sendtoworkspace(struct client *client, uint32_t ws);
 static void fixwindow(struct client *client, bool setcolour);
@@ -906,7 +915,7 @@ void forgetwin(xcb_window_t win)
 {
     struct item *item;
     struct client *client;
-    uint32_t ws;
+    //uint32_t ws;
 
     /* Find this window in the global window list. */
     for (item = winlist; item != NULL; item = item->next)
@@ -953,12 +962,6 @@ void fitonscreen(struct client *client)
     bool willmove = false;
     bool willresize = false;
     client->vertmaxed = false;
-
-    /* Move to top left and resize. */
-    //client->x = mon_x+OFFSETX;
-    //client->y = mon_y+OFFSETY;
-    //client->width = mon_width+MAXWIDTH;
-    //client->height = mon_height+MAXHEIGHT;
 
     if (client->maxed)
     {
@@ -2532,7 +2535,6 @@ void resizestep_keep_aspect(struct client *client, char direction)
 
 
 
-
 /*
  * Move window win as a result of pointer motion to coordinates
  * rel_x,rel_y.
@@ -3391,6 +3393,42 @@ void nextscreen(void)
     xcb_flush(conn);
 }
 
+/* Function to make the cursor move with the keyboard */
+void cursor_move(int direction, bool fast)
+{
+    switch(direction)
+    {
+        case 0:
+            if(fast)
+                xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, 0, -MOUSE_MOVE_FAST);
+            else
+                xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, 0, -MOUSE_MOVE_SLOW);
+            break;
+        case 1:
+            if(fast)
+                xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, 0, MOUSE_MOVE_FAST);
+            else
+                xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, 0, MOUSE_MOVE_SLOW);
+            break;
+        case 2:
+            if(fast)
+                xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, MOUSE_MOVE_FAST, 0);
+            else
+                xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, MOUSE_MOVE_SLOW, 0);
+            break;
+        case 3:
+            if(fast)
+                xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, -MOUSE_MOVE_FAST, 0);
+            else
+                xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, -MOUSE_MOVE_SLOW, 0);
+            break;
+        default:
+            break;
+    }
+
+    xcb_flush(conn);
+}
+
 void handle_keypress(xcb_key_press_event_t *ev)
 {
     int i;
@@ -3541,6 +3579,19 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
         case KEY_Y:
             maxverthor(focuswin,true);
+            break;
+
+        case KEY_UP:
+            cursor_move(0, true);
+            break;
+        case KEY_DOWN:
+            cursor_move(1, true);
+            break;
+        case KEY_RIGHT:
+            cursor_move(2, true);
+            break;
+        case KEY_LEFT:
+            cursor_move(3, true);
             break;
         default:
             /* Ignore other shifted keys. */
@@ -3706,6 +3757,18 @@ void handle_keypress(xcb_key_press_event_t *ev)
                 unkillablewindow(focuswin, true);
             break;
 
+        case KEY_UP:
+            cursor_move(0, false);
+            break;
+        case KEY_DOWN:
+            cursor_move(1, false);
+            break;
+        case KEY_RIGHT:
+            cursor_move(2, false);
+            break;
+        case KEY_LEFT:
+            cursor_move(3, false);
+            break;
         default:
 
             /* Ignore other keys. */

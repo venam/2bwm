@@ -102,6 +102,9 @@ is a feature, not a bug.
 MODKEY + key on focused window:
 .RS
 .IP \(bu 2
+.B arrows (+shift)
+Move the cursor (with shift fast).
+.IP \(bu 2
 .B r 
 raise or lower (toggles).
 .IP \(bu 2

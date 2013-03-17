@@ -32,9 +32,9 @@
 
 /* Offset when windows are in fullscreen or vert maxed for bars */
 #define OFFSETX     0
-#define OFFSETY     20
+#define OFFSETY     0
 #define MAXWIDTH    0
-#define MAXHEIGHT   20
+#define MAXHEIGHT   0
 /*
  * Start this program when pressing MODKEY + USERKEY_TERMINAL. Needs
  * to be in $PATH.
@@ -77,6 +77,14 @@
 /* Default width of border window, in pixels. Used unless -b width. */
 #define BORDERWIDTH 2
 
+/* Set the Fast and Slow mouse movement via keyboard
+ * You can set the fast movement to something big so you can
+ * quickly move your cursor to another monitor.
+ * Remember that you can move fast with the shifted conterpart of the keys.
+ */
+#define MOUSE_MOVE_SLOW 15
+#define MOUSE_MOVE_FAST 250
+
 /*
  * Keysym codes for window operations. Look in X11/keysymdefs.h for
  * actual symbols.
@@ -118,3 +126,7 @@
 #define USERKEY_GROW        XK_Home
 #define USERKEY_SHRINK      XK_End
 #define USERKEY_UNKILLABLE  XK_A
+#define USERKEY_UP          XK_Up
+#define USERKEY_DOWN        XK_Down
+#define USERKEY_RIGHT       XK_Right
+#define USERKEY_LEFT        XK_Left
