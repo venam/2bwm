@@ -646,9 +646,7 @@ void changeworkspace(uint32_t ws)
         PDEBUG("Changing to same workspace!\n");
         return;
     }
-
     PDEBUG("Changing from workspace #%d to #%d\n", curws, ws);
-
     /*
      * We lose our focus if the window we focus isn't fixed. An
      * EnterNotify event will set focus later.
@@ -718,7 +716,7 @@ void fixwindow(struct client *client, bool setcolour)
     {
         client->fixed = false;
         setwmdesktop(client->id, curws);
-        
+
         if(!client->unkillable)
         {
             if (setcolour)
@@ -769,7 +767,7 @@ void fixwindow(struct client *client, bool setcolour)
                 addtoworkspace(client, ws);
             }
         }
-        
+
         if (setcolour)
         {
             /* Set border color to fixed colour. */
@@ -932,23 +930,11 @@ void forgetwin(xcb_window_t win)
              * Delete window from whatever workspace lists it belonged
              * to. Note that it's OK to be on several workspaces at
              * once.
+             * Here this is already handled by the forgetclient() foo.
              */
-            for (ws = 0; ws < WORKSPACES; ws ++)
-            {
-                PDEBUG("Looking in ws #%d.\n", ws);
-                if (NULL == client->wsitem[ws])
-                {
-                    PDEBUG("  but it wasn't there.\n");
-                }
-                else
-                {
-                    PDEBUG("  found it here. Deleting!\n");
-                    delfromworkspace(client, ws);
-                }
-            }
-
-            free(item->data);
-            delitem(&winlist, item);
+            forgetclient(client);
+            //free(item->data);
+            //delitem(&winlist, item);
 
             return;
         }
@@ -966,8 +952,13 @@ void fitonscreen(struct client *client)
     uint16_t mon_height;
     bool willmove = false;
     bool willresize = false;
-
     client->vertmaxed = false;
+
+    /* Move to top left and resize. */
+    //client->x = mon_x+OFFSETX;
+    //client->y = mon_y+OFFSETY;
+    //client->width = mon_width+MAXWIDTH;
+    //client->height = mon_height+MAXHEIGHT;
 
     if (client->maxed)
     {
@@ -1995,7 +1986,7 @@ void movelim(struct client *client)
 //        mon_x = client->monitor->x;
         mon_y = client->monitor->y;
 //        mon_width = client->monitor->width;
-        mon_height = client->monitor->height;   
+        mon_height = client->monitor->height;
     }
 
     /* Is it outside the physical monitor? */
@@ -2011,8 +2002,8 @@ void movelim(struct client *client)
 
 
 
-    
- 
+
+
     if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
     {
         client->y = (mon_y + mon_height - conf.borderwidth * 2)
@@ -2852,8 +2843,8 @@ void maximize(struct client *client)
     /* Move to top left and resize. */
     client->x = mon_x+OFFSETX;
     client->y = mon_y+OFFSETY;
-    client->width = mon_width+MAXWIDTH;
-    client->height = mon_height+MAXHEIGHT;
+    client->width = mon_width-MAXWIDTH;
+    client->height = mon_height-MAXHEIGHT;
 
     values[0] = client->x;
     values[1] = client->y;
@@ -2914,9 +2905,9 @@ void maxvert(struct client *client)
     client->origsize.width = client->width;
     client->origsize.height = client->height;
 
-    client->y = mon_y;
+    client->y = mon_y+OFFSETY;
     /* Compute new height considering height increments and screen height. */
-    client->height = mon_height - conf.borderwidth * 2;
+    client->height = mon_height - (conf.borderwidth * 2) - MAXHEIGHT;
 
     /* Move to top of screen and resize. */
     values[0] = client->y;
@@ -2930,7 +2921,7 @@ void maxvert(struct client *client)
 }
 
 void maxverthor(struct client *client, bool right_left)
-{    
+{
     uint32_t values[4];
     int16_t mon_x;
     int16_t mon_y;
@@ -2980,8 +2971,8 @@ void maxverthor(struct client *client, bool right_left)
 
     /* Move to top left and resize. */
     client->y = mon_y+OFFSETY;
-    client->width = ((mon_width-MAXWIDTH)/2)- conf.borderwidth *2;
-    client->height = mon_height+MAXHEIGHT;
+    client->width = ((mon_width)/2) - (MAXWIDTH + (conf.borderwidth * 2));
+    client->height = mon_height- (MAXHEIGHT+ (conf.borderwidth * 2));
     if(right_left)
     {
         client->x = mon_x+OFFSETX;
@@ -3251,15 +3242,15 @@ void center(void)
     {
         mon_x = 0;
         mon_y = 0;
-        mon_height = screen->height_in_pixels;
-        mon_width = screen->width_in_pixels;
+        mon_height = screen->height_in_pixels + MAXHEIGHT;
+        mon_width  = screen->width_in_pixels  + MAXWIDTH;
     }
     else
     {
         mon_x = focuswin->monitor->x;
         mon_y = focuswin->monitor->y;
-        mon_height = focuswin->monitor->height;
-        mon_width = focuswin->monitor->width;
+        mon_height = focuswin->monitor->height + MAXHEIGHT;
+        mon_width  = focuswin->monitor->width  + MAXWIDTH;
     }
 
     /* Save pointer position so we can warp pointer here later. */
@@ -3454,7 +3445,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
     else if (ev->state & CONTROLMOD)
     {
         switch (key)
-        {    
+        {
             case KEY_END:
                 mcwm_exit();
                 break;
@@ -3591,7 +3582,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
         case KEY_TAB: /* tab */
             focusnext(false);
             break;
-        
+
         case KEY_BACKTAB: /* backtab */
             focusnext(true);
             break;
@@ -4679,7 +4670,7 @@ xcb_atom_t getatom(char *atom_name)
 
 /*
  * Here I want to have restart and exit.
- * Problems: I want exit to kill the X session, xinit,  main terminal 
+ * Problems: I want exit to kill the X session, xinit,  main terminal
  *           so that we quit X at the same time.
  */
 void mcwm_restart(void)

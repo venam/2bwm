@@ -31,10 +31,10 @@
 
 
 /* Offset when windows are in fullscreen or vert maxed for bars */
-#define OFFSETX 0
-#define OFFSETY  0
-#define MAXWIDTH 0
-#define MAXHEIGHT   0
+#define OFFSETX     0
+#define OFFSETY     20
+#define MAXWIDTH    0
+#define MAXHEIGHT   20
 /*
  * Start this program when pressing MODKEY + USERKEY_TERMINAL. Needs
  * to be in $PATH.
