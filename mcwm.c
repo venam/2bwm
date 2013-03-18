@@ -25,7 +25,6 @@
  * We grab MODKEY all the time! We can grab it only when we start
  * A separate workspace list for every monitor.
  * the keep aspect ratio with mouse
- * the keep aspect ratio fast resizer - binding
  * static Makefile problem
  * Double border patch
  * configs in a text file, dynamically updated
@@ -338,7 +337,7 @@ void maxverthor(struct client *client, bool right_left);
 static int32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void delfromworkspace(struct client *client, uint32_t ws);
-void cursor_move(int direction, bool fast);
+void cursor_move(uint8_t direction, bool fast);
 static void changeworkspace(uint32_t ws);
 static void sendtoworkspace(struct client *client, uint32_t ws);
 static void fixwindow(struct client *client, bool setcolour);
@@ -391,11 +390,13 @@ static void hide(struct client *client);
 static bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y);
 static bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
                     uint16_t *height);
+
 static void topleft(void);
 static void topright(void);
 static void botleft(void);
 static void botright(void);
 static void center(void);
+
 static void deletewin(void);
 static void prevscreen(void);
 static void nextscreen(void);
@@ -3105,13 +3106,13 @@ void topright(void)
 
     if (NULL == focuswin->monitor)
     {
-        mon_width = screen->width_in_pixels;
+        mon_width = screen->width_in_pixels + MAXWIDTH;
         mon_x = 0;
         mon_y = 0;
     }
     else
     {
-        mon_width = focuswin->monitor->width;
+        mon_width = focuswin->monitor->width + MAXWIDTH;
         mon_x = focuswin->monitor->x;
         mon_y = focuswin->monitor->y;
     }
@@ -3152,13 +3153,13 @@ void botleft(void)
     {
         mon_x = 0;
         mon_y = 0;
-        mon_height = screen->height_in_pixels;
+        mon_height = screen->height_in_pixels + MAXHEIGHT;
     }
     else
     {
-        mon_x = focuswin->monitor->x;
+        mon_x = focuswin->monitor->x ;
         mon_y = focuswin->monitor->y;
-        mon_height = focuswin->monitor->height;
+        mon_height = focuswin->monitor->height +MAXHEIGHT;
     }
 
     raisewindow(focuswin->id);
@@ -3195,15 +3196,15 @@ void botright(void)
     {
         mon_x = 0;
         mon_y = 0;
-        mon_width  = screen->width_in_pixels;;
-        mon_height = screen->height_in_pixels;
+        mon_width  = screen->width_in_pixels  + MAXWIDTH;
+        mon_height = screen->height_in_pixels + MAXHEIGHT;
     }
     else
     {
         mon_x = focuswin->monitor->x;
         mon_y = focuswin->monitor->y;
-        mon_width = focuswin->monitor->width;
-        mon_height = focuswin->monitor->height;
+        mon_width = focuswin->monitor->width   + MAXWIDTH;
+        mon_height = focuswin->monitor->height + MAXHEIGHT;
     }
 
     raisewindow(focuswin->id);
@@ -3394,7 +3395,7 @@ void nextscreen(void)
 }
 
 /* Function to make the cursor move with the keyboard */
-void cursor_move(int direction, bool fast)
+void cursor_move(uint8_t direction, bool fast)
 {
     switch(direction)
     {

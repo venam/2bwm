@@ -6,6 +6,7 @@ DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
 CFLAGS+=-g -std=c99 -Wall -O3 -march=i686 -mtune=i686 -Wextra -I/usr/local/include -DNDEBUG -DNPDEBUG -DNDMALLOC #-DDEBUG #-DDMALLOC
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util #-ldmalloc
 
+
 RM=/bin/rm
 PREFIX=/usr/local
 
@@ -21,8 +22,7 @@ hidden: hidden.c
 	clang $(CFLAGS) hidden.c $(LDFLAGS) -o $@
 
 mcwm-static: $(OBJS)
-	$(CC) $(OBJS) -static $(CFLAGS) $(LDFLAGS) \
-	-lXau -lXdmcp -o $@ -lpthread
+	$(CC) $(OBJS) -static $(CFLAGS) $(LDFLAGS) -lXau -lpthread -o $@
 
 mcwm.o: mcwm.c events.h list.h config.h Makefile
 

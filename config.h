@@ -83,7 +83,7 @@
  * Remember that you can move fast with the shifted conterpart of the keys.
  */
 #define MOUSE_MOVE_SLOW 15
-#define MOUSE_MOVE_FAST 250
+#define MOUSE_MOVE_FAST 400
 
 /*
  * Keysym codes for window operations. Look in X11/keysymdefs.h for
