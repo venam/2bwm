@@ -30,6 +30,7 @@
  * configs in a text file, dynamically updated
  * The unkillable status disappear when restarting
  * little bug while changing workspace and not focusing a window
+ * shift+mod+m maxhor
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -179,6 +180,7 @@ struct client
     int32_t width_inc, height_inc;
     int32_t base_width, base_height;
     bool vertmaxed;                  /* Vertically maximized? */
+    bool hormaxed;                   /* horizontally maximized? */
     bool maxed;                      /* Totally maximized? */
     bool  verthor;                   /* half horizontally maxed, full vert*/
     bool fixed;                      /* Visible on all workspaces? */
@@ -386,6 +388,7 @@ static void setborders(struct client *client, int width);
 static void unmax(struct client *client);
 static void maximize(struct client *client);
 static void maxvert(struct client *client);
+static void maxhor(struct client *client);
 static void hide(struct client *client);
 static bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y);
 static bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
@@ -1245,6 +1248,7 @@ struct client *setupwin(xcb_window_t win)
     client->width_inc = 1;
     client->height_inc = 1;
     client->vertmaxed = false;
+    client->hormaxed  = false;
     client->maxed = false;
     client->unkillable=false;
     client->fixed = false;
@@ -2477,6 +2481,10 @@ void resizestep(struct client *client, char direction)
     {
         client->vertmaxed = false;
     }
+    if(client->hormaxed)
+    {
+        client->hormaxed  = false;
+    }
 
     xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
                      client->width / 2, client->height / 2);
@@ -2528,6 +2536,10 @@ void resizestep_keep_aspect(struct client *client, char direction)
     {
         client->vertmaxed = false;
     }
+    if(client->hormaxed)
+    {
+        client->hormaxed =false;
+    }
 
     xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
                      client->width / 2, client->height / 2);
@@ -2567,6 +2579,10 @@ void mouseresize(struct client *client, int rel_x, int rel_y)
     {
         client->vertmaxed = false;
     }
+    if(client->hormaxed)
+    {
+        client->hormaxed = false;
+    }
 }
 
 void mouseresize_keepaspect(struct client *client, int rel_x, int rel_y)
@@ -2595,6 +2611,10 @@ void mouseresize_keepaspect(struct client *client, int rel_x, int rel_y)
     if (client->vertmaxed)
     {
         client->vertmaxed = false;
+    }
+    if(client->hormaxed)
+    {
+        client->hormaxed = false;
     }
 }
 
@@ -2922,6 +2942,69 @@ void maxvert(struct client *client)
     /* Remember that this client is vertically maximized. */
     client->vertmaxed = true;
 }
+
+
+void maxhor(struct client *client)
+{
+    uint32_t values[2];
+    int16_t mon_x;
+    uint16_t mon_width;
+
+    if (NULL == client )
+    {
+        PDEBUG("maxhor: client was NULL\n");
+        return;
+    }
+
+    if (NULL == client->monitor)
+    {
+        mon_x = 0;
+        mon_width = screen->width_in_pixels;
+    }
+    else
+    {
+        mon_x = client->monitor->x;
+        mon_width = client->monitor->width;
+    }
+
+    /*
+     * Check if maximized already. If so, revert to stored geometry.
+     */
+    if (client->hormaxed)
+    {
+        unmax(client);
+        client->hormaxed = false;
+        return;
+    }
+
+    /* Raise first. Pretty silly to maximize below something else. */
+    raisewindow(client->id);
+
+    /*
+     * Store original coordinates and geometry.
+     * FIXME: Store in property as well?
+     */
+    client->origsize.x = client->x;
+    client->origsize.y = client->y;
+    client->origsize.width = client->width;
+    client->origsize.height = client->height;
+
+    client->x = mon_x+OFFSETX;
+    /* Compute new height considering height increments and screen height. */
+    client->width = mon_width - (conf.borderwidth * 2) - MAXWIDTH;
+
+    /* Move to top of screen and resize. */
+    values[0] = client->x;
+    values[1] = client->width;
+
+    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_X
+                         | XCB_CONFIG_WINDOW_WIDTH, values);
+    xcb_flush(conn);
+    /* Remember that this client is vertically maximized. */
+    client->hormaxed = true;
+}
+
+
 
 void maxverthor(struct client *client, bool right_left)
 {
@@ -3581,7 +3664,9 @@ void handle_keypress(xcb_key_press_event_t *ev)
         case KEY_Y:
             maxverthor(focuswin,true);
             break;
-
+        case KEY_M:
+            maxhor(focuswin);
+            break;
         case KEY_UP:
             cursor_move(0, true);
             break;
@@ -3898,7 +3983,7 @@ void configurerequest(xcb_configure_request_event_t *e)
         if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
         {
             /* Don't resize if maximized. */
-            if (!client->maxed)
+            if (!client->maxed && !client->hormaxed)
             {
                 client->width = e->width;
             }

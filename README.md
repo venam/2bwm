@@ -19,6 +19,7 @@ Patches
 - Patched the maxvert
 - Patched the numlock issue
 - Move the mouse with the keyboard (fast and slow)
+- max horizontally with mod+shift+m
 - max vertically and half horizontally - mod+shift+topright/mod+shift+topleft
 - Restart/Exit patch with mod+ctrl+r mod+ctrl+q 
     (or whatever you set for the USERKEY_RAISE and USERKEY_DELETE respectivelly)

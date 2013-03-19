@@ -114,6 +114,9 @@ maximize (toggles).
 .B m 
 maximize vertically (toggles).
 .IP \(bu 2
+.B shift+m
+maximize horizontally (toggles).
+.IP \(bu 2
 .B H 
 resize left.
 .IP \(bu 2
