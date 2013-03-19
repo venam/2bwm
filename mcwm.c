@@ -28,9 +28,8 @@
  * static Makefile problem
  * Double border patch
  * configs in a text file, dynamically updated
- * The unkillable status disappear when restarting
+ * The unkillable status disappear when restarting or after unicon a window.
  * little bug while changing workspace and not focusing a window
- * shift+mod+m maxhor
  */
 #include <stdlib.h>
 #include <stdio.h>
