@@ -22,7 +22,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * We grab MODKEY all the time! We can grab it only when we start
  * A separate workspace list for every monitor.
  * the keep aspect ratio with mouse
  * static Makefile problem
