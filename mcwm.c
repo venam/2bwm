@@ -2770,7 +2770,7 @@ void unmax(struct client *client)
     client->height = client->origsize.height;
 
     /* Restore geometry. */
-    if (client->maxed)
+    if (client->maxed || client->hormaxed)
     {
         values[0] = client->x;
         values[1] = client->y;
