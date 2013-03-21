@@ -10,6 +10,9 @@
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at
  * the domain hack.org.
  *
+ * Copyright (c) 2013 of the mcwm-beast patches Patrick Louis, Youri Mouton,
+ * patrick at unixhub [dot] net
+ *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
  * copyright notice and this permission notice appear in all copies.
@@ -22,6 +25,8 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
+ *
+ * Some wanna do:
  * A separate workspace list for every monitor.
  * the keep aspect ratio with mouse
  * static Makefile problem
