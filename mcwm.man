@@ -309,3 +309,4 @@ Use it like this:
 .B hidden(1)
 .SH AUTHOR
 Michael Cardell Widerkrantz <mc@hack.org>.
+Patches by Patrick Louis & Youri mouton <patrick at unixhub dot net>
