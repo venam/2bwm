@@ -22,7 +22,7 @@ hidden: hidden.c
 	clang $(CFLAGS) hidden.c $(LDFLAGS) -o $@
 
 mcwm-static: $(OBJS)
-	$(CC) $(OBJS) -static $(CFLAGS) $(LDFLAGS) -lXau -lpthread -o $@
+	clang $(OBJS) -static $(CFLAGS) $(LDFLAGS) -lXau -lpthread -o $@
 
 mcwm.o: mcwm.c events.h list.h config.h Makefile
 
