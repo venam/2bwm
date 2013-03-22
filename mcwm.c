@@ -28,6 +28,7 @@
  *
  * Some wanna do:
  * A separate workspace list for every monitor.
+ * Max Number of workspaces
  * the keep aspect ratio with mouse
  * static Makefile problem
  * Double border patch
@@ -3623,40 +3624,49 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
 
         case KEY_2:
-            sendtoworkspace(focuswin, 1);
+            if(WORKSPACES>=2)
+                sendtoworkspace(focuswin, 1);
             break;
 
         case KEY_3:
-            sendtoworkspace(focuswin, 2);
+            if(WORKSPACES>=3)
+                sendtoworkspace(focuswin, 2);
             break;
 
         case KEY_4:
-            sendtoworkspace(focuswin, 3);
+            if(WORKSPACES>=4)
+                sendtoworkspace(focuswin, 3);
             break;
 
         case KEY_5:
-            sendtoworkspace(focuswin, 4);
+            if(WORKSPACES>=5)
+                sendtoworkspace(focuswin, 4);
             break;
 
         case KEY_6:
-            sendtoworkspace(focuswin, 5);
+            if(WORKSPACES>=6)
+                sendtoworkspace(focuswin, 5);
             break;
 
         case KEY_7:
-            sendtoworkspace(focuswin, 6);
+            if(WORKSPACES>=7)
+                sendtoworkspace(focuswin, 6);
             break;
 
         case KEY_8:
-            sendtoworkspace(focuswin, 7);
+            if(WORKSPACES>=8)
+                sendtoworkspace(focuswin, 7);
             break;
 
         case KEY_9:
-            sendtoworkspace(focuswin, 8);
+            if(WORKSPACES>=9)
+                sendtoworkspace(focuswin, 8);
             break;
 
         case KEY_0:
-            sendtoworkspace(focuswin, 9);
-                        break;
+            if(WORKSPACES==10)
+                sendtoworkspace(focuswin, 9);
+            break;
         case KEY_U:
             maxverthor(focuswin,false);
             break;
