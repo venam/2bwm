@@ -12,6 +12,7 @@
  *
  * Copyright (c) 2013 of the mcwm-beast patches Patrick Louis, Youri Mouton,
  * patrick at unixhub [dot] net
+ * beastie at unixhub [dot] net
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -3624,47 +3625,38 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
 
         case KEY_2:
-            if(WORKSPACES>=2)
                 sendtoworkspace(focuswin, 1);
             break;
 
         case KEY_3:
-            if(WORKSPACES>=3)
                 sendtoworkspace(focuswin, 2);
             break;
 
         case KEY_4:
-            if(WORKSPACES>=4)
                 sendtoworkspace(focuswin, 3);
             break;
 
         case KEY_5:
-            if(WORKSPACES>=5)
                 sendtoworkspace(focuswin, 4);
             break;
 
         case KEY_6:
-            if(WORKSPACES>=6)
                 sendtoworkspace(focuswin, 5);
             break;
 
         case KEY_7:
-            if(WORKSPACES>=7)
                 sendtoworkspace(focuswin, 6);
             break;
 
         case KEY_8:
-            if(WORKSPACES>=8)
                 sendtoworkspace(focuswin, 7);
             break;
 
         case KEY_9:
-            if(WORKSPACES>=9)
                 sendtoworkspace(focuswin, 8);
             break;
 
         case KEY_0:
-            if(WORKSPACES==10)
                 sendtoworkspace(focuswin, 9);
             break;
         case KEY_U:
