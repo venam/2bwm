@@ -1,4 +1,5 @@
 VERSION=2013-3
+CC=clang
 DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.c config.h events.h list.h hidden.c
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
@@ -16,13 +17,13 @@ OBJS=mcwm.o list.o
 all: $(TARGETS)
 
 mcwm: $(OBJS)
-	clang $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
 
 hidden: hidden.c
-	clang $(CFLAGS) hidden.c $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) hidden.c $(LDFLAGS) -o $@
 
 mcwm-static: $(OBJS)
-	clang $(OBJS) -static $(CFLAGS) $(LDFLAGS) -lXau -lpthread -o $@
+	$(CC) $(OBJS) -static $(CFLAGS) $(LDFLAGS) -lXau -lpthread -o $@
 
 mcwm.o: mcwm.c events.h list.h config.h Makefile
 
