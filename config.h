@@ -74,8 +74,20 @@
 /* Ditto for unkillable windows. */
 #define UNKILLCOL "#5c0202"
 
+/* Ditto for unkillable and fixed windows. */
+#define FIXED_UNKIL_COL "#cc880e"
+
 /* Default width of border window, in pixels. Used unless -b width. */
-#define BORDERWIDTH 2
+/* unfocused */
+#define BORDERWIDTH1 0
+/* focused */
+#define BORDERWIDTH2 1
+/* fixed */
+#define BORDERWIDTH3 1
+/* unkilable */
+#define BORDERWIDTH4 2
+/* fixed+unkilable */
+#define BORDERWIDTH5 4
 
 /* Set the Fast and Slow mouse movement via keyboard
  * You can set the fast movement to something big so you can
