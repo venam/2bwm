@@ -79,13 +79,13 @@
 
 /* Default width of border window, in pixels. Used unless -b width. */
 /* unfocused */
-#define BORDERWIDTH1 0
+#define BORDERWIDTH1 2
 /* focused */
-#define BORDERWIDTH2 1
+#define BORDERWIDTH2 2
 /* fixed */
-#define BORDERWIDTH3 1
+#define BORDERWIDTH3 2
 /* unkilable */
-#define BORDERWIDTH4 2
+#define BORDERWIDTH4 3
 /* fixed+unkilable */
 #define BORDERWIDTH5 4
 

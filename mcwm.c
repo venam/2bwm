@@ -997,7 +997,7 @@ void fitonscreen(struct client *client)
     if (client->maxed)
     {
         client->maxed = false;
-        setborders(client,true);
+        setborders(client,false);
     }
 
     if (NULL == client->monitor)
@@ -1066,7 +1066,7 @@ void fitonscreen(struct client *client)
      */
     if (client->width + client->borderwidth * 2 > mon_width)
     {
-        client->x = mon_x;
+        client->x = mon_x;            
         client->width = mon_width - client->borderwidth * 2;;
         willmove = true;
         willresize = true;
@@ -2781,23 +2781,26 @@ void setborders(struct client *client,bool isitfocused)
 {
     uint32_t values[1];
     uint32_t mask = 0;
+   
+    if(!client->maxed)
+    {
+        values[0] = conf.borderwidth;
+        if(isitfocused)
+            values[0] = conf.borderwidth2;
+        if(client->fixed)
+            values[0] = conf.borderwidth3;
+        if(client->unkillable)
+            values[0] = conf.borderwidth4;
+        if(client->unkillable && client->fixed)
+            values[0] = conf.borderwidth5;
     
-    values[0] = conf.borderwidth;
-    if(isitfocused)
-        values[0] = conf.borderwidth2;
-    if(client->fixed)
-        values[0] = conf.borderwidth3;
-    if(client->unkillable)
-        values[0] = conf.borderwidth4;
-    if(client->unkillable && client->fixed)
-        values[0] = conf.borderwidth5;
+        /* save the borderwidth inside the client */
+        client->borderwidth = values[0];
 
-    /* save the borderwidth inside the client */
-    client->borderwidth = values[0];
-
-    mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
-    xcb_configure_window(conn, client->id, mask, &values[0]);
-    xcb_flush(conn);
+        mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
+        xcb_configure_window(conn, client->id, mask, &values[0]);
+        xcb_flush(conn);
+    }
 }
 
 void unmax(struct client *client)
@@ -2824,9 +2827,6 @@ void unmax(struct client *client)
         values[2] = client->width;
         values[3] = client->height;
 
-        /* Set borders again. */
-        setborders(client,true);
-        
 
         mask =
             XCB_CONFIG_WINDOW_X
@@ -2851,6 +2851,7 @@ void unmax(struct client *client)
     xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
                      client->width / 2, client->height / 2);
 
+    setborders(client,true);
     xcb_flush(conn);
 }
 
@@ -2892,6 +2893,7 @@ void maximize(struct client *client)
     {
         unmax(client);
         client->maxed = false;
+        setborders(client,true);
         return;
     }
 
@@ -2959,6 +2961,7 @@ void maxvert(struct client *client)
     {
         unmax(client);
         client->vertmaxed = false;
+        setborders(client,true);
         return;
     }
 
@@ -3020,6 +3023,7 @@ void maxhor(struct client *client)
     {
         unmax(client);
         client->hormaxed = false;
+        setborders(client,true);
         return;
     }
 
@@ -3089,6 +3093,7 @@ void maxverthor(struct client *client, bool right_left)
     {
         unmax(client);
         client->verthor = false;
+        setborders(client,true);
         return;
     }
 
