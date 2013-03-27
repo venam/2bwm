@@ -77,6 +77,12 @@
 /* Ditto for unkillable and fixed windows. */
 #define FIXED_UNKIL_COL "#cc880e"
 
+/* Ditto for default back, when the WM don't know what to put.
+ * example: in mplayer when you resize.
+ * If you put 0 than it's going to be transparent
+ */
+#define EMPTY_COL "#000000"
+
 /* Default width of border window, in pixels. Used unless -b width. */
 /* unfocused */
 #define BORDERWIDTH1 2

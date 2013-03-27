@@ -315,6 +315,7 @@ struct conf
     uint32_t unfocuscol;        /* Unfocused border colour.  */
     uint32_t fixedcol;          /* Fixed windows border colour. */
     uint32_t unkillcol;         /* unkillable window color    */
+    uint32_t empty_col;         /* color for when we don't know what to put */
     uint32_t fixed_unkil_col;   /* unkillable and fixed window color */
     bool allowicons;            /* Allow windows to be unmapped. */
 } conf;
@@ -1224,8 +1225,16 @@ struct client *setupwin(xcb_window_t win)
      * Use the background frame instead.
      * This is really good for videos because we keep their aspect ratio.
      */
-    values[0] = 1;
-    xcb_change_window_attributes(conn, win, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
+    if(EMPTY_COL=="0")
+    {
+        values[0] = 1;
+        xcb_change_window_attributes(conn, win, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
+    }
+    else
+    {
+        values[0] = conf.empty_col;
+        xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXEL, values);
+    }
 
     /* Set border width. */
     values[0] = conf.borderwidth2;
@@ -4899,6 +4908,7 @@ int main(int argc, char **argv)
     char *unfocuscol;
     char *fixedcol;
     char *unkillcol;
+    char *empty_col;
     char *fixed_unkil_col;
     int scrno;
     xcb_screen_iterator_t iter;
@@ -4939,6 +4949,7 @@ int main(int argc, char **argv)
     fixedcol         = FIXEDCOL;
     unkillcol        = UNKILLCOL;
     fixed_unkil_col  = FIXED_UNKIL_COL;
+    empty_col        = EMPTY_COL;
 
     while (1)
     {
@@ -5029,6 +5040,10 @@ int main(int argc, char **argv)
     conf.unfocuscol      = getcolor(unfocuscol);
     conf.fixedcol        = getcolor(fixedcol);
     conf.unkillcol       = getcolor(unkillcol);
+    if(strcmp(empty_col,"0")==0)
+        conf.empty_col = 0;
+    else
+        conf.empty_col = getcolor(empty_col);
     conf.fixed_unkil_col = getcolor(fixed_unkil_col);
 
     /* Get some atoms. */
