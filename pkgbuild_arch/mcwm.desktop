@@ -1,0 +1,6 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=MCWM
+Comment=MC's Window Manager (patched)
+Exec=mcwm
+Type=XSession
