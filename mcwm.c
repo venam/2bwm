@@ -325,6 +325,7 @@ xcb_atom_t atom_desktop;        /*
                                  * what workspace a window should be
                                  * on.
                                  */
+xcb_atom_t atom_current_desktop;
 
 xcb_atom_t wm_delete_window;    /* WM_DELETE_WINDOW event to close windows.  */
 xcb_atom_t wm_change_state;
@@ -715,8 +716,7 @@ void changeworkspace(uint32_t ws)
     }
 
     xcb_flush(conn);
-    setwmdesktop(screen->root, ws); 
-    //focusnext(false);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&ws);
     curws = ws;
 }
 
@@ -5037,7 +5037,6 @@ int main(int argc, char **argv)
     }
 
     root = screen->root;
-    setwmdesktop(screen->root, 0); 
 
     PDEBUG("Screen size: %dx%d\nRoot window: %d\n", screen->width_in_pixels,
            screen->height_in_pixels, screen->root);
@@ -5055,10 +5054,14 @@ int main(int argc, char **argv)
 
     /* Get some atoms. */
     atom_desktop = getatom("_NET_WM_DESKTOP");
+    atom_current_desktop = getatom("_NET_CURRENT_DESKTOP");
     wm_delete_window = getatom("WM_DELETE_WINDOW");
     wm_change_state = getatom("WM_CHANGE_STATE");
     wm_state = getatom("WM_STATE");
     wm_protocols = getatom("WM_PROTOCOLS");
+
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&curws);
 
     /* Check for RANDR extension and configure. */
     randrbase = setuprandr();

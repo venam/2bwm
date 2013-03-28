@@ -25,7 +25,7 @@ Patches
 - dynamic window border size depending on its state 
 - Restart/Exit patch with mod+ctrl+r mod+ctrl+q 
     (or whatever you set for the USERKEY_RAISE and USERKEY_DELETE respectivelly)
-- You can now know the current workspace this way: xprop -root|grep _NET_WM_DESKTOP| sed -e 's/_NET_WM_DESKTOP(CARDINAL) = //'
+- You can now know the current workspace this way: xprop -root|grep _NET_CURRENT_DESKTOP| sed -e 's/_NET_CURRENT_DESKTOP(CARDINAL) = //'
 
 
 Authors:
