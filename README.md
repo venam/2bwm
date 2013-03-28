@@ -25,6 +25,11 @@ Patches
 - dynamic window border size depending on its state 
 - Restart/Exit patch with mod+ctrl+r mod+ctrl+q 
     (or whatever you set for the USERKEY_RAISE and USERKEY_DELETE respectivelly)
+- Log the workspace you are currently on in a temporary file mcwm_workspace.XXXXXX
+  But remember that if you kill the session uncleanly the old temporary file will not be deleted.
+  you can start the session this way to have less problems later:
+  exec ck-launch-session dbus-launch mcwm
+
 
 
 Authors:
