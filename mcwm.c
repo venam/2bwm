@@ -666,10 +666,10 @@ void log_workspace (uint32_t ws)
 {
     size_t length = 1;
     /* Write the number of bytes to the file first. */
-    char string_[3];
+    char string_[1];
     sprintf (string_, "%d", ws);
     lseek(writer,0,SEEK_SET);
-    write (writer, &length, sizeof (length));
+    //write (writer, &length, sizeof (length));
     /* Now write the data itself. */
     write (writer, string_, length);
 }
