@@ -29,6 +29,8 @@ Patches
   But remember that if you kill the session uncleanly the old temporary file will not be deleted.
   you can start the session this way to have less problems later:
   exec ck-launch-session dbus-launch mcwm
+  it would also be wise to add this, in case of unespected crash:
+  rm /tmp/mcwm_workspace*;
 
 
 
