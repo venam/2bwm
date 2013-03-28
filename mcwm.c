@@ -33,6 +33,7 @@
  * static Makefile problem
  * set default status depending on WM_NAME / WM_ICON_NAME
  * Double border patch
+ * half vertical, full horizontal maximizing
  * configs in a text file, dynamically updated
  * little bug while changing workspace and not focusing a window
  */
