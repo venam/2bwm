@@ -31,6 +31,7 @@
  * A separate workspace list for every monitor.
  * the keep aspect ratio with mouse
  * static Makefile problem
+ * set default status depending on WM_NAME / WM_ICON_NAME
  * Double border patch
  * configs in a text file, dynamically updated
  * The unkillable status disappear when restarting or after unicon a window.
@@ -76,10 +77,6 @@
 #endif
 
 /* Internal Constants. */
-
-typedef int temp_file_handle;
-temp_file_handle writer;
-char temp_filename[27];
 
 /* We're currently moving a window with the mouse. */
 #define MCWM_MOVE 2
@@ -534,9 +531,6 @@ struct modkeycodes getmodkeys(xcb_mod_mask_t modmask)
  */
 void cleanup(const int code)
 {
-    #ifdef LOG_WORKSPACE
-        unlink(temp_filename);
-    #endif
     xcb_set_input_focus(conn, XCB_NONE,
                         XCB_INPUT_FOCUS_POINTER_ROOT,
                         XCB_CURRENT_TIME);
@@ -661,18 +655,6 @@ void delfromworkspace(struct client *client, uint32_t ws)
     //focusnext();
 }
 
-/* Log the current workspace ws in a temporary file. */
-void log_workspace (uint32_t ws)
-{
-    size_t length = 1;
-    /* Write the number of bytes to the file first. */
-    char string_[1];
-    sprintf (string_, "%d", ws);
-    lseek(writer,0,SEEK_SET);
-    //write (writer, &length, sizeof (length));
-    /* Now write the data itself. */
-    write (writer, string_, length);
-}
 
 /* Change current workspace to ws. */
 void changeworkspace(uint32_t ws)
@@ -733,11 +715,9 @@ void changeworkspace(uint32_t ws)
     }
 
     xcb_flush(conn);
+    setwmdesktop(screen->root, ws); 
     //focusnext(false);
     curws = ws;
-    #ifdef LOG_WORKSPACE
-        log_workspace(ws);
-    #endif
 }
 
 /*
@@ -1393,9 +1373,6 @@ xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms)
     keyp = xcb_key_symbols_get_keycode(keysyms, keysym);
     if (NULL == keyp)
     {
-        #ifdef LOG_WORKSPACE
-            unlink(temp_filename);
-        #endif
         fprintf(stderr, "mcwm: Couldn't look up key. Exiting.\n");
         exit(1);
         return 0;
@@ -4911,9 +4888,6 @@ xcb_atom_t getatom(char *atom_name)
  */
 void mcwm_restart(void)
 {
-    #ifdef LOG_WORKSPACE
-        unlink(temp_filename);
-    #endif
     execvp("/usr/local/bin/mcwm", user_argv);
 }
 void mcwm_exit(void)
@@ -4923,27 +4897,10 @@ void mcwm_exit(void)
 }
 
 
-/* Create the temporary file where we'll log the current workspace */
-void create_temp_file ()
-{
-    /* Create the filename and file. The XXXXXX will be replaced with
-    characters that make the filename unique. */
-    strcpy(temp_filename,"/tmp/mcwm_workspace.XXXXXX");
-    writer               = mkstemp (temp_filename);
-    /* Unlink the file immediately, so that it will be removed when the
-    file descriptor is closed. */
-    //unlink (temp_filename);
-    log_workspace(0);
-}
-
-
 
 
 int main(int argc, char **argv)
 {
-    #ifdef LOG_WORKSPACE
-        create_temp_file();
-    #endif
 
     user_argv = argv;
 
@@ -4967,27 +4924,18 @@ int main(int argc, char **argv)
     /* We ignore child exists. Don't create zombies. */
     if (SIG_ERR == signal(SIGCHLD, SIG_IGN))
     {
-        #ifdef LOG_WORKSPACE
-            unlink(temp_filename);
-        #endif
         perror("mcwm: signal");
         exit(1);
     }
 
     if (SIG_ERR == signal(SIGINT, sigcatch))
     {
-        #ifdef LOG_WORKSPACE
-            unlink(temp_filename);
-        #endif
         perror("mcwm: signal");
         exit(1);
     }
 
     if (SIG_ERR == signal(SIGTERM, sigcatch))
     {
-        #ifdef LOG_WORKSPACE
-            unlink(temp_filename);
-        #endif
         perror("mcwm: signal");
         exit(1);
     }
@@ -5069,9 +5017,6 @@ int main(int argc, char **argv)
     conn = xcb_connect(NULL, &scrno);
     if (xcb_connection_has_error(conn))
     {
-        #ifdef LOG_WORKSPACE
-            unlink(temp_filename);
-        #endif
         perror("xcb_connect");
         exit(1);
     }
@@ -5086,15 +5031,13 @@ int main(int argc, char **argv)
     screen = iter.data;
     if (!screen)
     {
-        #ifdef LOG_WORKSPACE
-            unlink(temp_filename);
-        #endif
         fprintf (stderr, "mcwm: Can't get the current screen. Exiting.\n");
         xcb_disconnect(conn);
         exit(1);
     }
 
     root = screen->root;
+    setwmdesktop(screen->root, 0); 
 
     PDEBUG("Screen size: %dx%d\nRoot window: %d\n", screen->width_in_pixels,
            screen->height_in_pixels, screen->root);
@@ -5123,9 +5066,6 @@ int main(int argc, char **argv)
     /* Loop over all clients and set up stuff. */
     if (0 != setupscreen())
     {
-        #ifdef LOG_WORKSPACE
-            unlink(temp_filename);
-        #endif
         fprintf(stderr, "mcwm: Failed to initialize windows. Exiting.\n");
         xcb_disconnect(conn);
         exit(1);
@@ -5135,9 +5075,6 @@ int main(int argc, char **argv)
     if (0 != setupkeys())
     {
 
-        #ifdef LOG_WORKSPACE
-            unlink(temp_filename);
-        #endif
         fprintf(stderr, "mcwm: Couldn't set up keycodes. Exiting.");
         xcb_disconnect(conn);
         exit(1);
@@ -5204,9 +5141,6 @@ int main(int argc, char **argv)
                 error->error_code);
 
         xcb_disconnect(conn);
-        #ifdef LOG_WORKSPACE
-            unlink(temp_filename);
-        #endif
         exit(1);
     }
 
