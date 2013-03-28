@@ -34,7 +34,6 @@
  * set default status depending on WM_NAME / WM_ICON_NAME
  * Double border patch
  * configs in a text file, dynamically updated
- * The unkillable status disappear when restarting or after unicon a window.
  * little bug while changing workspace and not focusing a window
  */
 #include <stdlib.h>
@@ -326,6 +325,7 @@ xcb_atom_t atom_desktop;        /*
                                  * on.
                                  */
 xcb_atom_t atom_current_desktop;
+xcb_atom_t atom_unkillable;
 
 xcb_atom_t wm_delete_window;    /* WM_DELETE_WINDOW event to close windows.  */
 xcb_atom_t wm_change_state;
@@ -616,6 +616,33 @@ bad:
     return MCWM_NOWS;
 }
 
+/* check if the window is unkillable, if yes return true */
+bool get_unkil_state(xcb_drawable_t win)
+{
+    xcb_get_property_reply_t *reply;
+    xcb_get_property_cookie_t cookie;
+    uint32_t *wsp;
+    uint32_t ws;
+    cookie = xcb_get_property(conn, false, win, atom_unkillable,
+                            XCB_GET_PROPERTY_TYPE_ANY, 0,
+                            sizeof(int8_t));
+    reply = xcb_get_property_reply(conn, cookie, NULL);
+    if(NULL == reply)
+        return false;
+    if( 0 == xcb_get_property_value_length(reply))
+        goto bad;
+    wsp = xcb_get_property_value(reply);
+    ws = * wsp;
+    free(reply);
+    if(ws == 1)
+        return true;
+    else
+        return false;
+bad:
+    free(reply);
+    return false;
+}
+
 /* Add a window, specified by client, to workspace ws. */
 void addtoworkspace(struct client *client, uint32_t ws)
 {
@@ -877,6 +904,8 @@ void unkillablewindow(struct client *client, bool setcolour)
             }
         }
     }
+
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id, atom_unkillable , XCB_ATOM_CARDINAL, 8, 1, &client->unkillable);
     setborders(client,true);
     xcb_flush(conn);
 }
@@ -1560,7 +1589,10 @@ int setupscreen(void)
                  *
                  */
                 ws = getwmdesktop(children[i]);
-
+                if(get_unkil_state(children[i]))
+                {
+                    unkillablewindow(client, true);
+                }
                 if (ws == NET_WM_FIXED)
                 {
                     /* Add to current workspace. */
@@ -5053,12 +5085,13 @@ int main(int argc, char **argv)
     conf.fixed_unkil_col = getcolor(fixed_unkil_col);
 
     /* Get some atoms. */
-    atom_desktop = getatom("_NET_WM_DESKTOP");
+    atom_desktop         = getatom("_NET_WM_DESKTOP");
     atom_current_desktop = getatom("_NET_CURRENT_DESKTOP");
-    wm_delete_window = getatom("WM_DELETE_WINDOW");
-    wm_change_state = getatom("WM_CHANGE_STATE");
-    wm_state = getatom("WM_STATE");
-    wm_protocols = getatom("WM_PROTOCOLS");
+    atom_unkillable      = getatom("_NET_UNKILLABLE");
+    wm_delete_window     = getatom("WM_DELETE_WINDOW");
+    wm_change_state      = getatom("WM_CHANGE_STATE");
+    wm_state             = getatom("WM_STATE");
+    wm_protocols         = getatom("WM_PROTOCOLS");
 
 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&curws);
