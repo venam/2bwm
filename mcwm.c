@@ -688,6 +688,7 @@ void delfromworkspace(struct client *client, uint32_t ws)
 /* Change current workspace to ws. */
 void changeworkspace(uint32_t ws)
 {
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&ws);
     struct item *item;
     struct client *client;
 
@@ -744,7 +745,6 @@ void changeworkspace(uint32_t ws)
     }
 
     xcb_flush(conn);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&ws);
     curws = ws;
 }
 
