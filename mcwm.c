@@ -317,7 +317,6 @@ xcb_atom_t atom_desktop;        /*
                                  */
 xcb_atom_t atom_current_desktop;
 xcb_atom_t atom_unkillable;
-
 xcb_atom_t wm_delete_window;    /* WM_DELETE_WINDOW event to close windows.  */
 xcb_atom_t wm_change_state;
 xcb_atom_t wm_state;
@@ -867,6 +866,7 @@ void unkillablewindow(struct client *client, bool setcolour)
                                             values);
             }
         }
+        xcb_delete_property(conn, client->id, atom_unkillable);
     }
     else
     {
@@ -894,9 +894,9 @@ void unkillablewindow(struct client *client, bool setcolour)
                                             values);
             }
         }
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id, atom_unkillable , XCB_ATOM_CARDINAL, 8, 1, &client->unkillable);
     }
 
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id, atom_unkillable , XCB_ATOM_CARDINAL, 8, 1, &client->unkillable);
     setborders(client,true);
     xcb_flush(conn);
 }
