@@ -26,16 +26,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- *
- * Some wanna do:
- * A separate workspace list for every monitor.
- * the keep aspect ratio with mouse
- * static Makefile problem
- * set default status depending on WM_NAME / WM_ICON_NAME
- * Double border patch
- * half vertical, full horizontal maximizing
- * configs in a text file, dynamically updated
- * little bug while changing workspace and not focusing a window
  */
 #include <stdlib.h>
 #include <stdio.h>

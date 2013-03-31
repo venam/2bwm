@@ -1,0 +1,91 @@
+-*- text -*-
+
+* Extended Window Manager Hints (EWMH)
+
+  - Use the new xcb-ewmh for the EWMH hints.
+
+  I suggest listing least these in _NET_SUPPORTED (* marks
+  implemented):
+
+     _NET_NUMBER_OF_DESKTOPS, _NET_WM_DESKTOP*, _NET_CURRENT_DESKTOP,
+     _NET_WM_STATE, _NET_WM_STATE_STICKY,
+     _NET_WM_STATE_MAXIMIZED_VERT, _NET_WM_STATE_HIDDEN,
+     _NET_WM_STATE_FULLSCREEN, _NET_ACTIVE_WINDOW
+
+  _NET_NUMBER_OF_DESKTOPS can be set to the constant WORKSPACES.
+
+* Double border patch
+
+* half vertical, full horizontal maximizing
+
+* When moving windows between monitors, try to place the window on
+  roughly the same place on a new monitor, if possible.
+
+* resizing like in monsterwm? no pointer warp and be able to resize the 4 corners
+
+* the keep aspect ratio with mouse
+
+* little bug while changing workspace and not focusing a window
+
+* simplify the handle keypress function
+
+* configs in a text file, dynamically updated
+
+* Handle new modes on physical outputs. What do we have to do?
+
+* A separate workspace list for every monitor.
+
+* static Makefile problem
+
+* set default status depending on WM_NAME / WM_ICON_NAME
+
+* Grab specific keys 
+
+  Current code grabs modifier keys and any other keypress. We need to
+  specifically grab the keycodes we need. xbindkeys and possibly other
+  programs don't work.
+
+  Partially done. Now grabs all our keys unshifted as well as shifted.
+
+* Menu
+
+  We might need a menu for hidden windows. Since I'm probably
+  implementing menu windows anyway, perhaps I should add a menu with
+  basic window functions, like 9wm and twm. This way, one might use
+  the window manager without keyboard, if necessary. Not much work if
+  I have to do the menu anyway... But also chords?
+
+  On the other hand, see hidden.c and forthcoming external menu
+  program.
+
+* Chords
+
+  Maybe have mouse button chords to do move and resize? Configurable
+  if on or off?
+
+  Idea from Christian Neukirchen.
+
+* Snap to border and screen edge, which favours the edge.
+
+* Gaps on borders for docks, status windows et cetera.
+
+  Keep space reserved for Conky, dzen2 et cetera.
+  
+  Also respect EWMH hints _NET_WM_TYPE_DOCK and _NET_WM_TYPE_DESKTOP.
+
+* Use xcb-event's event handlers?
+
+* Configuration file.
+
+* Code cleaning
+
+  - Obivous cleanup: The event switch is way too big.
+
+  - The states are known everywhere. A tight state machine would be
+    nicer.
+
+  - Dispatch table with function pointers for key bindings instead of
+    keysym->enum->case?
+
+  - Use bitfields instead of extra lists for workspaces?
+
