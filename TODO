@@ -16,12 +16,16 @@
 
 * Double border patch
 
+* add xbindkeys/xchainkeys
+
 * half vertical, full horizontal maximizing
 
 * When moving windows between monitors, try to place the window on
   roughly the same place on a new monitor, if possible.
 
 * resizing like in monsterwm? no pointer warp and be able to resize the 4 corners
+
+* make the resize only draw lines
 
 * the keep aspect ratio with mouse
 

@@ -55,7 +55,7 @@
 /*
  * Start these programs when pressing MODKEY and mouse buttons on root window.
  */
-#define MOUSE1 "my_menu.sh"
+#define MOUSE1 ""
 #define MOUSE2 ""
 #define MOUSE3 "my_menu.sh"
 
