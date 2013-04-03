@@ -4,8 +4,8 @@
  * Move this many pixels when moving or resizing with keyboard unless
  * the window has hints saying otherwise.
  */
-#define MOVE_STEP 43
-#define MOVE_STEP_SLOW 13
+#define MOVE_STEP 40
+#define MOVE_STEP_SLOW 8
 
 /*
 * Modifier key to use with mouse buttons. Default Mod1, Meta on my
@@ -63,19 +63,22 @@
  * Default colour on border for focused windows. Can be set from
  * command line with "-f colour".
  */
-#define FOCUSCOL "#655444"
+#define FOCUSCOL "#323232"
 
 /* Ditto for unfocused. Use "-u colour". */
-#define UNFOCUSCOL "#323232"
+#define UNFOCUSCOL "#191919"
 
 /* Ditto for fixed windows. Use "-x colour". */
-#define FIXEDCOL "#526310"
+#define FIXEDCOL "#7a8c5c"
 
 /* Ditto for unkillable windows. */
-#define UNKILLCOL "#5c0202"
+#define UNKILLCOL "#ff6666"
 
 /* Ditto for unkillable and fixed windows. */
-#define FIXED_UNKIL_COL "#cc880e"
+#define FIXED_UNKIL_COL "#cc9933"
+
+/* the color of the outer border */
+#define OUTER_BORDER_COL "#121212"
 
 /* Ditto for default back, when the WM don't know what to put.
  * example: in mplayer when you resize.

@@ -305,6 +305,7 @@ struct conf
     uint32_t unkillcol;         /* unkillable window color    */
     uint32_t empty_col;         /* color for when we don't know what to put */
     uint32_t fixed_unkil_col;   /* unkillable and fixed window color */
+    uint32_t outer_border_col;  /* the color of the outer border   */
     bool allowicons;            /* Allow windows to be unmapped. */
 } conf;
 
@@ -2765,7 +2766,7 @@ void setborders(struct client *client,bool isitfocused)
         if(!client->unkillable && !client->fixed)
         {
             mask              = XCB_GC_FOREGROUND;
-            values[0]         = conf.empty_col;
+            values[0]         = conf.outer_border_col;
             xcb_change_gc(conn, gc, mask, &values[0]);
             xcb_poly_fill_rectangle(conn, pmap, gc, 4, rect_outer);
         }
@@ -5162,6 +5163,7 @@ int main(int argc, char **argv)
     conf.unfocuscol      = getcolor(unfocuscol);
     conf.fixedcol        = getcolor(fixedcol);
     conf.unkillcol       = getcolor(unkillcol);
+    conf.outer_border_col= getcolor(OUTER_BORDER_COL);
     if(strcmp(empty_col,"0")==0)
         conf.empty_col = 0;
     else
