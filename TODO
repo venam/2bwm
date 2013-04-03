@@ -14,14 +14,9 @@
 
   _NET_NUMBER_OF_DESKTOPS can be set to the constant WORKSPACES.
 
-* Double border patch
-
 * add xbindkeys/xchainkeys
 
 * half vertical, full horizontal maximizing
-
-* When moving windows between monitors, try to place the window on
-  roughly the same place on a new monitor, if possible.
 
 * resizing like in monsterwm? no pointer warp and be able to resize the 4 corners
 
@@ -43,7 +38,7 @@
 
 * set default status depending on WM_NAME / WM_ICON_NAME
 
-* Grab specific keys 
+* Grab specific keys
 
   Current code grabs modifier keys and any other keypress. We need to
   specifically grab the keycodes we need. xbindkeys and possibly other
@@ -74,7 +69,7 @@
 * Gaps on borders for docks, status windows et cetera.
 
   Keep space reserved for Conky, dzen2 et cetera.
-  
+
   Also respect EWMH hints _NET_WM_TYPE_DOCK and _NET_WM_TYPE_DESKTOP.
 
 * Use xcb-event's event handlers?

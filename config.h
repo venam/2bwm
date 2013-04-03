@@ -80,20 +80,25 @@
 /* Ditto for default back, when the WM don't know what to put.
  * example: in mplayer when you resize.
  * If you put 0 than it's going to be transparent
+ * If you comile with the double border option, this color
+ * will be the outer-default color for the window without status
  */
 #define EMPTY_COL "#000000"
 
-/* Default width of border window, in pixels. Used unless -b width. */
-/* unfocused */
-#define BORDERWIDTH1 2
-/* focused */
-#define BORDERWIDTH2 2
-/* fixed */
-#define BORDERWIDTH3 2
-/* unkilable */
-#define BORDERWIDTH4 3
-/* fixed+unkilable */
-#define BORDERWIDTH5 4
+/* Default width of border window, in pixels. Used unless -b width.
+ * I should remove all those border size because
+ * it's freaking useless and ugly to have many size (true story)
+ *
+ */
+
+/* outer border size*/
+#define OUTER_BORDER 2
+/* full border size
+ * a simple math gives you the inner border size
+ * Don't forget to enable the border flag when compiling
+ */
+#define BORDERWIDTH 7
+
 
 /* Set the Fast and Slow mouse movement via keyboard
  * You can set the fast movement to something big so you can

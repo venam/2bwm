@@ -22,10 +22,11 @@ Patches
 - max horizontally with mod+shift+m
 - max vertically and half horizontally - mod+shift+topright/mod+shift+topleft
 - more color states
-- dynamic window border size depending on its state 
-- Restart/Exit patch with mod+ctrl+r mod+ctrl+q 
+- double border can be enabled at compile time instead of the default 1 color border
+- Restart/Exit patch with mod+ctrl+r mod+ctrl+q
     (or whatever you set for the USERKEY_RAISE and USERKEY_DELETE respectivelly)
 - You can now know the current workspace this way: xprop -root _NET_CURRENT_DESKTOP| sed -e 's/_NET_CURRENT_DESKTOP(CARDINAL) = //'
+- keep approximately the same position when sending window to next screen
 
 
 Authors:
