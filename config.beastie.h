@@ -152,6 +152,7 @@
 // mcwm_restart == controlmod + raise
 // movestepslow == controlmod + move
 // resizestep == shift + move
+// resizestepslow == shift + controlmod + move
 // sendtoworkspace == shift + movetoworkspace
 // maxverthor == shift + topright//topleft
 // maxhor == shift + maxvert
