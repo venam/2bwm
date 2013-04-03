@@ -4,7 +4,7 @@ DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.c config.h events.h list.h hidden.c
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
 
-CFLAGS+=-g -std=c99 -Wall -O3 -Wextra -I/usr/local/include -D_GNU_SOURCE -DNDOUBLEBORDER -DNDEBUG -DNPDEBUG -DNDMALLOC #-DDEBUG #-DDMALLOC
+CFLAGS+=-g -std=c99 -Wall -O3 -Wextra -I/usr/local/include -DNDOUBLEBORDER -DNDEBUG -DNPDEBUG -DNDMALLOC #-DDEBUG #-DDMALLOC
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util #-ldmalloc
 
 
