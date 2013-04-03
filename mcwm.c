@@ -2709,7 +2709,13 @@ void setborders(struct client *client,bool isitfocused)
             { 0, client->height+conf.borderwidth+half,client->width+conf.borderwidth-half,conf.borderwidth-half},
             { client->width+conf.borderwidth+half,conf.borderwidth+client->height+half,conf.borderwidth,conf.borderwidth }
         };
-        xcb_rectangle_t rect_outer = {0,0,client->width+conf.borderwidth*2,client->height+conf.borderwidth*2};
+        xcb_rectangle_t rect_outer[] =  {
+                                            {client->width+conf.borderwidth-half,0,half,client->height+conf.borderwidth*2},
+                                            {client->width+conf.borderwidth,0,half,client->height+conf.borderwidth*2},
+                                            {0,client->height+conf.borderwidth-half,client->width+conf.borderwidth*2,half},
+                                            {0,client->height+conf.borderwidth,client->width+conf.borderwidth*2,half}
+                                        };
+
         xcb_pixmap_t pmap = xcb_generate_id(conn);
         xcb_create_pixmap(conn, screen->root_depth, pmap, client->id, client->width+(conf.borderwidth*2), client->height+(conf.borderwidth*2));
         xcb_gcontext_t gc = xcb_generate_id(conn);
@@ -2720,7 +2726,7 @@ void setborders(struct client *client,bool isitfocused)
             mask              = XCB_GC_FOREGROUND;
             values[0]         = conf.empty_col;
             xcb_change_gc(conn, gc, mask, &values[0]);
-            xcb_poly_fill_rectangle(conn, pmap, gc, 1, &rect_outer);
+            xcb_poly_fill_rectangle(conn, pmap, gc, 4, rect_outer);
         }
         else
         {
@@ -2729,7 +2735,7 @@ void setborders(struct client *client,bool isitfocused)
                 mask              = XCB_GC_FOREGROUND;
                 values[0]         = conf.fixed_unkil_col;
                 xcb_change_gc(conn, gc, mask, &values[0]);
-                xcb_poly_fill_rectangle(conn, pmap, gc, 1, &rect_outer);
+                xcb_poly_fill_rectangle(conn, pmap, gc, 4, rect_outer);
             }
             else
             {
@@ -2738,14 +2744,14 @@ void setborders(struct client *client,bool isitfocused)
                     mask              = XCB_GC_FOREGROUND;
                     values[0]         = conf.fixedcol;
                     xcb_change_gc(conn, gc, mask, &values[0]);
-                    xcb_poly_fill_rectangle(conn, pmap, gc, 1, &rect_outer);
+                    xcb_poly_fill_rectangle(conn, pmap, gc, 4, rect_outer);
                 }
                 else
                 {
                     mask              = XCB_GC_FOREGROUND;
                     values[0]         = conf.unkillcol;
                     xcb_change_gc(conn, gc, mask, &values[0]);
-                    xcb_poly_fill_rectangle(conn, pmap, gc, 1, &rect_outer);
+                    xcb_poly_fill_rectangle(conn, pmap, gc, 4, rect_outer);
                 }
             }
         }
@@ -2806,7 +2812,7 @@ void setborders(struct client *client,bool isitfocused)
                         values[0]         = conf.fixedcol;
                         xcb_change_window_attributes(conn,client->id,mask, &values[0]);
                     }
-                else
+                    else
                     {
                         values[0]         = conf.unkillcol;
                         xcb_change_window_attributes(conn,client->id,mask, &values[0]);
