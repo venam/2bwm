@@ -373,6 +373,7 @@ static int start(char *program);
 static void resizelim(struct client *client);
 static void resize(xcb_drawable_t win, uint16_t width, uint16_t height);
 static void resizestep(struct client *client, char direction);
+static void resizestepslow(struct client *client, char direction);
 void resizestep_keep_aspect(struct client *client, char direction);
 static void mousemove(struct client *client, int rel_x, int rel_y);
 static void mouseresize(struct client *client, int rel_x, int rel_y);
@@ -2376,23 +2377,6 @@ void resizestep(struct client *client, char direction)
 
     raisewindow(client->id);
 
-    if (client->width_inc > 1)
-    {
-        step_x = client->width_inc;
-    }
-    else
-    {
-        step_x = MOVE_STEP;
-    }
-
-    if (client->height_inc > 1)
-    {
-        step_y = client->height_inc;
-    }
-    else
-    {
-        step_y = MOVE_STEP;
-    }
 
     switch (direction)
     {
@@ -2433,6 +2417,63 @@ void resizestep(struct client *client, char direction)
                      client->width / 2, client->height / 2);
     xcb_flush(conn);
 }
+
+
+void resizestepslow(struct client *client, char direction)
+{
+
+    if (NULL == client)
+    {
+        return;
+    }
+
+    if (client->maxed)
+    {
+        /* Can't resize a fully maximized window. */
+        return;
+    }
+
+    raisewindow(client->id);
+
+    switch (direction)
+    {
+        case 'h':
+            client->width = client->width -MOVE_STEP_SLOW ;
+        break;
+
+        case 'j':
+            client->height = client->height + MOVE_STEP_SLOW;
+        break;
+
+        case 'k':
+            client->height = client->height - MOVE_STEP_SLOW;
+        break;
+
+        case 'l':
+            client->width = client->width + MOVE_STEP_SLOW;
+        break;
+
+        default:
+            PDEBUG("resizestepslow in unknown direction.\n");
+        break;
+    } /* switch direction */
+
+    resizelim(client);
+
+    /* If this window was vertically maximized, remember that it isn't now. */
+    if (client->vertmaxed)
+    {
+        client->vertmaxed = false;
+    }
+    if(client->hormaxed)
+    {
+        client->hormaxed = false;
+    }
+
+    xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
+    client->width / 2, client->height / 2);
+    xcb_flush(conn);
+} 
 
 
 /*
@@ -3622,6 +3663,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
     int i;
     key_enum_t key;
 
+//    keysymtokeycode(
     for (key = KEY_MAX, i = KEY_F; i < KEY_MAX; i ++)
     {
         if (ev->detail == keys[i].keycode && 0 != keys[i].keycode)
@@ -3650,10 +3692,33 @@ void handle_keypress(xcb_key_press_event_t *ev)
         finishtabbing();
     }
 
+    /* Is it both shifted and controlmasked ? */
+    if ((ev->state & SHIFTMOD) && (ev->state & CONTROLMOD))
+    {
+        switch (key)
+        {
+            case KEY_H: /* h */
+                resizestepslow(focuswin, 'h');
+            break;
 
+            case KEY_J: /* j */
+                resizestepslow(focuswin, 'j');
+            break;
+
+            case KEY_K: /* k */
+                resizestepslow(focuswin, 'k');
+            break;
+
+            case KEY_L: /* l */
+                resizestepslow(focuswin, 'l');
+            break;
+            
+            default:
+            break;
+        }
+    } 
      /* This is suppose to resize keeping aspect ratio */
-
-    if (ev->state & ALTMOD && ALTMOD!=-1)
+    else if (ev->state & ALTMOD && ALTMOD!=-1)
     {
         switch (key)
         {
@@ -3668,7 +3733,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
         }
     }
    /* control mask? */
-    else if (ev->state & CONTROLMOD)
+    else if ( ev->state & CONTROLMOD )
     {
         switch (key)
         {
@@ -3699,7 +3764,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
     }
 
     /* Is it shifted? */
-    else if (ev->state & SHIFTMOD)
+    else if ( ev->state & SHIFTMOD )
     {
         switch (key)
         {

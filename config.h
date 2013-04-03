@@ -4,7 +4,7 @@
  * Move this many pixels when moving or resizing with keyboard unless
  * the window has hints saying otherwise.
  */
-#define MOVE_STEP 32
+#define MOVE_STEP 43
 #define MOVE_STEP_SLOW 13
 
 /*
@@ -97,7 +97,7 @@
  * a simple math gives you the inner border size
  * Don't forget to enable the border flag when compiling
  */
-#define BORDERWIDTH 7
+#define BORDERWIDTH  8
 
 
 /* Set the Fast and Slow mouse movement via keyboard
@@ -143,8 +143,8 @@
 #define USERKEY_BOTRIGHT    XK_N
 #define USERKEY_CENTER      XK_G
 #define USERKEY_DELETE      XK_Q
-#define USERKEY_PREVSCREEN  XK_comma
-#define USERKEY_NEXTSCREEN  XK_period
+#define USERKEY_PREVSCREEN  XK_period
+#define USERKEY_NEXTSCREEN  XK_comma
 #define USERKEY_ICONIFY     XK_I
 #define USERKEY_GROW        XK_Home
 #define USERKEY_SHRINK      XK_End
