@@ -2549,7 +2549,7 @@ void mousemove(struct client *client, int rel_x, int rel_y)
 
 void mouseresize(struct client *client, int rel_x, int rel_y,bool accept_resize)
 {
-    /* this solve the problem of over cpu osage while redrawing */
+    /* this solve the problem of over cpu usage while redrawing */
     if( abs(rel_x - client->x) % MOVE_STEP_SLOW ==0 || abs(rel_y - client->y) %MOVE_STEP_SLOW == 0 || accept_resize)
     {
         client->width = abs(rel_x - client->x);
