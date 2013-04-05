@@ -1146,6 +1146,7 @@ struct client *setupwin(xcb_window_t win)
      * Use the background frame instead.
      * This is really good for videos because we keep their aspect ratio.
      */
+    
     if(EMPTY_COL=="0")
     {
         values[0] = 1;
@@ -1156,6 +1157,7 @@ struct client *setupwin(xcb_window_t win)
         values[0] = conf.empty_col;
         xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXEL, values);
     }
+    
 
     /* Set border width, for the first time. */
     values[0] = conf.borderwidth;
@@ -2547,27 +2549,35 @@ void mousemove(struct client *client, int rel_x, int rel_y)
 
 void mouseresize(struct client *client, int rel_x, int rel_y)
 {
-    client->width = abs(rel_x - client->x);
-    client->height = abs(rel_y - client->y);
-
-    client->width -= (client->width - client->base_width ) % client->width_inc;
-    client->height -= (client->height - client->base_height) % client->height_inc;
-
-    PDEBUG("Trying to resize to %dx%d (%dx%d)\n", client->width, client->height,
-           (client->width - client->base_width) / client->width_inc,
-           (client->height - client->base_height) / client->height_inc);
-
-    resizelim(client);
-
-    /* If this window was vertically maximized, remember that it isn't now. */
-    if (client->vertmaxed)
+    /* this solve the problem of over cpu osage while redrawing */
+    #ifndef SPOOKY_RESIZE
+    if( abs(rel_x - client->x) % MOVE_STEP_SLOW ==0 || abs(rel_y - client->y) %MOVE_STEP_SLOW == 0)
     {
-        client->vertmaxed = false;
+    #endif
+        client->width = abs(rel_x - client->x);
+        client->height = abs(rel_y - client->y);
+
+        client->width -= (client->width - client->base_width ) % client->width_inc;
+        client->height -= (client->height - client->base_height) % client->height_inc;
+
+        PDEBUG("Trying to resize to %dx%d (%dx%d)\n", client->width, client->height,
+               (client->width - client->base_width) / client->width_inc,
+             (client->height - client->base_height) / client->height_inc);
+
+        resizelim(client);
+
+        /* If this window was vertically maximized, remember that it isn't now. */
+        if (client->vertmaxed)
+        {
+            client->vertmaxed = false;
+        }
+        if(client->hormaxed)
+        {
+            client->hormaxed = false;
+        }
+    #ifndef SPOOKY_RESIZE
     }
-    if(client->hormaxed)
-    {
-        client->hormaxed = false;
-    }
+    #endif
 }
 
 void mouseresize_keepaspect(struct client *client, int rel_x, int rel_y)
@@ -3129,6 +3139,81 @@ void maxhor(struct client *client)
     setborders(client,true);
 }
 
+void maxhorvert(struct client *client, bool top_down)
+{
+    uint32_t values[4];
+    int16_t mon_x;
+    int16_t mon_y;
+    uint16_t mon_width;
+    uint16_t mon_height;
+
+    if (NULL == client||client->maxed)
+    {
+        PDEBUG("maximize: client was NULL!\n");
+        return;
+    }
+
+    if (NULL == client->monitor)
+    {
+        mon_x = 0;
+        mon_y = 0;
+        mon_width = screen->width_in_pixels;
+        mon_height = screen->height_in_pixels;
+    }
+    else
+    {
+        mon_x = client->monitor->x;
+        mon_y = client->monitor->y;
+        mon_width = client->monitor->width;
+        mon_height = client->monitor->height;
+    }
+
+
+    /*
+    * Check if maximized already. If so, revert to stored geometry.
+    */
+    if (client->verthor)
+    {
+        unmax(client);
+        client->verthor = false;
+        setborders(client,true);
+        return;
+    }
+
+    /* Raise first. Pretty silly to maximize below something else. */
+    raisewindow(client->id);
+
+    /* FIXME: Store original geom in property as well? */
+    client->origsize.x = client->x;
+    client->origsize.y = client->y;
+    client->origsize.width = client->width;
+    client->origsize.height = client->height;
+
+    client->x = mon_x+OFFSETX;
+    client->width =   mon_width - (MAXWIDTH + (conf.borderwidth * 2));
+    client->height = ((float)(mon_height)/2)- (MAXHEIGHT+ (conf.borderwidth * 2));
+    if(top_down)
+    {
+        client->y = mon_y+OFFSETY;
+    }
+    else
+    {
+        client->y = mon_y - OFFSETY + mon_height -(client->height + conf.borderwidth * 2);
+    }
+    values[0] = client->width;
+    values[1] = client->height;
+    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_WIDTH
+                        | XCB_CONFIG_WINDOW_HEIGHT, values);
+
+    xcb_flush(conn);
+
+    movewindow(focuswin->id, client->x, client->y);
+    client->verthor = true;
+    #ifdef DOUBLEBORDER
+    setborders(client,true);
+    #endif
+}
+
 
 
 void maxverthor(struct client *client, bool right_left)
@@ -3183,7 +3268,7 @@ void maxverthor(struct client *client, bool right_left)
 
     /* Move to top left and resize. */
     client->y = mon_y+OFFSETY;
-    client->width = ((mon_width)/2) - (MAXWIDTH + (conf.borderwidth * 2));
+    client->width = ((float)(mon_width)/2) - (MAXWIDTH + (conf.borderwidth * 2));
     client->height = mon_height- (MAXHEIGHT+ (conf.borderwidth * 2));
     if(right_left)
     {
@@ -3834,6 +3919,12 @@ void handle_keypress(xcb_key_press_event_t *ev)
         case KEY_Y:
             maxverthor(focuswin,true);
             break;
+        case KEY_B:
+            maxhorvert(focuswin,false);
+            break;
+        case KEY_N:
+            maxhorvert(focuswin,true);
+            break;
         case KEY_M:
             maxhor(focuswin);
             break;
@@ -4451,15 +4542,16 @@ void events(void)
                 }
                 else
                 {
-                    //if(e->state & CONTROLMOD)
-
-                    //else
-                        /* Mouse button 3 was pressed. */
-                        mode = MCWM_RESIZE;
+                    /* Mouse button 3 was pressed. */
+                    mode = MCWM_RESIZE;
 
                     /* Warp pointer to lower right. */
                     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0,
                                      0, focuswin->width, focuswin->height);
+                    //Attempt for the ghostly move
+                    //MCWM_RESIZE
+                    mode_x = pointx;
+                    mode_y = pointy;
                 }
 
                 /*
@@ -4573,7 +4665,9 @@ void events(void)
             }
             else if (mode == MCWM_RESIZE)
             {
+                #ifndef SPOOKY_RESIZE
                 mouseresize(focuswin, pointer->root_x, pointer->root_y);
+                #endif
             }
             else
             {
@@ -4598,11 +4692,14 @@ void events(void)
             }
             else
             {
-                int16_t x;
-                int16_t y;
 
+
+                xcb_query_pointer_reply_t *pointer;
+                pointer = xcb_query_pointer_reply(
+                        conn, xcb_query_pointer(conn, screen->root), 0);
+                mouseresize(focuswin, pointer->root_x, pointer->root_y);
+                free(pointer);
                 /* We're finished moving or resizing. */
-
                 if (NULL == focuswin)
                 {
                     /*
@@ -4618,6 +4715,9 @@ void events(void)
                     mode = 0;
                     break;
                 }
+                
+                //int16_t x;
+                //int16_t y;
 
                 /*
                  * We will get an EnterNotify and focus another window
@@ -4628,7 +4728,18 @@ void events(void)
                  * Move to saved position within window or if that
                  * position is now outside current window, move inside
                  * window.
+                 *
+                 * what happens here is that we release the mouse button 
+                 * and put the mode back to 0 (which is not MCWM_RESIZE nor MCWM_MOVE)
+                 * This tag is stupid and only here to help me browser the code.
+                 * MCWM_RESIZE;
+                 * MCWM_RESIZE;
+                 *
+                 * commented that because it gets annoying to always have the pointer jump around
+                 * PUT A MODULO ON THE MOUSE REDRAW
                  */
+               
+                /*
                 if (mode_x > focuswin->width)
                 {
                     x = focuswin->width / 2;
@@ -4655,6 +4766,7 @@ void events(void)
                 {
                     y = mode_y;
                 }
+                */
 
                 //xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, x, y);
                 xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
