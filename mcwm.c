@@ -377,7 +377,7 @@ static void resizestep(struct client *client, char direction);
 static void resizestepslow(struct client *client, char direction);
 void resizestep_keep_aspect(struct client *client, char direction);
 static void mousemove(struct client *client, int rel_x, int rel_y);
-static void mouseresize(struct client *client, int rel_x, int rel_y);
+static void mouseresize(struct client *client, int rel_x, int rel_y,bool accept_resize);
 static void movestep(struct client *client, char direction);
 static void movestepslow(struct client *client, char direction);
 static void setborders(struct client *client,bool isitfocused);
@@ -2547,13 +2547,11 @@ void mousemove(struct client *client, int rel_x, int rel_y)
     movelim(client);
 }
 
-void mouseresize(struct client *client, int rel_x, int rel_y)
+void mouseresize(struct client *client, int rel_x, int rel_y,bool accept_resize)
 {
     /* this solve the problem of over cpu osage while redrawing */
-    #ifndef SPOOKY_RESIZE
-    if( abs(rel_x - client->x) % MOVE_STEP_SLOW ==0 || abs(rel_y - client->y) %MOVE_STEP_SLOW == 0)
+    if( abs(rel_x - client->x) % MOVE_STEP_SLOW ==0 || abs(rel_y - client->y) %MOVE_STEP_SLOW == 0 || accept_resize)
     {
-    #endif
         client->width = abs(rel_x - client->x);
         client->height = abs(rel_y - client->y);
 
@@ -2575,13 +2573,13 @@ void mouseresize(struct client *client, int rel_x, int rel_y)
         {
             client->hormaxed = false;
         }
-    #ifndef SPOOKY_RESIZE
     }
-    #endif
 }
 
+//Not implemented yet, TODO later
 void mouseresize_keepaspect(struct client *client, int rel_x, int rel_y)
 {
+    //I'll do that later
     if( abs(rel_x -client->x) > abs(rel_x - client->x))
     {
         client->height = client->height + client->height * (abs(rel_x - client->x)/(client->width));
@@ -2769,10 +2767,13 @@ void setborders(struct client *client,bool isitfocused)
                                         };
 
         xcb_pixmap_t pmap = xcb_generate_id(conn);
-        xcb_create_pixmap(conn, screen->root_depth, pmap, client->id, client->width+(conf.borderwidth*2), client->height+(conf.borderwidth*2));
+        //my test have shown that drawing the pixmap directly on the 
+        //root window is faster then drawing it on the window directly
+        xcb_create_pixmap(conn, screen->root_depth, pmap, screen->root, client->width+(conf.borderwidth*2), client->height+(conf.borderwidth*2));
         xcb_gcontext_t gc = xcb_generate_id(conn);
         xcb_create_gc (conn, gc, pmap, 0, NULL);
 
+        //This is a fast test but a *single* state which would be uint_8_t would be better
         if(!client->unkillable && !client->fixed)
         {
             mask              = XCB_GC_FOREGROUND;
@@ -4665,8 +4666,22 @@ void events(void)
             }
             else if (mode == MCWM_RESIZE)
             {
+                //I love spooky resize, it only resize when you release 
+                //the mouse button which reduce considerably the cpu overussage
+                //I'll try to include the resize from each border here
+                //we'll need to calculate the difference between the mouse 
+                //position and the corners position
+                //Thus we need the corner positions
+                //roughly (may be wrong, I need to check that): 
+                //(client->x,client->y)
+                //(client->x+client->width,client->y)
+                //(client->x,client->y+client->height)       
+                //(client->x,client->width,client->y+client->height)
+                //To know which point is the closest we do this
+                //we take the lowest absolute difference between the coordinates 
+                //of the corners and the pointer
                 #ifndef SPOOKY_RESIZE
-                mouseresize(focuswin, pointer->root_x, pointer->root_y);
+                mouseresize(focuswin, pointer->root_x, pointer->root_y,false);
                 #endif
             }
             else
@@ -4694,11 +4709,13 @@ void events(void)
             {
 
 
-                xcb_query_pointer_reply_t *pointer;
-                pointer = xcb_query_pointer_reply(
-                        conn, xcb_query_pointer(conn, screen->root), 0);
-                mouseresize(focuswin, pointer->root_x, pointer->root_y);
-                free(pointer);
+                if(mode==MCWM_RESIZE)
+                {
+                    xcb_query_pointer_reply_t *pointer;
+                    pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, screen->root), 0);
+                    mouseresize(focuswin, pointer->root_x, pointer->root_y,true);
+                    free(pointer);
+                }
                 /* We're finished moving or resizing. */
                 if (NULL == focuswin)
                 {
