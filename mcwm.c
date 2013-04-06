@@ -427,7 +427,8 @@ void finishtabbing(void)
  * Find out what keycode modmask is bound to. Returns a struct. If the
  * len in the struct is 0 something went wrong.
  */
-struct modkeycodes getmodkeys(xcb_mod_mask_t modmask) {
+struct modkeycodes getmodkeys(xcb_mod_mask_t modmask) 
+{
     xcb_get_modifier_mapping_cookie_t cookie;
     xcb_get_modifier_mapping_reply_t *reply;
     xcb_keycode_t *modmap;
