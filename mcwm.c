@@ -65,7 +65,7 @@ do { fprintf(stderr, "mcwm: "); fprintf(stderr, ##Args); } while(0)
 #define MCWM_MOVE 2                 // We're currently moving a window with the mouse.
 #define MCWM_RESIZE 3               // We're currently resizing a window with the mouse.
 #define MCWM_TABBING 4              // We're currently tabbing around the window list, looking for a new window to focus on.
-#define WORKSPACES 10                // Number of workspaces.
+#define WORKSPACES 10               // Number of workspaces.
 #define NET_WM_FIXED 0xffffffff     // Value in WM hint which means this window is fixed on all workspaces.
 #define MCWM_NOWS 0xfffffffe        // This means we didn't get any window hint at all.
 
