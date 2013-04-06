@@ -94,7 +94,9 @@
  *
  */
 
-/* outer border size*/
+/* outer border size
+ * If you put this negative it will draw a square in the left corner
+ */
 #define OUTER_BORDER 2
 /* full border size
  * a simple math gives you the inner border size

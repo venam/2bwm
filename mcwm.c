@@ -2769,7 +2769,7 @@ void setborders(struct client *client,bool isitfocused)
         xcb_pixmap_t pmap = xcb_generate_id(conn);
         //my test have shown that drawing the pixmap directly on the 
         //root window is faster then drawing it on the window directly
-        xcb_create_pixmap(conn, screen->root_depth, pmap, client->id, client->width+(conf.borderwidth*2), client->height+(conf.borderwidth*2));
+        xcb_create_pixmap(conn, screen->root_depth, pmap, screen->root, client->width+(conf.borderwidth*2), client->height+(conf.borderwidth*2));
         xcb_gcontext_t gc = xcb_generate_id(conn);
         xcb_create_gc (conn, gc, pmap, 0, NULL);
 
