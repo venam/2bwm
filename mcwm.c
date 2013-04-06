@@ -2522,8 +2522,6 @@ void maxhorvert(struct client *client, bool top_down)
 #endif
 }
 
-
-
 void maxverthor(struct client *client, bool right_left)
 {
     uint32_t values[4];
@@ -2532,9 +2530,10 @@ void maxverthor(struct client *client, bool right_left)
     uint16_t mon_width;
     uint16_t mon_height;
     
-    if (NULL == client||client->maxed)
+    if (NULL == client||client->maxed) {
         PDEBUG("maximize: client was NULL!\n");
         return;
+    }
     
     if (NULL == client->monitor) {
         mon_x = 0;
@@ -2564,10 +2563,9 @@ void maxverthor(struct client *client, bool right_left)
     client->origsize.y = client->y;
     client->origsize.width = client->width;
     client->origsize.height = client->height;
-    /* Move to top left and resize. */
     client->y = mon_y+OFFSETY;
-    client->width = ((float)(mon_width)/2) - (MAXWIDTH + (conf.borderwidth * 2));
-    client->height = mon_height- (MAXHEIGHT+ (conf.borderwidth * 2));
+    client->height =   mon_height - (MAXHEIGHT + (conf.borderwidth * 2));
+    client->width = ((float)(mon_width)/2)- (MAXWIDTH+ (conf.borderwidth * 2));
     
     if (right_left)
         client->x = mon_x+OFFSETX;
@@ -2585,8 +2583,6 @@ void maxverthor(struct client *client, bool right_left)
     setborders(client,true);
 #endif
 }
-
-
 
 void hide(struct client *client)
 {
