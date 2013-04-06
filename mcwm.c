@@ -1826,10 +1826,6 @@ void resize(xcb_drawable_t win, uint16_t width, uint16_t height)
 
 void resizestep(struct client *client, char direction)
 {                                   // Resize window client in direction direction. Direction is:
-                                    // h = left, that is decrease width.
-                                    // j = down, that is, increase height.
-                                    // k = up, that is, decrease height.
-                                    // l = right, that is, increase width.
     int step_x = MOVE_STEP;
     int step_y = MOVE_STEP;
     
