@@ -568,7 +568,8 @@ int32_t getwmdesktop(xcb_drawable_t win)
     /* Length is 0 if we didn't find it. */
     if (0 == xcb_get_property_value_length(reply)) {
         PDEBUG("_NET_WM_DESKTOP reply was 0 length.\n");
-        goto bad;
+        free(reply);
+        return MCWM_NOWS;
     }
     
     wsp = xcb_get_property_value(reply);
@@ -580,10 +581,6 @@ int32_t getwmdesktop(xcb_drawable_t win)
     free(reply);
     
     return ws;
-    
-bad:
-    free(reply);
-    return MCWM_NOWS;
 }
 
 /* check if the window is unkillable, if yes return true */
@@ -643,9 +640,8 @@ void addtoworkspace(struct client *client, uint32_t ws)
      * Fixed windows have their own special WM hint. We don't want to
      * mess with that.
      */
-    if (!client->fixed) {
+    if (!client->fixed)
         setwmdesktop(client->id, ws);
-    }
 }
 
 /* Delete window client from workspace ws. */
@@ -681,14 +677,13 @@ void changeworkspace(uint32_t ws)
         PDEBUG("changeworkspace. unmap phase. ws #%d, client-fixed: %d\n",
                curws, client->fixed);
                
-        if (!client->fixed) {
+        if (!client->fixed) 
             /*
              * This is an ordinary window. Just unmap it. Note that
              * this will generate an unnecessary UnmapNotify event
              * which we will try to handle later.
              */
             xcb_unmap_window(conn, client->id);
-        }
     } /* for */
     
     /* Go through list of new ws. Map everything that isn't fixed. */
@@ -699,9 +694,8 @@ void changeworkspace(uint32_t ws)
                ws, client->fixed);
                
         /* Fixed windows are already mapped. Map everything else. */
-        if (!client->fixed) {
+        if (!client->fixed)
             xcb_map_window(conn, client->id);
-        }
     }
     
     xcb_flush(conn);
@@ -725,11 +719,9 @@ void fixwindow(struct client *client)
         setwmdesktop(client->id, curws);
         
         /* Delete from all workspace lists except current. */
-        for (ws = 0; ws < WORKSPACES; ws ++) {
-            if (ws != curws) {
+        for (ws = 0; ws < WORKSPACES; ws ++)
+            if (ws != curws)
                 delfromworkspace(client, ws);
-            }
-        }
     }
     
     else {
@@ -822,8 +814,7 @@ uint32_t getcolor(const char *hex)
 /* Forget everything about client client. */
 void forgetclient(struct client *client)
 {
-    uint32_t ws;
-    
+    uint32_t ws;    
     if (NULL == client) {
         PDEBUG("forgetclient: client was NULL\n");
         return;
