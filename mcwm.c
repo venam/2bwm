@@ -336,11 +336,7 @@ static void hide(struct client *client);
 static bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y);
 static bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
                     uint16_t *height);
-static void topleft(void);
-static void topright(void);
-static void botleft(void);
-static void botright(void);
-static void center(void);
+static void teleport(bool left_right, bool top_bottom, bool center);
 static void deletewin(void);
 static void prevscreen(void);
 static void nextscreen(void);
@@ -2629,56 +2625,27 @@ bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
     return true;
 }
 
-void topleft(void)
-{
-    int16_t pointx;
-    int16_t pointy;
-    int16_t mon_x;
-    int16_t mon_y;
-    
-    if (NULL == focuswin|| NULL == wslist[curws]|| focuswin->maxed)
-        return;
-    
-    if (NULL == focuswin->monitor) {
-        mon_x = 0;
-        mon_y = 0;
-    }
-    else {
-        mon_x = focuswin->monitor->x;
-        mon_y = focuswin->monitor->y;
-    }
-    
-    raisewindow(focuswin->id);
-    
-    if (!getpointer(focuswin->id, &pointx, &pointy))
-        return;
-    
-    focuswin->x = mon_x;
-    focuswin->y = mon_y;
-    movewindow(focuswin->id, focuswin->x, focuswin->y);
-    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
-                     pointx, pointy);
-    xcb_flush(conn);
-}
-
-void topright()
+void teleport(bool left_right, bool top_bottom, bool center)
 {
     int16_t pointx;
     int16_t pointy;
     int16_t mon_x;
     uint16_t mon_y;
     uint16_t mon_width;
+    uint16_t mon_height;
     
-    if (NULL == focuswin || NULL == wslist[curws] || focuswin->maxed)
+    if (NULL == focuswin|| NULL == wslist[curws]|| focuswin->maxed)
         return;
     
     if (NULL == focuswin->monitor) {
         mon_width = screen->width_in_pixels + MAXWIDTH;
-        mon_x = 0;
-        mon_y = 0;
+        mon_height= screen->height_in_pixels+ MAXHEIGHT;
+        mon_x     = 0;
+        mon_y     = 0;
     }
     else {
         mon_width = focuswin->monitor->width + MAXWIDTH;
+        mon_height= focuswin->monitor->height+ MAXHEIGHT;
         mon_x = focuswin->monitor->x;
         mon_y = focuswin->monitor->y;
     }
@@ -2687,145 +2654,59 @@ void topright()
     
     if (!getpointer(focuswin->id, &pointx, &pointy))
         return;
-    
-    focuswin->x = mon_x + mon_width -
-                  (focuswin->width + conf.borderwidth * 2);
-    focuswin->y = mon_y;
-    movewindow(focuswin->id, focuswin->x, focuswin->y);
-    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
-                     pointx, pointy);
-    xcb_flush(conn);
-}
 
-void botleft()
-{
-    int16_t pointx;
-    int16_t pointy;
-    int16_t mon_x;
-    int16_t mon_y;
-    uint16_t mon_height;
-    
-    if (NULL == focuswin || focuswin->maxed)
-        return;
-    
-    if (NULL == focuswin->monitor || NULL == wslist[curws]) {
-        mon_x = 0;
-        mon_y = 0;
-        mon_height = screen->height_in_pixels + MAXHEIGHT;
+    if (center) {
+        focuswin->x = mon_x;
+        focuswin->x += mon_x + mon_width -
+            (focuswin->width + conf.borderwidth * 2);
+        focuswin->y = mon_y + mon_height - (focuswin->height + conf.borderwidth* 2);
+        focuswin->y += mon_y;
+        focuswin->y     = focuswin->y /2;
+        focuswin->x     = focuswin->x /2;
+        movewindow(focuswin->id, focuswin->x, focuswin->y);
+
+        if (pointx > 0 - conf.borderwidth && pointx < focuswin->width + conf.borderwidth
+        && pointy > 0 - conf.borderwidth && pointy < focuswin->height + conf.borderwidth)
+            xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,pointx, pointy);
+
     }
     else {
-        mon_x = focuswin->monitor->x ;
-        mon_y = focuswin->monitor->y;
-        mon_height = focuswin->monitor->height +MAXHEIGHT;
+        if (left_right) {
+            if (top_bottom) {
+                focuswin->x = mon_x;
+                focuswin->y = mon_y;
+                movewindow(focuswin->id, focuswin->x, focuswin->y);
+                xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                    pointx, pointy);
+            }
+            else {
+                focuswin->x = mon_x;
+                focuswin->y = mon_y + mon_height - (focuswin->height + conf.borderwidth* 2);
+                movewindow(focuswin->id, focuswin->x, focuswin->y);
+                xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                    pointx, pointy);
+            }
+        }
+        else {
+            if (top_bottom) {
+                focuswin->x = mon_x + mon_width -
+                    (focuswin->width + conf.borderwidth * 2);
+                focuswin->y = mon_y;
+                movewindow(focuswin->id, focuswin->x, focuswin->y);
+                xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                    pointx, pointy);
+            }
+            else {
+                focuswin->x = mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
+                focuswin->y =  mon_y + mon_height - (focuswin->height + conf.borderwidth* 2);
+                movewindow(focuswin->id, focuswin->x, focuswin->y);
+                xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                    pointx, pointy);
+            }
+        }
     }
-    
-    raisewindow(focuswin->id);
-    
-    if (!getpointer(focuswin->id, &pointx, &pointy))
-        return;
-    
-    focuswin->x = mon_x;
-    focuswin->y = mon_y + mon_height - (focuswin->height + conf.borderwidth
-                                        * 2);
-    movewindow(focuswin->id, focuswin->x, focuswin->y);
-    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
-                     pointx, pointy);
-    xcb_flush(conn);
-}
 
-void botright()
-{
-    int16_t pointx;
-    int16_t pointy;
-    int16_t mon_x;
-    int16_t mon_y;
-    uint16_t mon_width;
-    uint16_t mon_height;
-    
-    if (NULL == focuswin || NULL == wslist[curws] || focuswin->maxed)
-        return;
-    
-    if (NULL == focuswin->monitor) {
-        mon_x = 0;
-        mon_y = 0;
-        mon_width  = screen->width_in_pixels  + MAXWIDTH;
-        mon_height = screen->height_in_pixels + MAXHEIGHT;
-    }
-    
-    else {
-        mon_x = focuswin->monitor->x;
-        mon_y = focuswin->monitor->y;
-        mon_width = focuswin->monitor->width   + MAXWIDTH;
-        mon_height = focuswin->monitor->height + MAXHEIGHT;
-    }
-    
-    raisewindow(focuswin->id);
-    
-    if (!getpointer(focuswin->id, &pointx, &pointy))
-        return;
-    
-    focuswin->x = mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
-    focuswin->y =  mon_y + mon_height - (focuswin->height + conf.borderwidth
-                                         * 2);
-    movewindow(focuswin->id, focuswin->x, focuswin->y);
-    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
-                     pointx, pointy);
     xcb_flush(conn);
-}
-
-void center()
-{
-    int16_t pointx;
-    int16_t pointy;
-    int16_t mon_x;
-    int16_t mon_y;
-    uint16_t mon_height;
-    uint16_t mon_width;
-    
-    if (NULL == focuswin|| NULL == wslist[curws])
-        return;
-    
-    if (focuswin->maxed)
-        return;
-    
-    if (NULL == focuswin->monitor) {
-        mon_x = 0;
-        mon_y = 0;
-        mon_height = screen->height_in_pixels + MAXHEIGHT;
-        mon_width  = screen->width_in_pixels  + MAXWIDTH;
-    }
-    else {
-        mon_x = focuswin->monitor->x;
-        mon_y = focuswin->monitor->y;
-        mon_height = focuswin->monitor->height + MAXHEIGHT;
-        mon_width  = focuswin->monitor->width  + MAXWIDTH;
-    }
-    
-    /* Save pointer position so we can warp pointer here later. */
-    if (!getpointer(focuswin->id, &pointx, &pointy))
-        return;
-    
-    raisewindow(focuswin->id);
-    
-    if (!getpointer(focuswin->id, &pointx, &pointy))
-        return;
-    
-    focuswin->x = mon_x;
-    focuswin->x += mon_x + mon_width -
-                   (focuswin->width + conf.borderwidth * 2);
-    focuswin->y = mon_y + mon_height - (focuswin->height + conf.borderwidth
-                                        * 2);
-    focuswin->y += mon_y;
-    focuswin->y     = focuswin->y /2;
-    focuswin->x     = focuswin->x /2;
-    movewindow(focuswin->id, focuswin->x, focuswin->y);
-    
-    if (pointx > 0 - conf.borderwidth && pointx < focuswin->width + conf.borderwidth
-            && pointy > 0 - conf.borderwidth && pointy < focuswin->height + conf.borderwidth) {
-        xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
-                         pointx, pointy);
-        xcb_flush(conn);
-    }
 }
 
 void deletewin(void)
@@ -3260,23 +3141,23 @@ void handle_keypress(xcb_key_press_event_t *ev)
                         break;
                         
                     case KEY_Y:
-                        topleft();
+                        teleport(true,true,false);
                         break;
                         
                     case KEY_U:
-                        topright();
+                        teleport(false,true,false);
                         break;
                         
                     case KEY_B:
-                        botleft();
+                        teleport(true,false,false);
                         break;
                         
                     case KEY_N:
-                        botright();
+                        teleport(false,false,false);
                         break;
                         
                     case KEY_G:
-                        center();
+                        teleport(false,false,true);
                         break;
                         
                     case KEY_END:
