@@ -78,7 +78,7 @@
 #define FIXED_UNKIL_COL "#cc9933"
 
 /* the color of the outer border */
-#define OUTER_BORDER_COL "#151515"
+#define OUTER_BORDER_COL "#121212"
 
 /* Ditto for default back, when the WM don't know what to put.
  * example: in mplayer when you resize.

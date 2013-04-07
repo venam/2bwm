@@ -43,6 +43,7 @@
 #include <X11/keysym.h>
 #include "list.h"
 #include "config.h"
+#include "signal.h"
 
 #ifdef DEBUG
 #include "events.h"
