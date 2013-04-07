@@ -279,13 +279,13 @@ static void cleanup(const int code);
 void mcwm_exit(void);
 static void arrangewindows(void);
 static void setwmdesktop(xcb_drawable_t win, uint32_t ws);
-void maxverthor(struct client *client, bool right_left);
+void maxverthor(struct client *client, const bool right_left);
 static int32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void delfromworkspace(struct client *client, uint32_t ws);
-void cursor_move(uint8_t direction, bool fast);
-static void changeworkspace(uint32_t ws);
-static void sendtoworkspace(struct client *client, uint32_t ws);
+void cursor_move(const uint8_t direction,const bool fast);
+static void changeworkspace(const uint32_t ws);
+static void sendtoworkspace(struct client *client, const uint32_t ws);
 static void fixwindow(struct client *client);
 static uint32_t getcolor(const char *hex);
 static void forgetclient(struct client *client);
@@ -303,8 +303,8 @@ static void getoutputs(xcb_randr_output_t *outputs,const int len,
                        xcb_timestamp_t timestamp);
 void arrbymon(struct monitor *monitor);
 static struct monitor *findmonitor(xcb_randr_output_t id);
-static struct monitor *findclones(xcb_randr_output_t id, int16_t x, int16_t y);
-static struct monitor *findmonbycoord(int16_t x, int16_t y);
+static struct monitor *findclones(xcb_randr_output_t id, const int16_t x, const int16_t y);
+static struct monitor *findmonbycoord( const int16_t x, const int16_t y);
 static void delmonitor(struct monitor *mon);
 static struct monitor *addmonitor(xcb_randr_output_t id, char *name,
                                   uint32_t x, uint32_t y, uint16_t width,
@@ -312,36 +312,37 @@ static struct monitor *addmonitor(xcb_randr_output_t id, char *name,
 static void raisewindow(xcb_drawable_t win);
 static void raiseorlower(struct client *client);
 static void movelim(struct client *client);
-static void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y);
-static struct client *findclient(xcb_drawable_t win);
+static void movewindow(xcb_drawable_t win, const uint16_t x, const uint16_t y);
+static struct client *findclient(const xcb_drawable_t win);
 static void focusnext(const bool reverse);
 static void setunfocus(struct client *client);
 static void setfocus(struct client *client);
 static int start(char *program);
 static void resizelim(struct client *client);
-static void resize(xcb_drawable_t win, uint16_t width, uint16_t height);
-static void resizestep(struct client *client, char direction);
-static void resizestepslow(struct client *client, char direction);
-void resizestep_keep_aspect(struct client *client, char direction);
-static void mousemove(struct client *client, int rel_x, int rel_y);
-static void mouseresize(struct client *client, int rel_x, int rel_y,bool accept_resize);
-static void movestep(struct client *client, char direction);
-static void movestepslow(struct client *client, char direction);
-static void setborders(struct client *client,bool isitfocused);
+static void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height);
+static void resizestep(struct client *client,const char direction);
+static void resizestepslow(struct client *client,const char direction);
+void resizestep_keep_aspect(struct client *client,const char direction);
+static void mousemove(struct client *client,const int rel_x,const int rel_y);
+static void mouseresize(struct client *client,const int rel_x,const int rel_y,const bool accept_resize);
+static void movestep(struct client *client,const char direction);
+static void movestepslow(struct client *client,const char direction);
+static void setborders(struct client *client,const bool isitfocused);
 static void unmax(struct client *client);
 static void maximize(struct client *client);
 static void maxvert(struct client *client);
 static void maxhor(struct client *client);
+static void maxhorvert(struct client *client,const bool top_bottom);
 static void hide(struct client *client);
-static bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y);
+static bool getpointer(const xcb_drawable_t win, int16_t *x,int16_t *y);
 static bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
                     uint16_t *height);
-static void teleport(bool left_right, bool top_bottom, bool center);
+static void teleport(const bool left_right,const bool top_bottom,const bool center);
 static void deletewin(void);
 static void prevscreen(void);
 static void nextscreen(void);
 static void handle_keypress(xcb_key_press_event_t *ev);
-static void configwin(xcb_window_t win, uint16_t mask, struct winconf wc);
+static void configwin(xcb_window_t win, uint16_t mask,const struct winconf wc);
 static void configurerequest(xcb_configure_request_event_t *e);
 static void events(void);
 static void printhelp(void);
@@ -546,7 +547,7 @@ void delfromworkspace(struct client *client, uint32_t ws)
     client->wsitem[ws] = NULL;
 }
 
-void changeworkspace(uint32_t ws)   // Change current workspace to ws.
+void changeworkspace(const uint32_t ws)   // Change current workspace to ws.
 {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&ws);
     struct item *item;
@@ -645,7 +646,7 @@ void unkillablewindow(struct client *client)
     xcb_flush(conn);
 }
 
-void sendtoworkspace(struct client *client, uint32_t ws)
+void sendtoworkspace(struct client *client, const uint32_t ws)
 {
     if (NULL == client)
         return;
@@ -1402,7 +1403,7 @@ struct monitor *findmonitor(xcb_randr_output_t id) {
     return NULL;
 }
 
-struct monitor *findclones(xcb_randr_output_t id, int16_t x, int16_t y) {
+struct monitor *findclones(xcb_randr_output_t id, const int16_t x, const int16_t y) {
     struct monitor *clonemon;
     struct item *item;
     
@@ -1422,7 +1423,7 @@ struct monitor *findclones(xcb_randr_output_t id, int16_t x, int16_t y) {
     return NULL;
 }
 
-struct monitor *findmonbycoord(int16_t x, int16_t y) {
+struct monitor *findmonbycoord( const int16_t x, const int16_t y) {
     struct item *item;
     struct monitor *mon;
     
@@ -1536,7 +1537,7 @@ void movelim(struct client *client)
     movewindow(client->id, client->x, client->y);
 }
 
-void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
+void movewindow(xcb_drawable_t win, const  uint16_t x, const uint16_t y)
 {                                    // Move window win to root coordinates x,y.
     uint32_t values[2];
     
@@ -1649,7 +1650,7 @@ void setunfocus(struct client *client)
     xcb_flush(conn);
 }
 
-struct client *findclient(xcb_drawable_t win)
+struct client *findclient(const xcb_drawable_t win)
 {                                   // Find client with client->id win in global window list.
                                     // Returns client pointer or NULL if not found.
     struct item *item;
@@ -1782,8 +1783,8 @@ void resizelim(struct client *client)
 }
 
 
-void moveresize(xcb_drawable_t win, uint16_t x, uint16_t y,
-                uint16_t width, uint16_t height)
+void moveresize(xcb_drawable_t win, const uint16_t x, const uint16_t y,
+                const uint16_t width, const uint16_t height)
 {
     uint32_t values[4];
     
@@ -1805,7 +1806,7 @@ void moveresize(xcb_drawable_t win, uint16_t x, uint16_t y,
     xcb_flush(conn);
 }
 
-void resize(xcb_drawable_t win, uint16_t width, uint16_t height)
+void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height)
 {                                   // Resize window win to width,height.
     uint32_t values[2];
     
@@ -1821,7 +1822,7 @@ void resize(xcb_drawable_t win, uint16_t width, uint16_t height)
     xcb_flush(conn);
 }
 
-void resizestep(struct client *client, char direction)
+void resizestep(struct client *client, const char direction)
 {                                   // Resize window client in direction direction. Direction is:
     int step_x = MOVE_STEP;
     int step_y = MOVE_STEP;
@@ -1870,7 +1871,7 @@ void resizestep(struct client *client, char direction)
     xcb_flush(conn);
 }
 
-void resizestepslow(struct client *client, char direction)
+void resizestepslow(struct client *client, const char direction)
 {
     if (NULL == client) {
         return;
@@ -1917,7 +1918,7 @@ void resizestepslow(struct client *client, char direction)
 }
 
 
-void resizestep_keep_aspect(struct client *client, char direction)
+void resizestep_keep_aspect(struct client *client, const  char direction)
 {                                   // Resize window and keep it's aspect ratio
                                     // The problem here is that it will exponentially grow the window
     if (NULL == client)
@@ -1957,7 +1958,7 @@ void resizestep_keep_aspect(struct client *client, char direction)
     xcb_flush(conn);
 }
 
-void mousemove(struct client *client, int rel_x, int rel_y)
+void mousemove(struct client *client, const int rel_x, const int rel_y)
 {                                   // Move window win as a result of pointer motion to coordinates
                                     // rel_x,rel_y.
     client->x = rel_x;
@@ -1965,7 +1966,7 @@ void mousemove(struct client *client, int rel_x, int rel_y)
     movelim(client);
 }
 
-void mouseresize(struct client *client, int rel_x, int rel_y,bool accept_resize)
+void mouseresize(struct client *client, const int rel_x, const int rel_y, const bool accept_resize)
 {
     /* this solve the problem of over cpu usage while redrawing */
     if (abs(rel_x - client->x) % MOVE_STEP_SLOW ==0 || abs(rel_y - client->y) %MOVE_STEP_SLOW == 0 || accept_resize) {
@@ -1986,7 +1987,7 @@ void mouseresize(struct client *client, int rel_x, int rel_y,bool accept_resize)
     }
 }
 
-void mouseresize_keepaspect(struct client *client, int rel_x, int rel_y)
+void mouseresize_keepaspect(struct client *client,const int rel_x,const int rel_y)
 {                                   //Not implemented yet, TODO later
     /* I'll do that later */
     if (abs(rel_x -client->x) > abs(rel_x - client->x)) {
@@ -2013,7 +2014,7 @@ void mouseresize_keepaspect(struct client *client, int rel_x, int rel_y)
 }
 
 
-void movestep(struct client *client, char direction)
+void movestep(struct client *client, const char direction)
 {
     int16_t start_x;
     int16_t start_y;
@@ -2065,7 +2066,7 @@ void movestep(struct client *client, char direction)
     }
 }
 
-void movestepslow(struct client *client, char direction)
+void movestepslow(struct client *client, const char direction)
 {
     int16_t start_x;
     int16_t start_y;
@@ -2117,7 +2118,7 @@ void movestepslow(struct client *client, char direction)
 }
 
 
-void setborders(struct client *client,bool isitfocused)
+void setborders(struct client *client,const bool isitfocused)
 {
 #ifdef DOUBLEBORDER
     /* this is the color maintainer */
@@ -2457,7 +2458,7 @@ void maxhor(struct client *client)
     setborders(client,true);
 }
 
-void maxhorvert(struct client *client, bool top_down)
+void maxhorvert(struct client *client,const bool top_down)
 {
     uint32_t values[4];
     int16_t mon_x;
@@ -2519,7 +2520,7 @@ void maxhorvert(struct client *client, bool top_down)
 #endif
 }
 
-void maxverthor(struct client *client, bool right_left)
+void maxverthor(struct client *client, const bool right_left)
 {
     uint32_t values[4];
     int16_t mon_x;
@@ -2593,7 +2594,7 @@ void hide(struct client *client)
     xcb_flush(conn);
 }
 
-bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y)
+bool getpointer(const xcb_drawable_t win, int16_t *x, int16_t *y)
 {
     xcb_query_pointer_reply_t *pointer;
     pointer
@@ -2625,7 +2626,7 @@ bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
     return true;
 }
 
-void teleport(bool left_right, bool top_bottom, bool center)
+void teleport(const bool left_right,const bool top_bottom,const bool center)
 {
     int16_t pointx;
     int16_t pointy;
@@ -2801,7 +2802,7 @@ void nextscreen(void)
     xcb_flush(conn);
 }
 
-void cursor_move(uint8_t direction, bool fast)
+void cursor_move(const uint8_t direction, const bool fast)
 {                                   // Function to make the cursor move with the keyboard
     switch (direction) {
     case 0:
@@ -3233,7 +3234,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
                 }
 } /* handle_keypress() */
 
-void configwin(xcb_window_t win, uint16_t mask, struct winconf wc)
+void configwin(xcb_window_t win, uint16_t mask,const struct winconf wc)
 {                                   // Helper function to configure a window.
     uint32_t values[7];
     int i = -1;

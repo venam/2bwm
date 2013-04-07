@@ -16,6 +16,8 @@
 
 * add xbindkeys/xchainkeys
 
+* ignore features
+
 * resizing like in monsterwm? no pointer warp and be able to resize the 4 corners
 
 * make the resize only draw lines
