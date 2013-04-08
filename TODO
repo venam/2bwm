@@ -20,6 +20,8 @@
 
 * Write a better README.md
 
+* maxvert and maxhor in one foo
+
 * resizing like in monsterwm? no pointer warp and be able to resize the 4 corners
 
 * make the resize only draw lines
