@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
-#include <getopt.h>
+//#include <getopt.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -165,12 +165,11 @@ struct winconf {                    // Window configuration data.
 };
 
 ///---Globals---///
-char **user_argv;
 int sigcode;                        // Signal code. Non-zero if we've been interruped by a signal.
 xcb_connection_t *conn;             // Connection to X server.
 xcb_screen_t *screen;               // Our current screen.
 int randrbase;                      // Beginning of RANDR extension events.
-uint32_t curws = 0;                 // Current workspace.
+uint8_t curws = 0;                 // Current workspace.
 struct client *focuswin;            // Current focus window.
 struct client *lastfocuswin;        // Last focused window. NOTE! Only used to communicate between start and end of tabbing mode.
 struct item *winlist = NULL;        // Global list of all client windows.
@@ -272,18 +271,17 @@ xcb_atom_t wm_protocols;            // WM_PROTOCOLS.
 
 ///---Functions prototypes---///
 static void finishtabbing(void);
-void mcwm_restart(void);
-void mcwm_exit(void);
+static void mcwm_restart(void);
+static void mcwm_exit(void);
+static int start(char *program);
 static struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
 static void cleanup(const int code);
-void mcwm_exit(void);
 static void arrangewindows(void);
 static void setwmdesktop(xcb_drawable_t win, uint32_t ws);
-void maxverthor(struct client *client, const bool right_left);
 static int32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void delfromworkspace(struct client *client, uint32_t ws);
-void cursor_move(const uint8_t direction,const bool fast);
+static void cursor_move(const uint8_t direction,const bool fast);
 static void changeworkspace(const uint32_t ws);
 static void sendtoworkspace(struct client *client, const uint32_t ws);
 static void fixwindow(struct client *client);
@@ -301,7 +299,7 @@ static int setuprandr(void);
 static void getrandr(void);
 static void getoutputs(xcb_randr_output_t *outputs,const int len,
                        xcb_timestamp_t timestamp);
-void arrbymon(struct monitor *monitor);
+static void arrbymon(struct monitor *monitor);
 static struct monitor *findmonitor(xcb_randr_output_t id);
 static struct monitor *findclones(xcb_randr_output_t id, const int16_t x, const int16_t y);
 static struct monitor *findmonbycoord( const int16_t x, const int16_t y);
@@ -317,35 +315,30 @@ static struct client *findclient(const xcb_drawable_t win);
 static void focusnext(const bool reverse);
 static void setunfocus(struct client *client);
 static void setfocus(struct client *client);
-static int start(char *program);
 static void resizelim(struct client *client);
 static void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height);
-static void resizestep(struct client *client,const char direction);
-static void resizestepslow(struct client *client,const char direction);
-void resizestep_keep_aspect(struct client *client,const char direction);
+static void resizestep(struct client *client,const char direction, const bool fast_slow);
+static void resizestep_keep_aspect(struct client *client,const char direction);
 static void mousemove(struct client *client,const int rel_x,const int rel_y);
 static void mouseresize(struct client *client,const int rel_x,const int rel_y,const bool accept_resize);
-static void movestep(struct client *client,const char direction);
-static void movestepslow(struct client *client,const char direction);
+static void movestep(struct client *client,const char direction,const bool fast_slow);
 static void setborders(struct client *client,const bool isitfocused);
 static void unmax(struct client *client);
 static void maximize(struct client *client);
 static void maxvert(struct client *client);
 static void maxhor(struct client *client);
-static void maxhorvert(struct client *client,const bool top_bottom);
+static void maxhalf(struct client *client, const bool which, const bool where);
 static void hide(struct client *client);
 static bool getpointer(const xcb_drawable_t win, int16_t *x,int16_t *y);
 static bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
                     uint16_t *height);
 static void teleport(const bool left_right,const bool top_bottom,const bool center);
 static void deletewin(void);
-static void prevscreen(void);
-static void nextscreen(void);
+static void changescreen(const bool next_prev);
 static void handle_keypress(xcb_key_press_event_t *ev);
 static void configwin(xcb_window_t win, uint16_t mask,const struct winconf wc);
 static void configurerequest(xcb_configure_request_event_t *e);
 static void events(void);
-static void printhelp(void);
 static void sigcatch(const int sig);
 static xcb_atom_t getatom(char *atom_name);
 
@@ -1822,10 +1815,19 @@ void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height)
     xcb_flush(conn);
 }
 
-void resizestep(struct client *client, const char direction)
+void resizestep(struct client *client, const char direction, const bool fast_slow)
 {                                   // Resize window client in direction direction. Direction is:
-    int step_x = MOVE_STEP;
-    int step_y = MOVE_STEP;
+    uint8_t step_x;
+    uint8_t step_y;
+
+    if (fast_slow) {
+        step_x = MOVE_STEP;
+        step_y = MOVE_STEP;
+    }
+    else {
+        step_x = MOVE_STEP_SLOW;
+        step_y = MOVE_STEP_SLOW;
+    }
     
     if (NULL == client) {
         return;
@@ -1870,53 +1872,6 @@ void resizestep(struct client *client, const char direction)
                      client->width / 2, client->height / 2);
     xcb_flush(conn);
 }
-
-void resizestepslow(struct client *client, const char direction)
-{
-    if (NULL == client) {
-        return;
-    }
-    
-    if (client->maxed)
-        return;
-    
-    raisewindow(client->id);
-    
-    switch (direction) {
-    case 'h':
-        client->width = client->width -MOVE_STEP_SLOW ;
-        break;
-        
-    case 'j':
-        client->height = client->height + MOVE_STEP_SLOW;
-        break;
-        
-    case 'k':
-        client->height = client->height - MOVE_STEP_SLOW;
-        break;
-        
-    case 'l':
-        client->width = client->width + MOVE_STEP_SLOW;
-        break;
-        
-    default :
-        PDEBUG("resizestepslow in unknown direction.\n");
-        break;
-    } /* switch direction */
-    
-    resizelim(client);
-    
-    if (client->vertmaxed)
-        client->vertmaxed = false;
-    
-    if (client->hormaxed)
-        client->hormaxed = false;
-    
-    xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
-                     client->width / 2, client->height / 2);
-    xcb_flush(conn);
-}
-
 
 void resizestep_keep_aspect(struct client *client, const  char direction)
 {                                   // Resize window and keep it's aspect ratio
@@ -2014,7 +1969,7 @@ void mouseresize_keepaspect(struct client *client,const int rel_x,const int rel_
 }
 
 
-void movestep(struct client *client, const char direction)
+void movestep(struct client *client, const char direction,const bool fast_slow)
 {
     int16_t start_x;
     int16_t start_y;
@@ -2030,29 +1985,54 @@ void movestep(struct client *client, const char direction)
         return;
     
     raisewindow(client->id);
-    
-    switch (direction) {
-    case 'h':
-        client->x = client->x - MOVE_STEP;
-        break;
-        
-    case 'j':
-        client->y = client->y + MOVE_STEP;
-        break;
-        
-    case 'k':
-        client->y = client->y - MOVE_STEP;
-        break;
-        
-    case 'l':
-        client->x = client->x + MOVE_STEP;
-        break;
-        
-    default :
-        PDEBUG("movestep: Moving in unknown direction.\n");
-        break;
-    } /* switch direction */
-    
+   
+    if (fast_slow) {
+        switch (direction) {
+        case 'h':
+            client->x = client->x - MOVE_STEP;
+            break;
+            
+        case 'j':
+            client->y = client->y + MOVE_STEP;
+            break;
+            
+        case 'k':
+            client->y = client->y - MOVE_STEP;
+            break;
+            
+        case 'l':
+            client->x = client->x + MOVE_STEP;
+            break;
+            
+        default :
+            PDEBUG("movestep: Moving in unknown direction.\n");
+            break;
+        } /* switch direction */
+    }
+    else {
+        switch (direction) {
+        case 'h':
+            client->x = client->x + MOVE_STEP_SLOW;
+            break;
+            
+        case 'j':
+            client->y = client->y - MOVE_STEP_SLOW;
+            break;
+            
+        case 'k':
+            client->y = client->y + MOVE_STEP_SLOW;
+            break;
+            
+        case 'l':
+            client->x = client->x - MOVE_STEP_SLOW;
+            break;
+            
+        default :
+            PDEBUG("movestepslow: Moving in unknown direction.\n");
+            break;
+        } /* switch direction */
+    }    
+
     movelim(client);
     
     /* If the pointer was inside the window to begin with, move
@@ -2065,58 +2045,6 @@ void movestep(struct client *client, const char direction)
         xcb_flush(conn);
     }
 }
-
-void movestepslow(struct client *client, const char direction)
-{
-    int16_t start_x;
-    int16_t start_y;
-    
-    if (NULL == client)
-        return;
-    
-    if (client->maxed)
-        return;
-    
-    /* Save pointer position so we can warp pointer here later. */
-    if (!getpointer(client->id, &start_x, &start_y))
-        return;
-    
-    raisewindow(client->id);
-    
-    switch (direction) {
-    case 'h':
-        client->x = client->x + MOVE_STEP_SLOW;
-        break;
-        
-    case 'j':
-        client->y = client->y - MOVE_STEP_SLOW;
-        break;
-        
-    case 'k':
-        client->y = client->y + MOVE_STEP_SLOW;
-        break;
-        
-    case 'l':
-        client->x = client->x - MOVE_STEP_SLOW;
-        break;
-        
-    default :
-        PDEBUG("movestepslow: Moving in unknown direction.\n");
-        break;
-    } /* switch direction */
-    
-    movelim(client);
-    
-    /* If the pointer was inside the window to begin with, move
-     * pointer back to where it was, relative to the window. */
-    if (start_x > 0 - conf.borderwidth && start_x < client->width + conf.borderwidth
-            && start_y > 0 - conf.borderwidth && start_y < client->height + conf.borderwidth) {
-        xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
-                         start_x, start_y);
-        xcb_flush(conn);
-    }
-}
-
 
 void setborders(struct client *client,const bool isitfocused)
 {
@@ -2458,7 +2386,7 @@ void maxhor(struct client *client)
     setborders(client,true);
 }
 
-void maxhorvert(struct client *client,const bool top_down)
+void maxhalf(struct client *client, const bool which, const bool where)
 {
     uint32_t values[4];
     int16_t mon_x;
@@ -2499,76 +2427,26 @@ void maxhorvert(struct client *client,const bool top_down)
     client->origsize.y = client->y;
     client->origsize.width = client->width;
     client->origsize.height = client->height;
-    client->x = mon_x+OFFSETX;
-    client->width =   mon_width - (MAXWIDTH + (conf.borderwidth * 2));
-    client->height = ((float)(mon_height)/2)- (MAXHEIGHT+ (conf.borderwidth * 2));
-    
-    if (top_down)
+    if (which) {
         client->y = mon_y+OFFSETY;
-    else
-        client->y = mon_y - OFFSETY + mon_height -(client->height + conf.borderwidth * 2);
+        client->height =   mon_height - (MAXHEIGHT + (conf.borderwidth * 2));
+        client->width = ((float)(mon_width)/2)- (MAXWIDTH+ (conf.borderwidth * 2));
     
-    values[0] = client->width;
-    values[1] = client->height;
-    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_WIDTH
-                         | XCB_CONFIG_WINDOW_HEIGHT, values);
-    xcb_flush(conn);
-    movewindow(focuswin->id, client->x, client->y);
-    client->verthor = true;
-#ifdef DOUBLEBORDER
-    setborders(client,true);
-#endif
-}
-
-void maxverthor(struct client *client, const bool right_left)
-{
-    uint32_t values[4];
-    int16_t mon_x;
-    int16_t mon_y;
-    uint16_t mon_width;
-    uint16_t mon_height;
-    
-    if (NULL == client||client->maxed) {
-        PDEBUG("maximize: client was NULL!\n");
-        return;
-    }
-    
-    if (NULL == client->monitor) {
-        mon_x = 0;
-        mon_y = 0;
-        mon_width = screen->width_in_pixels;
-        mon_height = screen->height_in_pixels;
+        if (where)
+            client->x = mon_x+OFFSETX;
+        else
+            client->x = mon_x - OFFSETX + mon_width -(client->width + conf.borderwidth * 2);
     }
     else {
-        mon_x = client->monitor->x;
-        mon_y = client->monitor->y;
-        mon_width = client->monitor->width;
-        mon_height = client->monitor->height;
-    }
-    
-    /* Check if maximized already. If so, revert to stored geometry. */
-    if (client->verthor) {
-        unmax(client);
-        client->verthor = false;
-        setborders(client,true);
-        return;
-    }
-    
-    /* Raise first. Pretty silly to maximize below something else. */
-    raisewindow(client->id);
-    /* FIXME: Store original geom in property as well? */
-    client->origsize.x = client->x;
-    client->origsize.y = client->y;
-    client->origsize.width = client->width;
-    client->origsize.height = client->height;
-    client->y = mon_y+OFFSETY;
-    client->height =   mon_height - (MAXHEIGHT + (conf.borderwidth * 2));
-    client->width = ((float)(mon_width)/2)- (MAXWIDTH+ (conf.borderwidth * 2));
-    
-    if (right_left)
         client->x = mon_x+OFFSETX;
-    else
-        client->x = mon_x - OFFSETX + mon_width -(client->width + conf.borderwidth * 2);
+        client->width =   mon_width - (MAXWIDTH + (conf.borderwidth * 2));
+        client->height = ((float)(mon_height)/2)- (MAXHEIGHT+ (conf.borderwidth * 2));
+
+        if (where)
+            client->y = mon_y+OFFSETY;
+        else
+            client->y = mon_y - OFFSETY + mon_height -(client->height + conf.borderwidth * 2);
+    }
     
     values[0] = client->width;
     values[1] = client->height;
@@ -2754,38 +2632,17 @@ void deletewin(void)
     xcb_flush(conn);
 }
 
-void prevscreen(void)
+void changescreen(const bool next_prev)
 {
     struct item *item;
     
     if (NULL == focuswin || NULL == focuswin->monitor)
         return;
     
-    item = focuswin->monitor->item->prev;
-    
-    if (NULL == item)
-        return;
-    
-    float xpercentage = (float)(focuswin->x-focuswin->monitor->x)/(focuswin->monitor->width);
-    float ypercentage = (float)(focuswin->y-focuswin->monitor->y)/(focuswin->monitor->height);
-    focuswin->monitor = item->data;
-    raisewindow(focuswin->id);
-    focuswin->x        = focuswin->monitor->width * xpercentage + focuswin->monitor->x;
-    focuswin->y        = focuswin->monitor->height * ypercentage + focuswin->monitor->y;
-    fitonscreen(focuswin);
-    movelim(focuswin);
-    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, 0, 0);
-    xcb_flush(conn);
-}
-
-void nextscreen(void)
-{
-    struct item *item;
-    
-    if (NULL == focuswin || NULL == focuswin->monitor)
-        return;
-    
-    item = focuswin->monitor->item->next;
+    if (next_prev)
+        item = focuswin->monitor->item->next;
+    else
+        item = focuswin->monitor->item->prev;
     
     if (NULL == item)
         return;
@@ -2879,19 +2736,19 @@ void handle_keypress(xcb_key_press_event_t *ev)
     if ((ev->state & SHIFTMOD) && (ev->state & CONTROLMOD)) {
         switch (key) {
         case KEY_H: /* h */
-            resizestepslow(focuswin, 'h');
+            resizestep(focuswin, 'h',false);
             break;
             
         case KEY_J: /* j */
-            resizestepslow(focuswin, 'j');
+            resizestep(focuswin, 'j',false);
             break;
             
         case KEY_K: /* k */
-            resizestepslow(focuswin, 'k');
+            resizestep(focuswin, 'k',false);
             break;
             
         case KEY_L: /* l */
-            resizestepslow(focuswin, 'l');
+            resizestep(focuswin, 'l',false);
             break;
             
         default :
@@ -2927,19 +2784,19 @@ void handle_keypress(xcb_key_press_event_t *ev)
                     break;
                     
                 case KEY_H: /* h */
-                    movestepslow(focuswin, 'l');
+                    movestep(focuswin, 'l',false);
                     break;
                     
                 case KEY_J: /* j */
-                    movestepslow(focuswin, 'k');
+                    movestep(focuswin, 'k',false);
                     break;
                     
                 case KEY_K: /* k */
-                    movestepslow(focuswin, 'j');
+                    movestep(focuswin, 'j',false);
                     break;
                     
                 case KEY_L: /* l */
-                    movestepslow(focuswin, 'h');
+                    movestep(focuswin, 'h',false);
                     break;
                     
                 default :
@@ -2951,19 +2808,19 @@ void handle_keypress(xcb_key_press_event_t *ev)
                 if (ev->state & SHIFTMOD) {
                     switch (key) {
                     case KEY_H: /* h */
-                        resizestep(focuswin, 'h');
+                        resizestep(focuswin, 'h',true);
                         break;
                         
                     case KEY_J: /* j */
-                        resizestep(focuswin, 'j');
+                        resizestep(focuswin, 'j',true);
                         break;
                         
                     case KEY_K: /* k */
-                        resizestep(focuswin, 'k');
+                        resizestep(focuswin, 'k',true);
                         break;
                         
                     case KEY_L: /* l */
-                        resizestep(focuswin, 'l');
+                        resizestep(focuswin, 'l',true);
                         break;
                         
                     case KEY_TAB: /* shifted tab counts as backtab */
@@ -3011,19 +2868,19 @@ void handle_keypress(xcb_key_press_event_t *ev)
                         break;
                         
                     case KEY_U:
-                        maxverthor(focuswin,false);
+                        maxhalf(focuswin,true,false);
                         break;
                         
                     case KEY_Y:
-                        maxverthor(focuswin,true);
+                        maxhalf(focuswin,true,true);
                         break;
                         
                     case KEY_B:
-                        maxhorvert(focuswin,false);
+                        maxhalf(focuswin,false,false);
                         break;
                         
                     case KEY_N:
-                        maxhorvert(focuswin,true);
+                        maxhalf(focuswin,false,true);
                         break;
                         
                     case KEY_M:
@@ -3066,19 +2923,19 @@ void handle_keypress(xcb_key_press_event_t *ev)
                         break;
                         
                     case KEY_H: /* h */
-                        movestep(focuswin, 'h');
+                        movestep(focuswin, 'h',true);
                         break;
                         
                     case KEY_J: /* j */
-                        movestep(focuswin, 'j');
+                        movestep(focuswin, 'j',true);
                         break;
                         
                     case KEY_K: /* k */
-                        movestep(focuswin, 'k');
+                        movestep(focuswin, 'k',true);
                         break;
                         
                     case KEY_L: /* l */
-                        movestep(focuswin, 'l');
+                        movestep(focuswin, 'l',true);
                         break;
                         
                     case KEY_TAB: /* tab */
@@ -3166,11 +3023,11 @@ void handle_keypress(xcb_key_press_event_t *ev)
                         break;
                         
                     case KEY_PREVSCR:
-                        prevscreen();
+                        changescreen(false);
                         break;
                         
                     case KEY_NEXTSCR:
-                        nextscreen();
+                        changescreen(true);
                         break;
                         
                     case KEY_ICONIFY:
@@ -3676,35 +3533,23 @@ void events(void)
                  * what happens here is that we release the mouse button
                  * and put the mode back to 0 (which is not MCWM_RESIZE nor MCWM_MOVE)
                  * This tag is stupid and only here to help me browser the code.
-                 * MCWM_RESIZE;
                  * commented that because it gets annoying to always have the pointer jump around */
                 /*
-                if (mode_x > focuswin->width)
-                {
+                if (mode_x > focuswin->width) {
                     x = focuswin->width / 2;
                     if (0 == x)
-                    {
                         x = 1;
-                    }
-                
                 }
                 else
-                {
                     x = mode_x;
-                }
                 
-                if (mode_y > focuswin->height)
-                {
+                if (mode_y > focuswin->height) {
                     y = focuswin->height / 2;
                     if (0 == y)
-                    {
                         y = 1;
-                    }
                 }
                 else
-                {
                     y = mode_y;
-                }
                 */
                 /*xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, x, y);*/
                 xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
@@ -3806,13 +3651,11 @@ void events(void)
                 = (xcb_configure_notify_event_t *)ev;
                 
             if (e->window == screen->root) {
-                /* When using RANDR or Xinerama, the root can change
-                 * geometry when the user adds a new screen, tilts
-                 * their screen 90 degrees or whatnot. We might need
-                 * to rearrange windows to be visible.
-                 * We might get notified for several reasons, not just
-                 * if the geometry changed. If the geometry is
-                 * unchanged we do nothing. */
+                /* When using RANDR or Xinerama, the root can change geometry when the user 
+                 * adds a new screen, tilts their screen 90 degrees or whatnot. We might 
+                 * need to rearrange windows to be visible.
+                 * We might get notified for several reasons, not just if the geometry changed. 
+                 * If the geometry is unchanged we do nothing. */
                 PDEBUG("Notify event for root!\n");
                 PDEBUG("Possibly a new root geometry: %dx%d\n",
                        e->width, e->height);
@@ -3826,13 +3669,10 @@ void events(void)
                     screen->width_in_pixels = e->width;
                     screen->height_in_pixels = e->height;
                     
-                    /* Check for RANDR. */
                     if (-1 == randrbase) {
-                        /* We have no RANDR so we rearrange windows to
-                         * the new root geometry here.
-                         * With RANDR enabled, we handle this per
-                         * screen getrandr() when we receive an
-                         * XCB_RANDR_SCREEN_CHANGE_NOTIFY event. */
+                        /* We have no RANDR so we rearrange windows to the new root geometry here.
+                         * With RANDR enabled, we handle this per screen getrandr() when we 
+                         * receive an XCB_RANDR_SCREEN_CHANGE_NOTIFY event. */
                         arrangewindows();
                     }
                 }
@@ -3867,8 +3707,7 @@ void events(void)
         case XCB_CIRCULATE_REQUEST: {
             xcb_circulate_request_event_t *e
                 = (xcb_circulate_request_event_t *)ev;
-            /* Subwindow e->window to parent e->event is about to be
-             * restacked.
+            /* Subwindow e->window to parent e->event is about to be restacked.
              * Just do what was requested, e->place is either
              * XCB_PLACE_ON_TOP or _ON_BOTTOM. We don't care. */
             xcb_circulate_window(conn, e->window, e->place);
@@ -3882,8 +3721,6 @@ void events(void)
              * We want to know when the entire keyboard is finished.
              * Impossible? Better handling somehow?*/
             
-            /* We're only interested in keys and modifiers, not
-             * pointer mappings, for instance. */
             if (e->request != XCB_MAPPING_MODIFIER
                     && e->request != XCB_MAPPING_KEYBOARD)
                 break;
@@ -3937,21 +3774,6 @@ void events(void)
     }
 }
 
-void printhelp(void)
-{
-    printf("mcwm: Usage: mcwm [-b] [-t terminal-program] [-m menu-program] [-f colour] "
-           "[-u colour] [-x colour] \n");
-    printf("  -b means draw no borders\n");
-    printf("  -t urxvt will start urxvt when MODKEY + Return is pressed\n");
-    printf("  -m mcwm will start a menu when MODKEY + P is pressed\n");
-    printf("  -f colour sets colour for focused window borders of focused "
-           "to a named color.\n");
-    printf("  -u colour sets colour for unfocused window borders.");
-    printf("  -x color sets colour for fixed window borders.\n");
-    printf("  -k color sets colour for unkillable window borders.\n");
-    printf("Mcwm patched by Beastie, enjoy ;)\n");
-}
-
 void sigcatch(const int sig)
 {
     sigcode = sig;
@@ -3983,7 +3805,8 @@ void mcwm_restart(void)             //restart mcwm and exit mcwm
                         XCB_INPUT_FOCUS_POINTER_ROOT,
                         XCB_CURRENT_TIME);
     xcb_flush(conn);
-    execvp("/usr/local/bin/mcwm", user_argv);
+    char* argv[2] = {"",NULL};
+    execvp("/usr/local/bin/mcwm", argv);
 }
 
 void mcwm_exit(void)
@@ -3992,12 +3815,10 @@ void mcwm_exit(void)
     exit(0);
 }
 
-int main(int argc, char **argv)
+int main()
 {
-    user_argv = argv;
     uint32_t mask = 0;
     uint32_t values[2];
-    int ch;                    /* Option character */
     xcb_void_cookie_t cookie;
     xcb_generic_error_t *error;
     xcb_drawable_t root;
@@ -4027,7 +3848,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     
-    /* Set up defaults. */
+    /* Set up the configs. */
     conf.borderwidth = BORDERWIDTH;
 #ifdef DOUBLEBORDER
     conf.outer_border= OUTER_BORDER;
@@ -4041,56 +3862,6 @@ int main(int argc, char **argv)
     unkillcol        = UNKILLCOL;
     fixed_unkil_col  = FIXED_UNKIL_COL;
     empty_col        = EMPTY_COL;
-    
-    while (1) {
-        ch = getopt(argc, argv, "b:it:m:f:u:x:k:");
-        
-        if (-1 == ch)
-            /* No more options, break out of while loop. */
-            break;
-        
-        switch (ch) {
-        case 'b':
-            /* Border width */
-            conf.borderwidth = atoi(optarg);
-            break;
-            
-        case 'i':
-            conf.allowicons = true;
-            break;
-            
-        case 't':
-            conf.terminal = optarg;
-            break;
-            
-        case 'm':
-            conf.menu = optarg;
-            break;
-            
-        case 'f':
-            focuscol = optarg;
-            break;
-            
-        case 'u':
-            unfocuscol = optarg;
-            break;
-            
-        case 'x':
-            fixedcol = optarg;
-            break;
-            
-        case 'k':
-            unkillcol = optarg;
-            break;
-            
-        case 'K':
-            fixed_unkil_col = optarg;
-            
-        default :
-            printhelp();
-            exit(0);
-        } /* switch */
-    }
     
     /* Use $DISPLAY. After connecting scrno will contain the value of
      * the display's screen. */
@@ -4124,13 +3895,13 @@ int main(int argc, char **argv)
     conf.fixedcol        = getcolor(fixedcol);
     conf.unkillcol       = getcolor(unkillcol);
     conf.outer_border_col= getcolor(OUTER_BORDER_COL);
+    conf.fixed_unkil_col = getcolor(fixed_unkil_col);
     
     if (strcmp(empty_col,"0")==0)
         conf.empty_col = 0;
     else
         conf.empty_col = getcolor(empty_col);
         
-    conf.fixed_unkil_col = getcolor(fixed_unkil_col);
     /* Get some atoms. */
     atom_desktop         = getatom("_NET_WM_DESKTOP");
     atom_current_desktop = getatom("_NET_CURRENT_DESKTOP");
@@ -4191,13 +3962,12 @@ int main(int argc, char **argv)
                     3 /* right mouse button */,
                     XCB_MOD_MASK_2| MOUSEMODKEY);
     /* Subscribe to events. */
-    mask = XCB_CW_EVENT_MASK;
+    mask      = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT
                 | XCB_EVENT_MASK_STRUCTURE_NOTIFY
                 | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
-    cookie =
-        xcb_change_window_attributes_checked(conn, root, mask, values);
-    error = xcb_request_check(conn, cookie);
+    cookie    = xcb_change_window_attributes_checked(conn, root, mask, values);
+    error     = xcb_request_check(conn, cookie);
     xcb_flush(conn);
     
     if (NULL != error) {
