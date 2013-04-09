@@ -1,14 +1,9 @@
 /* mcwm, a small window manager for the X Window System using the X
  * protocol C Binding libraries.
- *
- * For 'user' configurable stuff, see config.h.
- *
- * MC, mc at the domain hack.org
  * http://hack.org/mc/
  *
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at
  * the domain hack.org.
- *
  * Copyright (c) 2013 of the mcwm-beast patches Patrick Louis, Youri Mouton,
  * patrick at unixhub [dot] net
  * beastie at unixhub [dot] net
@@ -31,7 +26,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
-//#include <getopt.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -63,12 +57,12 @@ do { fprintf(stderr, "mcwm: "); fprintf(stderr, ##Args); } while(0)
 #endif
 
 ///---Internal Constants---///
-#define MCWM_MOVE 2                 // We're currently moving a window with the mouse.
-#define MCWM_RESIZE 3               // We're currently resizing a window with the mouse.
+#define MCWM_MOVE    2              // We're currently moving a window with the mouse.
+#define MCWM_RESIZE  3              // We're currently resizing a window with the mouse.
 #define MCWM_TABBING 4              // We're currently tabbing around the window list, looking for a new window to focus on.
-#define WORKSPACES 10               // Number of workspaces.
+#define WORKSPACES   10             // Number of workspaces.
 #define NET_WM_FIXED 0xffffffff     // Value in WM hint which means this window is fixed on all workspaces.
-#define MCWM_NOWS 0xfffffffe        // This means we didn't get any window hint at all.
+#define MCWM_NOWS    0xfffffffe     // This means we didn't get any window hint at all.
 
 ///---Types---///
 typedef enum {                      // All our key shortcuts.
@@ -128,8 +122,8 @@ struct monitor {
 struct sizepos {
     int16_t x;
     int16_t y;
-    uint16_t width;
-    uint16_t height;
+    int16_t width;
+    int16_t height;
 };
 
 struct client {                     // Everything we know about a window.
@@ -166,10 +160,11 @@ struct winconf {                    // Window configuration data.
 
 ///---Globals---///
 int sigcode;                        // Signal code. Non-zero if we've been interruped by a signal.
+struct sizepos mouse_win_old;
 xcb_connection_t *conn;             // Connection to X server.
 xcb_screen_t *screen;               // Our current screen.
 int randrbase;                      // Beginning of RANDR extension events.
-uint8_t curws = 0;                 // Current workspace.
+uint8_t curws = 0;                  // Current workspace.
 struct client *focuswin;            // Current focus window.
 struct client *lastfocuswin;        // Last focused window. NOTE! Only used to communicate between start and end of tabbing mode.
 struct item *winlist = NULL;        // Global list of all client windows.
@@ -1915,8 +1910,8 @@ void resizestep_keep_aspect(struct client *client, const  bool direction)
 void mousemove(struct client *client, const int16_t *rel_x, const int16_t *rel_y)
 {                                   // Move window win as a result of pointer motion to coordinates
                                     // rel_x,rel_y.
-    client->x = *rel_x;
-    client->y = *rel_y;
+    client->x = mouse_win_old.width + *rel_x - mouse_win_old.x;
+    client->y = mouse_win_old.height+ *rel_y - mouse_win_old.y;
     movelim(client);
 }
 
@@ -2413,8 +2408,7 @@ void hide(struct client *client)
 bool getpointer(const xcb_drawable_t *win, int16_t *x, int16_t *y)
 {
     xcb_query_pointer_reply_t *pointer;
-    pointer
-        = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, *win), 0);
+    pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, *win), 0);
         
     if (NULL == pointer)
         return false;
@@ -3256,10 +3250,10 @@ void events(void)
                 break;
             }
             
-            /* If we don't have any currently focused window, we can't
-             * do anything. We don't want to do anything if the mouse
-             * cursor is in the wrong window (root window or a panel,
-             * for instance). There is a limit to sloppy focus. */
+            /* If we don't have any currently focused window, we can't do anything. 
+             * We don't want to do anything if the mouse cursor is in the wrong 
+             * window (root window or a panel, for instance). There is a limit 
+             * to sloppy focus. */
             if (NULL == focuswin || focuswin->id != e->child)
                 break;
             
@@ -3270,9 +3264,8 @@ void events(void)
             else {
                 /* We're moving or resizing. */
                 
-                /* Get and save pointer position inside the window
-                 * so we can go back to it when we're done moving
-                 * or resizing. */
+                /* Get and save pointer position inside the window so we can go 
+                 * back to it when we're done moving or resizing. */
                 if (!getpointer(&focuswin->id, &mode_x, &mode_y))
                     break;
 
@@ -3282,10 +3275,14 @@ void events(void)
                 /* Mouse button 1 was pressed. */
                 if (1 == e->detail) {
                     mode = MCWM_MOVE;
-                    /* Warp pointer to upper left of window before
-                     * starting move. */
-                    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
-                                     1, 1);
+                    /* Warp pointer to upper left of window before starting move. */
+                    xcb_query_pointer_reply_t *pointer; 
+                    pointer            = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, screen->root), 0);
+                    mouse_win_old.x    = pointer->root_x; mouse_win_old.y      = pointer->root_y;
+                    mouse_win_old.width= focuswin->x    ; mouse_win_old.height = focuswin->y; 
+                    free(pointer);
+                    //xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                    //                 1, 1);
                 }
                 else {
                     /* Mouse button 3 was pressed. */

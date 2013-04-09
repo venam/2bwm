@@ -29,6 +29,7 @@ Patches
 - You can now know the current workspace this way: xprop -root _NET_CURRENT_DESKTOP| sed -e 's/_NET_CURRENT_DESKTOP(CARDINAL) = //'
 - keep approximately the same position when sending window to next screen
 - Magnet borders
+- Mouse not in the left-corner while moving a window (stays in place)
 
 
 Authors:
