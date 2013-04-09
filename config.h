@@ -5,7 +5,7 @@
  * the window has hints saying otherwise.
  */
 #define MOVE_STEP 40
-#define MOVE_STEP_SLOW 8
+#define MOVE_STEP_SLOW 10
 
 /*
 * Modifier key to use with mouse buttons. Default Mod1, Meta on my

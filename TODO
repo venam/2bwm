@@ -16,11 +16,15 @@
 
 * add xbindkeys/xchainkeys
 
-* ignore features
+* ignore features (maybe we'll remove the debug)
+
+* Review the whole code for efficiency (software engineering vs algorithm analysis)
 
 * Write a better README.md
 
 * resizing like in monsterwm? no pointer warp and be able to resize the 4 corners
+
+* change the pointer while moving or resizing
 
 * make the resize only draw lines
 
@@ -63,8 +67,6 @@
   if on or off?
 
   Idea from Christian Neukirchen.
-
-* Snap to border and screen edge, which favours the edge.
 
 * Gaps on borders for docks, status windows et cetera.
 
