@@ -1524,14 +1524,14 @@ void movelim(struct client *client) //Keep the window inside the screen
     /* Is it outside the physical monitor or close to the side? */
     if (client->y-conf.borderwidth < mon_y)
         client->y = mon_y;
-    else if (client->y < (mon_height/70))
+    else if (client->y < 9)
         client->y =0;
-    else if ( client->y+client->height+(conf.borderwidth*2) > mon_height - (mon_height/70))
+    else if ( client->y+client->height+(conf.borderwidth*2) > mon_height -9)
         client->y = mon_height- client->height - conf.borderwidth;
 
-    if (client->x < (mon_width/73))
+    if (client->x < 9)
         client->x = 0;
-    else if (client->x+client->width+(conf.borderwidth*2) > mon_width - (mon_width/73))
+    else if (client->x+client->width+(conf.borderwidth*2) > mon_width - 9)
         client->x = mon_width- client->width- conf.borderwidth;
 
     if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
