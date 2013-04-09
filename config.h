@@ -24,11 +24,6 @@
 /* Extra modifier for resizing. Default is Shift. */
 #define SHIFTMOD XCB_MOD_MASK_SHIFT
 #define CONTROLMOD XCB_MOD_MASK_CONTROL
-//This new mod will be used for the fast resize
-//if ALTMOD == -1 then the GROW and SHRINK will be used only with the MODKEY
-//Otherwise the GROW and SHRINK will be used with the ALTMOD and MODKEY (combination)
-#define ALTMOD     -1
-
 
 /* Offset when windows are in fullscreen or vert maxed for bars */
 #define OFFSETX     0

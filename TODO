@@ -20,8 +20,6 @@
 
 * Write a better README.md
 
-* maxvert and maxhor in one foo
-
 * resizing like in monsterwm? no pointer warp and be able to resize the 4 corners
 
 * make the resize only draw lines
@@ -39,8 +37,6 @@
 * A separate workspace list for every monitor.
 
 * static Makefile problem
-
-* set default status depending on WM_NAME / WM_ICON_NAME
 
 * Grab specific keys
 

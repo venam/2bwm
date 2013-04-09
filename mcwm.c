@@ -277,12 +277,13 @@ static int start(char *program);
 static struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
 static void cleanup(const int *code);
 static void arrangewindows(void);
-static void setwmdesktop(xcb_drawable_t win, uint32_t ws);
+static void setwmdesktop(const xcb_drawable_t *win, uint32_t ws);
 static int32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void delfromworkspace(struct client *client, uint32_t ws);
 static void cursor_move(const uint8_t direction,const bool fast);
 static void changeworkspace(const uint32_t ws);
+static void prevworkspace(void);
 static void sendtoworkspace(struct client *client, const uint32_t ws);
 static void fixwindow(struct client *client);
 static uint32_t getcolor(const char *hex);
@@ -317,16 +318,15 @@ static void setunfocus(struct client *client);
 static void setfocus(struct client *client);
 static void resizelim(struct client *client);
 static void resize(xcb_drawable_t win, const uint16_t *width, const uint16_t *height);
-static void resizestep(struct client *client,const char direction, const bool fast_slow);
-static void resizestep_keep_aspect(struct client *client,const char direction);
+static void resizestep(struct client *client,const uint8_t *direction, const bool fast_slow);
+static void resizestep_keep_aspect(struct client *client,const bool direction);
 static void mousemove(struct client *client,const int16_t *rel_x,const int16_t *rel_y);
 static void mouseresize(struct client *client,const int16_t *rel_x,const int16_t *rel_y,const bool accept_resize);
-static void movestep(struct client *client,const char direction,const bool fast_slow);
+static void movestep(struct client *client,const uint8_t *direction,const bool fast_slow);
 static void setborders(struct client *client,const bool isitfocused);
 static void unmax(struct client *client);
 static void maximize(struct client *client);
-static void maxvert(struct client *client);
-static void maxhor(struct client *client);
+static void maxvert_hor(struct client *client,const bool vert_hor);
 static void maxhalf(struct client *client, const bool which, const bool where);
 static void hide(struct client *client);
 static bool getpointer(const xcb_drawable_t *win, int16_t *x,int16_t *y);
@@ -442,10 +442,10 @@ void arrangewindows(void)           //Rearrange windows to fit new screen size.
     } /* for */
 }
 
-void setwmdesktop(xcb_drawable_t win, uint32_t ws)
+void setwmdesktop(const xcb_drawable_t *win, uint32_t ws)
 {                                   // Set the EWMH hint that window win belongs on workspace ws.
     PDEBUG("Changing _NET_WM_DESKTOP on window %d to %d\n", win, ws);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, win,
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, *win,
                         atom_desktop, XCB_ATOM_CARDINAL, 32, 1,
                         &ws);
 }
@@ -530,7 +530,7 @@ void addtoworkspace(struct client *client, uint32_t ws)
      * Fixed windows have their own special WM hint. We don't want to
      * mess with that. */
     if (!client->fixed)
-        setwmdesktop(client->id, ws);
+        setwmdesktop(&client->id, ws);
 }
 
 void delfromworkspace(struct client *client, uint32_t ws)
@@ -581,6 +581,14 @@ void changeworkspace(const uint32_t ws)   // Change current workspace to ws.
     curws = ws;
 }
 
+void prevworkspace()
+{
+    if (curws>0)
+        changeworkspace(curws-1);
+    else
+        changeworkspace(WORKSPACES-1);
+}
+
 void fixwindow(struct client *client)
 {                                   // Fix or unfix a window client from all workspaces. If setcolour is
                                     // set, also change back to ordinary focus colour when unfixing.
@@ -591,7 +599,7 @@ void fixwindow(struct client *client)
     
     if (client->fixed) {
         client->fixed = false;
-        setwmdesktop(client->id, curws);
+        setwmdesktop(&client->id, curws);
         
         /* Delete from all workspace lists except current. */
         for (ws = 0; ws < WORKSPACES; ws ++)
@@ -606,7 +614,7 @@ void fixwindow(struct client *client)
          */
         raisewindow(client->id);
         client->fixed = true;
-        setwmdesktop(client->id, NET_WM_FIXED);
+        setwmdesktop(&client->id, NET_WM_FIXED);
         
         /* Add window to all workspace lists. */
         for (ws = 0; ws < WORKSPACES; ws ++)
@@ -896,7 +904,7 @@ struct client *setupwin(xcb_window_t win)
      * Use the background frame instead.
      * This is really good for videos because we keep their aspect ratio. */
     
-    if (EMPTY_COL=="0") {
+    if (conf.empty_col == 0) {
         values[0] = 1;
         xcb_change_window_attributes(conn, win, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
     } else {
@@ -1815,19 +1823,14 @@ void resize(xcb_drawable_t win, const uint16_t *width, const uint16_t *height)
     xcb_flush(conn);
 }
 
-void resizestep(struct client *client, const char direction, const bool fast_slow)
-{                                   // Resize window client in direction direction. Direction is:
-    uint8_t step_x;
-    uint8_t step_y;
+void resizestep(struct client *client, const uint8_t *direction, const bool fast_slow)
+{                                   // Resize window client in direction.
+    uint8_t step;
 
-    if (fast_slow) {
-        step_x = MOVE_STEP;
-        step_y = MOVE_STEP;
-    }
-    else {
-        step_x = MOVE_STEP_SLOW;
-        step_y = MOVE_STEP_SLOW;
-    }
+    if (fast_slow)
+        step = MOVE_STEP;
+    else
+        step = MOVE_STEP_SLOW;
     
     if (NULL == client) {
         return;
@@ -1838,21 +1841,21 @@ void resizestep(struct client *client, const char direction, const bool fast_slo
     
     raisewindow(client->id);
     
-    switch (direction) {
-    case 'h':
-        client->width = client->width - step_x;
+    switch (*direction) {
+    case 0:
+        client->width = client->width - step;
         break;
         
-    case 'j':
-        client->height = client->height + step_y;
+    case 1:
+        client->height = client->height + step;
         break;
         
-    case 'k':
-        client->height = client->height - step_y;
+    case 2:
+        client->height = client->height - step;
         break;
         
-    case 'l':
-        client->width = client->width + step_x;
+    case 3:
+        client->width = client->width + step;
         break;
         
     default :
@@ -1873,7 +1876,7 @@ void resizestep(struct client *client, const char direction, const bool fast_slo
     xcb_flush(conn);
 }
 
-void resizestep_keep_aspect(struct client *client, const  char direction)
+void resizestep_keep_aspect(struct client *client, const  bool direction)
 {                                   // Resize window and keep it's aspect ratio
                                     // The problem here is that it will exponentially grow the window
     if (NULL == client)
@@ -1884,21 +1887,14 @@ void resizestep_keep_aspect(struct client *client, const  char direction)
     
     raisewindow(client->id);
     
-    switch (direction) {
-    case 'h':
+    if (direction) {
         client->width  = client->width  / 1.03;
         client->height = client->height / 1.03;
-        break;
-        
-    case 'l':
+    }
+    else {
         client->height = client->height * 1.03;
         client->width  = client->width  * 1.03;
-        break;
-        
-    default :
-        PDEBUG("resizestep in unknown direction.\n");
-        break;
-    } /* switch direction */
+    }
     
     resizelim(client);
     
@@ -1969,10 +1965,16 @@ void mouseresize_keepaspect(struct client *client,const int rel_x,const int rel_
 }
 
 
-void movestep(struct client *client, const char direction,const bool fast_slow)
+void movestep(struct client *client, const uint8_t *direction,const bool fast_slow)
 {
     int16_t start_x;
     int16_t start_y;
+    uint8_t step;
+    
+    if(fast_slow)
+        step = MOVE_STEP;
+    else
+        step = MOVE_STEP_SLOW;
     
     if (NULL == client)
         return;
@@ -1986,52 +1988,27 @@ void movestep(struct client *client, const char direction,const bool fast_slow)
     
     raisewindow(client->id);
    
-    if (fast_slow) {
-        switch (direction) {
-        case 'h':
-            client->x = client->x - MOVE_STEP;
-            break;
-            
-        case 'j':
-            client->y = client->y + MOVE_STEP;
-            break;
-            
-        case 'k':
-            client->y = client->y - MOVE_STEP;
-            break;
-            
-        case 'l':
-            client->x = client->x + MOVE_STEP;
-            break;
-            
-        default :
-            PDEBUG("movestep: Moving in unknown direction.\n");
-            break;
-        } /* switch direction */
+    switch (*direction) {
+    case 0:
+        client->x = client->x - step;
+        break;
+        
+    case 1:
+        client->y = client->y + step;
+        break;
+        
+    case 2:
+        client->y = client->y - step;
+        break;
+        
+    case 3:
+        client->x = client->x + step;
+        break;
+        
+    default :
+        PDEBUG("movestep: Moving in unknown direction.\n");
+        break;
     }
-    else {
-        switch (direction) {
-        case 'h':
-            client->x = client->x + MOVE_STEP_SLOW;
-            break;
-            
-        case 'j':
-            client->y = client->y - MOVE_STEP_SLOW;
-            break;
-            
-        case 'k':
-            client->y = client->y + MOVE_STEP_SLOW;
-            break;
-            
-        case 'l':
-            client->x = client->x - MOVE_STEP_SLOW;
-            break;
-            
-        default :
-            PDEBUG("movestepslow: Moving in unknown direction.\n");
-            break;
-        } /* switch direction */
-    }    
 
     movelim(client);
     
@@ -2282,11 +2259,13 @@ void maximize(struct client *client)
     client->maxed = true;
 }
 
-void maxvert(struct client *client)
+void maxvert_hor(struct client *client, const bool vert_hor)
 {
     uint32_t values[2];
     int16_t mon_y;
+    int16_t mon_x;
     uint16_t mon_height;
+    uint16_t mon_width;
     
     if (NULL == client) {
         PDEBUG("maxvert: client was NULL\n");
@@ -2294,18 +2273,23 @@ void maxvert(struct client *client)
     }
     
     if (NULL == client->monitor) {
-        mon_y = 0;
+        mon_y      = 0;
+        mon_x      = 0;
         mon_height = screen->height_in_pixels;
+        mon_width  = screen->width_in_pixels;
     }
     else {
-        mon_y = client->monitor->y;
+        mon_y      = client->monitor->y;
+        mon_x      = client->monitor->x;
         mon_height = client->monitor->height;
+        mon_width  = client->monitor->width;
     }
     
     /* Check if maximized already. If so, revert to stored geometry. */
-    if (client->vertmaxed) {
+    if (client->vertmaxed || client->hormaxed) {
         unmax(client);
         client->vertmaxed = false;
+        client->hormaxed  = false;
         setborders(client,true);
         return;
     }
@@ -2319,71 +2303,32 @@ void maxvert(struct client *client)
     client->origsize.y = client->y;
     client->origsize.width = client->width;
     client->origsize.height = client->height;
-    client->y = mon_y+OFFSETY;
-    /* Compute new height considering height increments and screen height. */
-    client->height = mon_height - (conf.borderwidth * 2) - MAXHEIGHT;
-    /* Move to top of screen and resize. */
-    values[0] = client->y;
-    values[1] = client->height;
-    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_Y
-                         | XCB_CONFIG_WINDOW_HEIGHT, values);
+    if ( vert_hor) {
+        client->y = mon_y+OFFSETY;
+        /* Compute new height considering height increments and screen height. */
+        client->height = mon_height - (conf.borderwidth * 2) - MAXHEIGHT;
+        /* Move to top of screen and resize. */
+        values[0] = client->y;
+        values[1] = client->height;
+        xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_Y
+                             | XCB_CONFIG_WINDOW_HEIGHT, values);
+        client->vertmaxed = true;
+    }
+    else {
+        client->x = mon_x+OFFSETX;
+        client->width = mon_width - (conf.borderwidth * 2) - MAXWIDTH;
+        values[0] = client->x;
+        values[1] = client->width;
+        xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_X
+                           | XCB_CONFIG_WINDOW_WIDTH, values);
+        client->hormaxed = true;
+    }
+
     xcb_flush(conn);
     /* Remember that this client is vertically maximized. */
-    client->vertmaxed = true;
 #ifdef DOUBLEBORDER
     setborders(client,true);
 #endif
-}
-
-
-void maxhor(struct client *client)
-{
-    uint32_t values[2];
-    int16_t mon_x;
-    uint16_t mon_width;
-    
-    if (NULL == client||client->maxed) {
-        PDEBUG("maxhor: client was NULL\n");
-        return;
-    }
-    
-    if (NULL == client->monitor) {
-        mon_x = 0;
-        mon_width = screen->width_in_pixels;
-    }
-    else {
-        mon_x = client->monitor->x;
-        mon_width = client->monitor->width;
-    }
-    
-    /* Check if maximized already. If so, revert to stored geometry. */
-    if (client->hormaxed) {
-        unmax(client);
-        client->hormaxed = false;
-        setborders(client,true);
-        return;
-    }
-    
-    /* Raise first. Pretty silly to maximize below something else. */
-    raisewindow(client->id);
-    /* Store original coordinates and geometry.
-     * FIXME: Store in property as well? */
-    client->origsize.x = client->x;
-    client->origsize.y = client->y;
-    client->origsize.width = client->width;
-    client->origsize.height = client->height;
-    client->x = mon_x+OFFSETX;
-    /* Compute new height considering height increments and screen height. */
-    client->width = mon_width - (conf.borderwidth * 2) - MAXWIDTH;
-    /* Move to top of screen and resize. */
-    values[0] = client->x;
-    values[1] = client->width;
-    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_X
-                         | XCB_CONFIG_WINDOW_WIDTH, values);
-    xcb_flush(conn);
-    /* Remember that this client is vertically maximized. */
-    client->hormaxed = true;
-    setborders(client,true);
 }
 
 void maxhalf(struct client *client, const bool which, const bool where)
@@ -2462,14 +2407,15 @@ void maxhalf(struct client *client, const bool which, const bool where)
 
 void hide(struct client *client)
 {
-    long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
-    /* Unmap window and declare iconic.
-     * Unmapping will generate an UnmapNotify event so we can forget
-     * about the window later. */
-    xcb_unmap_window(conn, client->id);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
-                        wm_state, wm_state, 32, 2, data);
-    xcb_flush(conn);
+    if (conf.allowicons) {
+        long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
+        /* Unmap window and declare iconic. Unmapping will generate 
+         * an UnmapNotify event so we can forget about the window later. */
+        xcb_unmap_window(conn, client->id);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
+                            wm_state, wm_state, 32, 2, data);
+        xcb_flush(conn);
+    }
 }
 
 bool getpointer(const xcb_drawable_t *win, int16_t *x, int16_t *y)
@@ -2707,7 +2653,8 @@ void cursor_move(const uint8_t direction, const bool fast)
 
 void handle_keypress(xcb_key_press_event_t *ev)
 {
-    int i;
+    /* we'll try to reuse this variable to not waste memory space */
+    uint8_t i;
     key_enum_t key;
     
     for (key = KEY_MAX, i = KEY_F; i < KEY_MAX; i ++) {
@@ -2736,19 +2683,23 @@ void handle_keypress(xcb_key_press_event_t *ev)
     if ((ev->state & SHIFTMOD) && (ev->state & CONTROLMOD)) {
         switch (key) {
         case KEY_H: /* h */
-            resizestep(focuswin, 'h',false);
+            i = 0;
+            resizestep(focuswin, &i,false);
             break;
             
         case KEY_J: /* j */
-            resizestep(focuswin, 'j',false);
+            i = 1;
+            resizestep(focuswin, &i,false);
             break;
             
         case KEY_K: /* k */
-            resizestep(focuswin, 'k',false);
+            i = 2;
+            resizestep(focuswin, &i,false);
             break;
             
         case KEY_L: /* l */
-            resizestep(focuswin, 'l',false);
+            i = 3;
+            resizestep(focuswin, &i,false);
             break;
             
         default :
@@ -2757,338 +2708,321 @@ void handle_keypress(xcb_key_press_event_t *ev)
     }
     /* This is suppose to resize keeping aspect ratio */
     else
-        if (ev->state & ALTMOD && ALTMOD!=-1) {
+        /* control mask? */
+        if (ev->state & CONTROLMOD) {
             switch (key) {
-            case KEY_GROW: /* h */
-                resizestep_keep_aspect(focuswin, 'l');
+            case KEY_END:
+                mcwm_exit();
                 break;
                 
-            case KEY_SHRINK: /* l */
-                resizestep_keep_aspect(focuswin, 'h');
+            case KEY_R:
+                mcwm_restart();
+                break;
+                
+            case KEY_H: /* h */
+                i = 3;
+                movestep(focuswin, &i,false);
+                break;
+                
+            case KEY_J: /* j */
+                i = 2;
+                movestep(focuswin, &i,false);
+                break;
+                
+            case KEY_K: /* k */
+                i = 1;
+                movestep(focuswin, &i,false);
+                break;
+                
+            case KEY_L: /* l */
+                i = 0;
+                movestep(focuswin, &i,false);
                 break;
                 
             default :
                 break;
             }
         }
-        /* control mask? */
+        /* Is it shifted? */
         else
-            if (ev->state & CONTROLMOD) {
+            if (ev->state & SHIFTMOD) {
                 switch (key) {
-                case KEY_END:
-                    mcwm_exit();
-                    break;
-                    
-                case KEY_R:
-                    mcwm_restart();
-                    break;
-                    
                 case KEY_H: /* h */
-                    movestep(focuswin, 'l',false);
+                    i = 0;
+                    resizestep(focuswin, &i,true);
                     break;
                     
                 case KEY_J: /* j */
-                    movestep(focuswin, 'k',false);
+                    i = 1;
+                    resizestep(focuswin, &i,true);
                     break;
                     
                 case KEY_K: /* k */
-                    movestep(focuswin, 'j',false);
+                    i = 2;
+                    resizestep(focuswin, &i,true);
                     break;
                     
                 case KEY_L: /* l */
-                    movestep(focuswin, 'h',false);
+                    i = 3;
+                    resizestep(focuswin, &i,true);
+                    break;
+                    
+                case KEY_TAB: /* shifted tab counts as backtab */
+                    focusnext(true);
+                    break;
+                    
+                case KEY_1:
+                    sendtoworkspace(focuswin, 0);
+                    break;
+                    
+                case KEY_2:
+                    sendtoworkspace(focuswin, 1);
+                    break;
+                    
+                case KEY_3:
+                    sendtoworkspace(focuswin, 2);
+                    break;
+                    
+                case KEY_4:
+                    sendtoworkspace(focuswin, 3);
+                    break;
+                    
+                case KEY_5:
+                    sendtoworkspace(focuswin, 4);
+                    break;
+                    
+                case KEY_6:
+                    sendtoworkspace(focuswin, 5);
+                    break;
+                    
+                case KEY_7:
+                    sendtoworkspace(focuswin, 6);
+                    break;
+                    
+                case KEY_8:
+                    sendtoworkspace(focuswin, 7);
+                    break;
+                    
+                case KEY_9:
+                    sendtoworkspace(focuswin, 8);
+                    break;
+                    
+                case KEY_0:
+                    sendtoworkspace(focuswin, 9);
+                    break;
+                    
+                case KEY_U:
+                    maxhalf(focuswin,true,false);
+                    break;
+                    
+                case KEY_Y:
+                    maxhalf(focuswin,true,true);
+                    break;
+                    
+                case KEY_B:
+                    maxhalf(focuswin,false,false);
+                    break;
+                    
+                case KEY_N:
+                    maxhalf(focuswin,false,true);
+                    break;
+                    
+                case KEY_M:
+                    maxvert_hor(focuswin,false);
+                    break;
+                    
+                case KEY_UP:
+                    cursor_move(0, true);
+                    break;
+                    
+                case KEY_DOWN:
+                    cursor_move(1, true);
+                    break;
+                    
+                case KEY_RIGHT:
+                    cursor_move(2, true);
+                    break;
+                    
+                case KEY_LEFT:
+                    cursor_move(3, true);
                     break;
                     
                 default :
+                    /* Ignore other shifted keys. */
                     break;
                 }
             }
-            /* Is it shifted? */
-            else
-                if (ev->state & SHIFTMOD) {
-                    switch (key) {
-                    case KEY_H: /* h */
-                        resizestep(focuswin, 'h',true);
-                        break;
-                        
-                    case KEY_J: /* j */
-                        resizestep(focuswin, 'j',true);
-                        break;
-                        
-                    case KEY_K: /* k */
-                        resizestep(focuswin, 'k',true);
-                        break;
-                        
-                    case KEY_L: /* l */
-                        resizestep(focuswin, 'l',true);
-                        break;
-                        
-                    case KEY_TAB: /* shifted tab counts as backtab */
-                        focusnext(true);
-                        break;
-                        
-                    case KEY_1:
-                        sendtoworkspace(focuswin, 0);
-                        break;
-                        
-                    case KEY_2:
-                        sendtoworkspace(focuswin, 1);
-                        break;
-                        
-                    case KEY_3:
-                        sendtoworkspace(focuswin, 2);
-                        break;
-                        
-                    case KEY_4:
-                        sendtoworkspace(focuswin, 3);
-                        break;
-                        
-                    case KEY_5:
-                        sendtoworkspace(focuswin, 4);
-                        break;
-                        
-                    case KEY_6:
-                        sendtoworkspace(focuswin, 5);
-                        break;
-                        
-                    case KEY_7:
-                        sendtoworkspace(focuswin, 6);
-                        break;
-                        
-                    case KEY_8:
-                        sendtoworkspace(focuswin, 7);
-                        break;
-                        
-                    case KEY_9:
-                        sendtoworkspace(focuswin, 8);
-                        break;
-                        
-                    case KEY_0:
-                        sendtoworkspace(focuswin, 9);
-                        break;
-                        
-                    case KEY_U:
-                        maxhalf(focuswin,true,false);
-                        break;
-                        
-                    case KEY_Y:
-                        maxhalf(focuswin,true,true);
-                        break;
-                        
-                    case KEY_B:
-                        maxhalf(focuswin,false,false);
-                        break;
-                        
-                    case KEY_N:
-                        maxhalf(focuswin,false,true);
-                        break;
-                        
-                    case KEY_M:
-                        maxhor(focuswin);
-                        break;
-                        
-                    case KEY_UP:
-                        cursor_move(0, true);
-                        break;
-                        
-                    case KEY_DOWN:
-                        cursor_move(1, true);
-                        break;
-                        
-                    case KEY_RIGHT:
-                        cursor_move(2, true);
-                        break;
-                        
-                    case KEY_LEFT:
-                        cursor_move(3, true);
-                        break;
-                        
-                    default :
-                        /* Ignore other shifted keys. */
-                        break;
-                    }
-                }
-                else {
-                    switch (key) {
-                    case KEY_RET: /* return */
-                        start(conf.terminal);
-                        break;
-                        
-                    case KEY_P: /* P */
-                        start(conf.menu);
-                        break;
-                        
-                    case KEY_F: /* f */
-                        fixwindow(focuswin);
-                        break;
-                        
-                    case KEY_H: /* h */
-                        movestep(focuswin, 'h',true);
-                        break;
-                        
-                    case KEY_J: /* j */
-                        movestep(focuswin, 'j',true);
-                        break;
-                        
-                    case KEY_K: /* k */
-                        movestep(focuswin, 'k',true);
-                        break;
-                        
-                    case KEY_L: /* l */
-                        movestep(focuswin, 'l',true);
-                        break;
-                        
-                    case KEY_TAB: /* tab */
-                        focusnext(false);
-                        break;
-                        
-                    case KEY_BACKTAB: /* backtab */
-                        focusnext(true);
-                        break;
-                        
-                    case KEY_M: /* m */
-                        maxvert(focuswin);
-                        break;
-                        
-                    case KEY_R: /* r*/
-                        raiseorlower(focuswin);
-                        break;
-                        
-                    case KEY_X: /* x */
-                        maximize(focuswin);
-                        break;
-                        
-                    case KEY_1:
-                        changeworkspace(0);
-                        break;
-                        
-                    case KEY_2:
-                        changeworkspace(1);
-                        break;
-                        
-                    case KEY_3:
-                        changeworkspace(2);
-                        break;
-                        
-                    case KEY_4:
-                        changeworkspace(3);
-                        break;
-                        
-                    case KEY_5:
-                        changeworkspace(4);
-                        break;
-                        
-                    case KEY_6:
-                        changeworkspace(5);
-                        break;
-                        
-                    case KEY_7:
-                        changeworkspace(6);
-                        break;
-                        
-                    case KEY_8:
-                        changeworkspace(7);
-                        break;
-                        
-                    case KEY_9:
-                        changeworkspace(8);
-                        break;
-                        
-                    case KEY_0:
-                        changeworkspace(9);
-                        break;
-                        
-                    case KEY_Y:
-                        teleport(true,true,false);
-                        break;
-                        
-                    case KEY_U:
-                        teleport(false,true,false);
-                        break;
-                        
-                    case KEY_B:
-                        teleport(true,false,false);
-                        break;
-                        
-                    case KEY_N:
-                        teleport(false,false,false);
-                        break;
-                        
-                    case KEY_G:
-                        teleport(false,false,true);
-                        break;
-                        
-                    case KEY_END:
-                        deletewin();
-                        break;
-                        
-                    case KEY_PREVSCR:
-                        changescreen(false);
-                        break;
-                        
-                    case KEY_NEXTSCR:
-                        changescreen(true);
-                        break;
-                        
-                    case KEY_ICONIFY:
-                        if (conf.allowicons) {
-                            hide(focuswin);
-                        }
-                        
-                        break;
-                        
-                    case KEY_PREVWS:
-                        if (curws >0) {
-                            changeworkspace(curws -1);
-                        }
-                        
-                        else {
-                            changeworkspace(WORKSPACES -1);
-                        }
-                        
-                        break;
-                        
-                    case KEY_NEXTWS:
-                        changeworkspace((curws +1) % WORKSPACES);
-                        break;
-                        
-                    case KEY_GROW:
-                        if (ALTMOD==-1)
-                            resizestep_keep_aspect(focuswin, 'l');
-                            
-                        break;
-                        
-                    case KEY_SHRINK:
-                        if (ALTMOD==-1)
-                            resizestep_keep_aspect(focuswin, 'h');
-                            
-                        break;
-                        
-                    case KEY_UNKILLABLE:
-                        unkillablewindow(focuswin);
-                        break;
-                        
-                    case KEY_UP:
-                        cursor_move(0, false);
-                        break;
-                        
-                    case KEY_DOWN:
-                        cursor_move(1, false);
-                        break;
-                        
-                    case KEY_RIGHT:
-                        cursor_move(2, false);
-                        break;
-                        
-                    case KEY_LEFT:
-                        cursor_move(3, false);
-                        break;
-                        
-                    default :
-                        /* Ignore other keys. */
-                        break;
-                    } /* switch unshifted */
-                }
+            else {
+                switch (key) {
+                case KEY_RET: /* return */
+                    start(conf.terminal);
+                    break;
+                    
+                case KEY_P: /* P */
+                    start(conf.menu);
+                    break;
+                    
+                case KEY_F: /* f */
+                    fixwindow(focuswin);
+                    break;
+                    
+                case KEY_H: /* h */
+                    i = 0;
+                    movestep(focuswin, &i,true);
+                    break;
+                    
+                case KEY_J: /* j */
+                    i = 1;
+                    movestep(focuswin, &i,true);
+                    break;
+                    
+                case KEY_K: /* k */
+                    i = 2;
+                    movestep(focuswin, &i,true);
+                    break;
+                    
+                case KEY_L: /* l */
+                    i = 3;
+                    movestep(focuswin, &i,true);
+                    break;
+                    
+                case KEY_TAB: /* tab */
+                    focusnext(false);
+                    break;
+                    
+                case KEY_BACKTAB: /* backtab */
+                    focusnext(true);
+                    break;
+                    
+                case KEY_M: /* m */
+                    maxvert_hor(focuswin,true);
+                    break;
+                    
+                case KEY_R: /* r*/
+                    raiseorlower(focuswin);
+                    break;
+                    
+                case KEY_X: /* x */
+                    maximize(focuswin);
+                    break;
+                    
+                case KEY_1:
+                    changeworkspace(0);
+                    break;
+                    
+                case KEY_2:
+                    changeworkspace(1);
+                    break;
+                    
+                case KEY_3:
+                    changeworkspace(2);
+                    break;
+                    
+                case KEY_4:
+                    changeworkspace(3);
+                    break;
+                    
+                case KEY_5:
+                    changeworkspace(4);
+                    break;
+                    
+                case KEY_6:
+                    changeworkspace(5);
+                    break;
+                    
+                case KEY_7:
+                    changeworkspace(6);
+                    break;
+                    
+                case KEY_8:
+                    changeworkspace(7);
+                    break;
+                    
+                case KEY_9:
+                    changeworkspace(8);
+                    break;
+                    
+                case KEY_0:
+                    changeworkspace(9);
+                    break;
+                    
+                case KEY_Y:
+                    teleport(true,true,false);
+                    break;
+                    
+                case KEY_U:
+                    teleport(false,true,false);
+                    break;
+                    
+                case KEY_B:
+                    teleport(true,false,false);
+                    break;
+                    
+                case KEY_N:
+                    teleport(false,false,false);
+                    break;
+                    
+                case KEY_G:
+                    teleport(false,false,true);
+                    break;
+                    
+                case KEY_END:
+                    deletewin();
+                    break;
+                    
+                case KEY_PREVSCR:
+                    changescreen(false);
+                    break;
+                    
+                case KEY_NEXTSCR:
+                    changescreen(true);
+                    break;
+                    
+                case KEY_ICONIFY:
+                    hide(focuswin);
+                    break;
+                    
+                case KEY_PREVWS:
+                    prevworkspace();
+                    break;
+                    
+                case KEY_NEXTWS:
+                    changeworkspace((curws +1) % WORKSPACES);
+                    break;
+                    
+                case KEY_GROW:
+                    resizestep_keep_aspect(focuswin, false); 
+                    break;
+                    
+                case KEY_SHRINK:
+                    resizestep_keep_aspect(focuswin, true);
+                    break;
+                    
+                case KEY_UNKILLABLE:
+                    unkillablewindow(focuswin);
+                    break;
+                    
+                case KEY_UP:
+                    cursor_move(0, false);
+                    break;
+                    
+                case KEY_DOWN:
+                    cursor_move(1, false);
+                    break;
+                    
+                case KEY_RIGHT:
+                    cursor_move(2, false);
+                    break;
+                    
+                case KEY_LEFT:
+                    cursor_move(3, false);
+                    break;
+                    
+                default :
+                    /* Ignore other keys. */
+                    break;
+                } /* switch unshifted */
+            }
 } /* handle_keypress() */
 
 void configwin(xcb_window_t win, uint16_t mask,const struct winconf *wc)
@@ -3265,12 +3199,10 @@ void events(void)
         /* Prepare for select(). */
         FD_ZERO(&in);
         FD_SET(fd, &in);
-        /* Check for events, again and again. When poll returns NULL
-         * (and it does that a lot), we block on select() until the
-         * event file descriptor gets readable again.
-         * We do it this way instead of xcb_wait_for_event() since
-         * select() will return if we were interrupted by a signal. We
-         * like that. */
+        /* Check for events, again and again. When poll returns NULL (and it does
+         * that a lot), we block on select() until the event file descriptor gets 
+         * readable again. We do it this way instead of xcb_wait_for_event() since 
+         * select() will return if we were interrupted by a signal. We like that. */
         ev = xcb_poll_for_event(conn);
         
         if (NULL == ev) {
@@ -3302,8 +3234,8 @@ void events(void)
                 /* We found more events. Goto start of loop. */
                 continue;
         }
+
 #ifdef DEBUG
-        
         if (ev->response_type <= MAXEVENTS)
             PDEBUG("Event: %s\n", evnames[ev->response_type]);
         else
@@ -3360,17 +3292,14 @@ void events(void)
             if (2 == e->detail)
                 raiseorlower(focuswin);
             else {
-                int16_t pointx;
-                int16_t pointy;
                 /* We're moving or resizing. */
                 
                 /* Get and save pointer position inside the window
                  * so we can go back to it when we're done moving
                  * or resizing. */
-                if (!getpointer(&focuswin->id, &pointx, &pointy))
+                if (!getpointer(&focuswin->id, &mode_x, &mode_y))
                     break;
-                mode_x = pointx;
-                mode_y = pointy;
+
                 /* Raise window. */
                 raisewindow(focuswin->id);
                 
@@ -3388,18 +3317,12 @@ void events(void)
                     /* Warp pointer to lower right. */
                     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0,
                                      0, focuswin->width, focuswin->height);
-                    //Attempt for the ghostly move
-                    //MCWM_RESIZE
-                    mode_x = pointx;
-                    mode_y = pointy;
                 }
                 
-                /* Take control of the pointer in the root window
-                 * and confine it to root.
-                 * Give us events when the key is released or if
-                 * any motion occurs with the key held down.
-                 * Keep updating everything else.
-                 * Don't use any new cursor. */
+                /* Take control of the pointer in the root window and confine 
+                 * it to root. Give us events when the key is released or if
+                 * any motion occurs with the key held down. Keep updating 
+                 * everything else. Don't use any new cursor. */
                 xcb_grab_pointer(conn, 0, screen->root,
                                  XCB_EVENT_MASK_BUTTON_RELEASE
                                  | XCB_EVENT_MASK_BUTTON_MOTION
@@ -3417,7 +3340,6 @@ void events(void)
         
         case XCB_MAP_REQUEST: {
             xcb_map_request_event_t *e;
-            
             PDEBUG("event: Map request.\n");
             e = (xcb_map_request_event_t *) ev;
             newwin(e->window);
@@ -3432,15 +3354,13 @@ void events(void)
              * forget about the focus.
              * We will get an EnterNotify if there's another window
              * under the pointer so we can set the focus proper later. */
-            if (NULL != focuswin) {
+            if (NULL != focuswin)
                 if (focuswin->id == e->window)
                     focuswin = NULL;
-            }
             
-            if (NULL != lastfocuswin) {
+            if (NULL != lastfocuswin)
                 if (lastfocuswin->id == e->window)
                     lastfocuswin = NULL;
-            }
             
             /* Find this window in list of clients and forget about it. */
             forgetwin(e->window);
@@ -3470,6 +3390,7 @@ void events(void)
              * we're either resizing or moving a window. */
             if (mode == MCWM_MOVE)
                 mousemove(focuswin, &pointer->root_x, &pointer->root_y);
+#ifndef SPOOKY_RESIZE
             else
                 if (mode == MCWM_RESIZE) {
                     /*I love spooky resize, it only resize when you release
@@ -3486,13 +3407,11 @@ void events(void)
                      *To know which point is the closest we do this
                      *we take the lowest absolute difference between the coordinates
                      *of the corners and the pointer */
-#ifndef SPOOKY_RESIZE
                     mouseresize(focuswin, &pointer->root_x, &pointer->root_y,false);
-#endif
                 }
                 else
                     PDEBUG("Motion event when we're not moving our resizing!\n");
-                
+#endif
             free(pointer);
         }
         break;
