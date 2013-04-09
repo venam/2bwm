@@ -3488,7 +3488,7 @@ void events(void)
         
         case XCB_KEY_RELEASE: {
             xcb_key_release_event_t *e = (xcb_key_release_event_t *)ev;
-            unsigned i;
+            uint8_t i;
             PDEBUG("Key %d released.\n", e->detail);
             
             if (MCWM_TABBING == mode) {
@@ -3515,16 +3515,14 @@ void events(void)
                    e->child,
                    e->detail);
                    
-            /* If this isn't a normal enter notify, don't bother.
-             * We also need ungrab events, since these will be
-             * generated on button and key grabs and if the user for
-             * some reason presses a button on the root and then moves
-             * the pointer to our window and releases the button, we
-             * get an Ungrab EnterNotify.
-             * The other cases means the pointer is grabbed and that
-             * either means someone is using it for menu selections or
-             * that we're moving or resizing. We don't want to change
-             * focus in those cases. */
+            /* If this isn't a normal enter notify, don't bother. We also need 
+             * ungrab events, since these will be generated on button and key 
+             * grabs and if the user for some reason presses a button on the 
+             * root and then moves the pointer to our window and releases the 
+             * button, we get an Ungrab EnterNotify. The other cases means the 
+             * pointer is grabbed and that either means someone is using it for 
+             * menu selections or that we're moving or resizing. We don't want 
+             * to change focus in those cases. */
             if (e->mode == XCB_NOTIFY_MODE_NORMAL
                     || e->mode == XCB_NOTIFY_MODE_UNGRAB) {
                 /* If we're entering the same window we focus now,
