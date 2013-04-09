@@ -99,6 +99,10 @@
  */
 #define BORDERWIDTH  10
 
+/* this is the power of the magnet, normally you should never put it
+ * less than your MOVE_STEP_SLOW */
+#define MAGNET_BORDER 9
+
 
 /* Set the Fast and Slow mouse movement via keyboard
  * You can set the fast movement to something big so you can
