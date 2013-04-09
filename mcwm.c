@@ -857,8 +857,9 @@ void newwin(xcb_window_t win)       // Set position, geometry and attributes of 
         client->y = pointy;
         movewindow(client->id, &client->x, &client->y);
     }
-    else
+    else {
         PDEBUG("User set coordinates.\n");
+    }
     
     /* Find the physical output this window will be on if RANDR is active. */
     if (-1 != randrbase) {
@@ -896,7 +897,7 @@ struct client *setupwin(xcb_window_t win)
      * Use the background frame instead.
      * This is really good for videos because we keep their aspect ratio. */
     
-    if (EMPTY_COL == "0") {
+    if (strcmp(EMPTY_COL,"0")==0) {
         values[0] = 1;
         xcb_change_window_attributes(conn, win, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
     } else {
@@ -964,8 +965,9 @@ struct client *setupwin(xcb_window_t win)
     
     /* Get the window's incremental size step, if any.*/
     if (!xcb_icccm_get_wm_normal_hints_reply(conn,
-        xcb_icccm_get_wm_normal_hints_unchecked(conn, win), &hints, NULL))
+        xcb_icccm_get_wm_normal_hints_unchecked(conn, win), &hints, NULL)) {
         PDEBUG("Couldn't get size hints.\n");
+    }
     
     /* The user specified the position coordinates. Remember that so
      * we can use geometry later. */
@@ -1582,9 +1584,10 @@ void focusnext(const bool reverse)  // Change focus to next in window ring.
         PDEBUG("Focusing first in list: %p\n", wslist[curws]);
         client = wslist[curws]->data;
         
-        if (NULL != focuswin && NULL == focuswin->wsitem[curws])
+        if (NULL != focuswin && NULL == focuswin->wsitem[curws]) {
             PDEBUG("XXX Our focused window %d isn't on this workspace!\n",
                    focuswin->id);
+        }
     }
     else {
         if (reverse) {
@@ -3005,7 +3008,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
 void configwin(xcb_window_t win, uint16_t mask,const struct winconf *wc)
 {                                   // Helper function to configure a window.
     uint32_t values[7];
-    uint8_t i = -1;
+    int8_t i = -1;
     
     if (mask & XCB_CONFIG_WINDOW_X) {
         mask |= XCB_CONFIG_WINDOW_X;
