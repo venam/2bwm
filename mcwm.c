@@ -3281,8 +3281,6 @@ void events(void)
                     mouse_win_old.x    = pointer->root_x; mouse_win_old.y      = pointer->root_y;
                     mouse_win_old.width= focuswin->x    ; mouse_win_old.height = focuswin->y; 
                     free(pointer);
-                    //xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
-                    //                 1, 1);
                 }
                 else {
                     /* Mouse button 3 was pressed. */
@@ -3367,19 +3365,7 @@ void events(void)
             else
                 if (mode == MCWM_RESIZE) {
                     /*I love spooky resize, it only resize when you release
-                     *the mouse button which reduce considerably the cpu overussage
-                     *I'll try to include the resize from each border here
-                     *we'll need to calculate the difference between the mouse
-                     *position and the corners position
-                     *Thus we need the corner positions
-                     *roughly (may be wrong, I need to check that):
-                     *(client->x,client->y)
-                     *(client->x+client->width,client->y)
-                     *(client->x,client->y+client->height)
-                     *(client->x,client->width,client->y+client->height)
-                     *To know which point is the closest we do this
-                     *we take the lowest absolute difference between the coordinates
-                     *of the corners and the pointer */
+                     *the mouse button which reduce considerably the cpu overussage*/
                     mouseresize(focuswin, &pointer->root_x, &pointer->root_y,false);
                 }
                 else

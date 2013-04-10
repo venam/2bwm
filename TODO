@@ -1,5 +1,7 @@
 -*- text -*-
 
+* Don't listen to other actions while in a "MCWM_MOVE", "MCWM_RESIZE" mode
+
 * Extended Window Manager Hints (EWMH)
 
   - Use the new xcb-ewmh for the EWMH hints.
