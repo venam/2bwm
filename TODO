@@ -2,6 +2,8 @@
 
 * Don't listen to other actions while in a "MCWM_MOVE", "MCWM_RESIZE" mode
 
+* Use xcb-event's event handlers? (monsterwm-xcb and dwm)
+
 * Extended Window Manager Hints (EWMH)
 
   - Use the new xcb-ewmh for the EWMH hints.
@@ -76,7 +78,6 @@
 
   Also respect EWMH hints _NET_WM_TYPE_DOCK and _NET_WM_TYPE_DESKTOP.
 
-* Use xcb-event's event handlers?
 
 * Configuration file.
 

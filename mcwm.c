@@ -57,9 +57,7 @@ do { fprintf(stderr, "mcwm: "); fprintf(stderr, ##Args); } while(0)
 #endif
 
 ///---Internal Constants---///
-#define MCWM_MOVE    2              // We're currently moving a window with the mouse.
-#define MCWM_RESIZE  3              // We're currently resizing a window with the mouse.
-#define MCWM_TABBING 4              // We're currently tabbing around the window list, looking for a new window to focus on.
+enum { MCWM_NORMAL,MCWM_MOVE,MCWM_RESIZE, MCWM_TABBING};
 #define WORKSPACES   10             // Number of workspaces.
 #define NET_WM_FIXED 0xffffffff     // Value in WM hint which means this window is fixed on all workspaces.
 #define MCWM_NOWS    0xfffffffe     // This means we didn't get any window hint at all.
@@ -169,7 +167,7 @@ struct client *focuswin;            // Current focus window.
 struct client *lastfocuswin;        // Last focused window. NOTE! Only used to communicate between start and end of tabbing mode.
 struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
-int mode = 0;                       // Internal mode, such as move or resize
+int mode = MCWM_NORMAL;                       // Internal mode, such as move or resize
 
 struct item *wslist[WORKSPACES] = { // Workspaces: Every workspace has a list of all visible windows.
     NULL,
@@ -345,7 +343,7 @@ void finishtabbing(void)            // MODKEY was released after tabbing around 
                                     // on to the head of the window list and then move the
                                     // new focus to the head of the list as well. The list
                                     // should always start with the window we're focusing on.
-    mode = 0;
+    mode = MCWM_NORMAL;
     
     if (NULL != lastfocuswin) {
         movetohead(&wslist[curws], lastfocuswin->wsitem[curws]);
@@ -3369,7 +3367,7 @@ void events(void)
                     mouseresize(focuswin, &pointer->root_x, &pointer->root_y,false);
                 }
                 else
-                    PDEBUG("Motion event when we're not moving our resizing!\n");
+                    PDEBUG("Motion event when we're not moving or resizing!\n");
 #endif
             free(pointer);
         }
@@ -3393,25 +3391,19 @@ void events(void)
                 if (NULL == focuswin) {
                     /* We don't seem to have a focused window! Just
                      * ungrab and reset the mode. */
-                    PDEBUG("No focused window when finished moving or "
-                           "resizing!");
+                    PDEBUG("No focused window when finished moving or resizing!");
                     xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
                     xcb_flush(conn); /* Important! */
-                    mode = 0;
+                    mode = MCWM_NORMAL;
                     break;
                 }
                 
-                /* We will get an EnterNotify and focus another window
-                 * if the pointer just happens to be on top of another
-                 * window when we ungrab the pointer, so we have to
-                 * warp the pointer before to prevent this.
-                 * Move to saved position within window or if that
-                 * position is now outside current window, move inside
-                 * window.
-                 * what happens here is that we release the mouse button
-                 * and put the mode back to 0 (which is not MCWM_RESIZE nor MCWM_MOVE)
-                 * This tag is stupid and only here to help me browser the code.
-                 * commented that because it gets annoying to always have the pointer jump around
+                /* We will get an EnterNotify and focus another window if the 
+                 * pointer just happens to be on top of another window when we 
+                 * ungrab the pointer, so we have to warp the pointer before to 
+                 * prevent this. Move to saved position within window or if that
+                 * position is now outside current window, move inside window.
+                 * commented this because it gets annoying to always have the pointer jump around
                 if (mode_x > focuswin->width) {
                     x = focuswin->width / 2;
                     if (0 == x)
@@ -3429,7 +3421,7 @@ void events(void)
                 xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, x, y);*/
                 xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
                 xcb_flush(conn); /* Important! */
-                mode = 0;
+                mode = MCWM_NORMAL;
                 PDEBUG("mode now = %d\n", mode);
             }
         }
