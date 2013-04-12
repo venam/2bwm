@@ -1915,23 +1915,24 @@ void mousemove(struct client *client, const int16_t *rel_x, const int16_t *rel_y
 
 void mouseresize(struct client *client, const int16_t *rel_x, const int16_t *rel_y, const bool accept_resize)
 {
-    /* this solve the problem of over cpu usage while redrawing */
-    if (abs(*rel_x - client->x) % MOVE_STEP_SLOW ==0 || abs(*rel_y - client->y) %MOVE_STEP_SLOW == 0 || accept_resize) {
-        client->width = abs(*rel_x - client->x);
-        client->height = abs(*rel_y - client->y);
-        client->width -= (client->width - client->base_width) % client->width_inc;
-        client->height -= (client->height - client->base_height) % client->height_inc;
-        PDEBUG("Trying to resize to %dx%d (%dx%d)\n", client->width, client->height,
-               (client->width - client->base_width) / client->width_inc,
-               (client->height - client->base_height) / client->height_inc);
-        resizelim(client);
-        
-        if (client->vertmaxed)
-            client->vertmaxed = false;
-        
-        if (client->hormaxed)
-            client->hormaxed = false;
-    }
+    if(!focuswin->maxed)
+        /* this solve the problem of over cpu usage while redrawing */
+        if (abs(*rel_x - client->x) % MOVE_STEP_SLOW ==0 || abs(*rel_y - client->y) %MOVE_STEP_SLOW == 0 || accept_resize) {
+            client->width = abs(*rel_x - client->x);
+            client->height = abs(*rel_y - client->y);
+            client->width -= (client->width - client->base_width) % client->width_inc;
+            client->height -= (client->height - client->base_height) % client->height_inc;
+            PDEBUG("Trying to resize to %dx%d (%dx%d)\n", client->width, client->height,
+                (client->width - client->base_width) / client->width_inc,
+                (client->height - client->base_height) / client->height_inc);
+            resizelim(client);
+            
+            if (client->vertmaxed)
+                client->vertmaxed = false;
+            
+            if (client->hormaxed)
+                client->hormaxed = false;
+        }
 }
 
 void mouseresize_keepaspect(struct client *client,const int rel_x,const int rel_y)
