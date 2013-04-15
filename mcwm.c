@@ -30,7 +30,7 @@
 #include <xcb/xcb_icccm.h>
 #include <X11/keysym.h>
 #include "list.h"
-#include "signal.h"
+#include <signal.h>
 
 ///---Internal Constants---///
 enum {MCWM_MOVE,MCWM_RESIZE};
