@@ -1,9 +1,5 @@
 -*- text -*-
 
-* Don't listen to other actions while in a "MCWM_MOVE", "MCWM_RESIZE" mode
-
-* Use xcb-event's event handlers? (monsterwm-xcb and dwm)
-
 * Extended Window Manager Hints (EWMH)
 
   - Use the new xcb-ewmh for the EWMH hints.
@@ -20,10 +16,6 @@
 
 * add xbindkeys/xchainkeys
 
-* ignore features (maybe we'll remove the debug)
-
-* Review the whole code for efficiency (software engineering vs algorithm analysis)
-
 * Write a better README.md
 
 * resizing like in monsterwm? no pointer warp and be able to resize the 4 corners
@@ -34,10 +26,6 @@
 
 * the keep aspect ratio with mouse
 
-* little bug while changing workspace and not focusing a window
-
-* simplify the handle keypress function
-
 * configs in a text file, dynamically updated
 
 * Handle new modes on physical outputs. What do we have to do?
@@ -45,14 +33,6 @@
 * A separate workspace list for every monitor.
 
 * static Makefile problem
-
-* Grab specific keys
-
-  Current code grabs modifier keys and any other keypress. We need to
-  specifically grab the keycodes we need. xbindkeys and possibly other
-  programs don't work.
-
-  Partially done. Now grabs all our keys unshifted as well as shifted.
 
 * Menu
 
@@ -78,18 +58,7 @@
 
   Also respect EWMH hints _NET_WM_TYPE_DOCK and _NET_WM_TYPE_DESKTOP.
 
-
-* Configuration file.
-
 * Code cleaning
-
-  - Obivous cleanup: The event switch is way too big.
-
-  - The states are known everywhere. A tight state machine would be
-    nicer.
-
-  - Dispatch table with function pointers for key bindings instead of
-    keysym->enum->case?
 
   - Use bitfields instead of extra lists for workspaces?
 
