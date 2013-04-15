@@ -30,7 +30,10 @@ Patches
 - keep approximately the same position when sending window to next screen
 - Magnet borders
 - Mouse not in the left-corner while moving a window (stays in place)
-
+- Resize and move with the mouse from anywhere
+- Efficiency updated
+- Events loop way more clean
+- Easier configs
 
 Authors:
 =======
