@@ -52,12 +52,6 @@
 
   Idea from Christian Neukirchen.
 
-* Gaps on borders for docks, status windows et cetera.
-
-  Keep space reserved for Conky, dzen2 et cetera.
-
-  Also respect EWMH hints _NET_WM_TYPE_DOCK and _NET_WM_TYPE_DESKTOP.
-
 * Code cleaning
 
   - Use bitfields instead of extra lists for workspaces?
