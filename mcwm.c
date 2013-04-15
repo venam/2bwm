@@ -146,7 +146,7 @@ static void focusnext(const Arg *arg);
 static void focusnext_helper(bool arg);
 static void sendtoworkspace(const Arg *arg);
 static void resizestep(const Arg *arg);
-static void resizestep_keep_aspect(const Arg *arg);
+static void resizestep_aspect(const Arg *arg);
 static void movestep(const Arg *arg);
 static void maxvert_hor(const Arg *arg);
 static void maxhalf(const Arg *arg);
@@ -1102,7 +1102,7 @@ void resizestep(const Arg *arg)
     xcb_flush(conn);
 }
 
-void resizestep_keep_aspect(const Arg *arg)
+void resizestep_aspect(const Arg *arg)
 {                                   // Resize window and keep it's aspect ratio
                                     // The problem here is that it will exponentially grow the window
     if (NULL == focuswin||focuswin->maxed) return;
