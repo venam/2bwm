@@ -181,7 +181,7 @@ static void handle_keypress(xcb_generic_event_t *e);
 static xcb_keycode_t* xcb_get_keycodes(xcb_keysym_t keysym);
 static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen);
 static struct client *setupwin(xcb_window_t win);
-static void cleanup(const int *code);
+static void cleanup(const int code);
 static int32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void grabbuttons(struct client *c);
@@ -192,20 +192,20 @@ static uint32_t getcolor(const char *hex);
 static void forgetclient(struct client *client);
 static void forgetwin(xcb_window_t win);
 static void fitonscreen(struct client *client);
-static void getoutputs(xcb_randr_output_t *outputs,const int *len,xcb_timestamp_t timestamp);
+static void getoutputs(xcb_randr_output_t *outputs,const int len,xcb_timestamp_t timestamp);
 static void arrbymon(struct monitor *monitor);
 static struct monitor *findmonitor(xcb_randr_output_t id);
-static struct monitor *findclones(xcb_randr_output_t id, const int16_t *x, const int16_t *y);
-static struct monitor *findmonbycoord( const int16_t *x, const int16_t *y);
+static struct monitor *findclones(xcb_randr_output_t id, const int16_t x, const int16_t y);
+static struct monitor *findmonbycoord( const int16_t x, const int16_t y);
 static void delmonitor(struct monitor *mon);
-static struct monitor *addmonitor(xcb_randr_output_t id, char *name,const int16_t *x, const int16_t *y, const uint16_t *width,const uint16_t *height);
+static struct monitor *addmonitor(xcb_randr_output_t id, char *name,const int16_t x, const int16_t y, const uint16_t width,const uint16_t height);
 static void raisewindow(xcb_drawable_t win);
 static void movelim(struct client *client);
-static void movewindow(xcb_drawable_t win, const int16_t *x, const int16_t *y);
+static void movewindow(xcb_drawable_t win, const int16_t x, const int16_t y);
 static struct client *findclient(const xcb_drawable_t *win);
 static void setfocus(struct client *client);
 static void resizelim(struct client *client);
-static void resize(xcb_drawable_t win, const uint16_t *width, const uint16_t *height);
+static void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height);
 static void mousemove(const int16_t rel_x,const int16_t rel_y);
 static void mouseresize(const int16_t rel_x,const int16_t rel_y,const bool accept_resize);
 static void setborders(struct client *client,const bool isitfocused);
@@ -232,13 +232,13 @@ xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen)
     return NULL;
 }
 
-void cleanup(const int *code)       // Set keyboard focus to follow mouse pointer. Then exit.
+void cleanup(const int code)       // Set keyboard focus to follow mouse pointer. Then exit.
 {                                   // We don't need to bother mapping all windows we know about. They
                                     // should all be in the X server's Save Set and should be mapped automagically.
     xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,XCB_CURRENT_TIME);
     xcb_flush(conn);
     xcb_disconnect(conn);
-    exit(*code);
+    exit(code);
 }
 
 void arrangewindows(void)           //Rearrange windows to fit new screen size.
@@ -486,9 +486,9 @@ void fitonscreen(struct client *client)
             willmove = true;
         }
         
-    if (willmove) movewindow(client->id, &client->x, &client->y);
+    if (willmove) movewindow(client->id, client->x, client->y);
     
-    if (willresize) resize(client->id, &client->width, &client->height);
+    if (willresize) resize(client->id, client->width, client->height);
 }
 
 void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of a new window and show it
@@ -510,11 +510,11 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
         if (!getpointer(&screen->root, &pointx, &pointy)) pointx = pointy = 0;
         client->x = pointx;
         client->y = pointy;
-        movewindow(client->id, &client->x, &client->y);
+        movewindow(client->id, client->x, client->y);
     }
     /* Find the physical output this window will be on if RANDR is active. */
     if (-1 != randrbase) {
-        client->monitor = findmonbycoord(&client->x, &client->y);
+        client->monitor = findmonbycoord(client->x, client->y);
         
         if (NULL == client->monitor)
             /* Window coordinates are outside all physical monitors. Choose the first screen.*/
@@ -665,7 +665,7 @@ int setupscreen(void)               // Walk through all existing windows and set
             
             if (NULL != client) {
                 /* Find the physical output this window will be on if RANDR is active. */
-                if (-1 != randrbase) client->monitor = findmonbycoord(&client->x, &client->y);
+                if (-1 != randrbase) client->monitor = findmonbycoord(client->x, client->y);
                 fitonscreen(client);    /* Fit window on physical screen. */
                 ws = getwmdesktop(children[i]);/* Check if this window has a workspace set already as a WM hint. */
                 
@@ -723,11 +723,11 @@ void getrandr(void)                 // Get RANDR resources and figure out how ma
     int len     = xcb_randr_get_screen_resources_current_outputs_length(res);
     xcb_randr_output_t *outputs = xcb_randr_get_screen_resources_current_outputs(res);
     /* Request information for all outputs. */
-    getoutputs(outputs, &len, timestamp);
+    getoutputs(outputs, len, timestamp);
     free(res);
 }
 
-void getoutputs(xcb_randr_output_t *outputs, const int *len, xcb_timestamp_t timestamp)
+void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t timestamp)
 {                                   // Walk through all the RANDR outputs (number of outputs == len) there
                                     // was at time timestamp.
     char *name;
@@ -736,10 +736,10 @@ void getoutputs(xcb_randr_output_t *outputs, const int *len, xcb_timestamp_t tim
     xcb_randr_get_output_info_reply_t *output;
     struct monitor *mon;
     struct monitor *clonemon;
-    xcb_randr_get_output_info_cookie_t ocookie[*len];
+    xcb_randr_get_output_info_cookie_t ocookie[len];
     
-    for (int i = 0; i < *len; i++) ocookie[i] = xcb_randr_get_output_info(conn, outputs[i], timestamp);
-    for (int i = 0; i < *len; i ++) { /* Loop through all outputs. */
+    for (int i = 0; i < len; i++) ocookie[i] = xcb_randr_get_output_info(conn, outputs[i], timestamp);
+    for (int i = 0; i < len; i ++) { /* Loop through all outputs. */
         output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL);
         
         if (output == NULL) continue;
@@ -750,12 +750,12 @@ void getoutputs(xcb_randr_output_t *outputs, const int *len, xcb_timestamp_t tim
             crtc = xcb_randr_get_crtc_info_reply(conn, icookie, NULL);
             
             if (NULL == crtc) return;
-            clonemon = findclones(outputs[i], &crtc->x, &crtc->y); /* Check if it's a clone. */
+            clonemon = findclones(outputs[i], crtc->x, crtc->y); /* Check if it's a clone. */
             
             if (NULL != clonemon) continue;
             /* Do we know this monitor already? */
-            if (NULL == (mon = findmonitor(outputs[i]))) addmonitor(outputs[i], name, &crtc->x, &crtc->y, &crtc->width,
-                &crtc->height);
+            if (NULL == (mon = findmonitor(outputs[i]))) addmonitor(outputs[i], name, crtc->x, crtc->y, crtc->width,
+                crtc->height);
             else {
                 bool changed = false;
                 /* We know this monitor. Update information. If it's smaller than before, rearrange windows. */
@@ -830,29 +830,29 @@ struct monitor *findmonitor(xcb_randr_output_t id)
     return NULL;
 }
 
-struct monitor *findclones(xcb_randr_output_t id, const int16_t *x, const int16_t *y) {
+struct monitor *findclones(xcb_randr_output_t id, const int16_t x, const int16_t y) {
     struct monitor *clonemon;
     
     for (struct item *item= monlist; item != NULL; item = item->next) {
         clonemon = item->data;
         /* Check for same position. */
-        if (id != clonemon->id && clonemon->x == *x && clonemon->y == *y) return clonemon;
+        if (id != clonemon->id && clonemon->x == x && clonemon->y == y) return clonemon;
     }
     return NULL;
 }
 
-struct monitor *findmonbycoord( const int16_t *x, const int16_t *y) 
+struct monitor *findmonbycoord( const int16_t x, const int16_t y) 
 {
     struct monitor *mon;
     for (struct item *item = monlist; item != NULL; item = item->next) {
         mon = item->data;
-        if (*x>=mon->x&& *x<=mon->x+mon->width&& *y>=mon->y&& *y <= mon->y+mon->height) return mon;
+        if (x>=mon->x&& x<=mon->x+mon->width&& y>=mon->y&& y <= mon->y+mon->height) return mon;
     }
     return NULL;
 }
 
-struct monitor *addmonitor(xcb_randr_output_t id, char *name,const int16_t *x, const int16_t *y, 
-    const uint16_t *width,const uint16_t *height) 
+struct monitor *addmonitor(xcb_randr_output_t id, char *name,const int16_t x, const int16_t y, 
+    const uint16_t width,const uint16_t height) 
 {
     struct item *item;
     
@@ -864,8 +864,8 @@ struct monitor *addmonitor(xcb_randr_output_t id, char *name,const int16_t *x, c
     
     item->data  = mon;          mon->id     = id;
     mon->name   = name;         mon->item   = item;
-    mon->x      = *x;           mon->y      = *y;
-    mon->width  = *width;       mon->height = *height;
+    mon->x      = x;            mon->y      = y;
+    mon->width  = width;        mon->height = height;
     return mon;
 }
 
@@ -913,14 +913,14 @@ void movelim(struct client *client) //Keep the window inside the screen
 
     if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
         client->y = (mon_y + mon_height - conf.borderwidth * 2) - client->height;
-    movewindow(client->id, &client->x, &client->y);
+    movewindow(client->id, client->x, client->y);
 }
 
-void movewindow(xcb_drawable_t win, const int16_t *x, const int16_t *y)
+void movewindow(xcb_drawable_t win, const int16_t x, const int16_t y)
 {                                    // Move window win to root coordinates x,y.
     uint32_t values[2];
     if (screen->root == win || 0 == win) return;
-    values[0] = *x;        values[1] = *y;
+    values[0] = x;        values[1] = y;
     xcb_configure_window(conn, win, XCB_CONFIG_WINDOW_X|XCB_CONFIG_WINDOW_Y, values);
     xcb_flush(conn);
 }
@@ -1037,7 +1037,7 @@ void resizelim(struct client *client)
     
     if (client->y + client->height + conf.borderwidth * 2 > mon_y + mon_height)
         client->height = mon_height - ((client->y - mon_y) + conf.borderwidth*2);
-    resize(client->id, &client->width, &client->height);
+    resize(client->id, client->width, client->height);
 #ifdef DOUBLEBORDER
     setborders(client,true);
 #endif
@@ -1055,12 +1055,12 @@ void moveresize(xcb_drawable_t win, const uint16_t x, const uint16_t y,const uin
     xcb_flush(conn);
 }
 
-void resize(xcb_drawable_t win, const uint16_t *width, const uint16_t *height)
+void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height)
 {                                   // Resize window win to width,height.
     uint32_t values[2];
     
     if (screen->root == win || 0 == win) return;
-    values[0] = *width;        values[1] = *height;
+    values[0] = width;        values[1] = height;
     xcb_configure_window(conn, win,XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT, values);
     xcb_flush(conn);
 }
@@ -1471,7 +1471,7 @@ void maxhalf(const Arg *arg)
     values[0] = focuswin->width;        values[1] = focuswin->height;
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT, values);
     xcb_flush(conn);
-    movewindow(focuswin->id, &focuswin->x, &focuswin->y);
+    movewindow(focuswin->id, focuswin->x, focuswin->y);
     focuswin->verthor = true;
 #ifdef DOUBLEBORDER
     setborders(focuswin,true);
@@ -1539,7 +1539,7 @@ void teleport(const Arg *arg)
         focuswin->y += mon_y;
         focuswin->y  = focuswin->y /2;
         focuswin->x  = focuswin->x /2;
-        movewindow(focuswin->id, &focuswin->x, &focuswin->y);
+        movewindow(focuswin->id, focuswin->x, focuswin->y);
 
         if (pointx > 0 - conf.borderwidth && pointx < focuswin->width + conf.borderwidth
         && pointy > 0 - conf.borderwidth && pointy < focuswin->height + conf.borderwidth)
@@ -1550,13 +1550,13 @@ void teleport(const Arg *arg)
         if (arg->flag) {
             if (arg->flag2) {
                 focuswin->x = mon_x;        focuswin->y = mon_y;
-                movewindow(focuswin->id, &focuswin->x, &focuswin->y);
+                movewindow(focuswin->id, focuswin->x, focuswin->y);
                 xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, pointx, pointy);
             }
             else {
                 focuswin->x = mon_x;
                 focuswin->y = mon_y + mon_height - (focuswin->height + conf.borderwidth* 2);
-                movewindow(focuswin->id, &focuswin->x, &focuswin->y);
+                movewindow(focuswin->id, focuswin->x, focuswin->y);
                 xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, pointx, pointy);
             }
         }
@@ -1564,13 +1564,13 @@ void teleport(const Arg *arg)
             if (arg->flag2) {
                 focuswin->x = mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
                 focuswin->y = mon_y;
-                movewindow(focuswin->id, &focuswin->x, &focuswin->y);
+                movewindow(focuswin->id, focuswin->x, focuswin->y);
                 xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, pointx, pointy);
             }
             else {
                 focuswin->x = mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
                 focuswin->y =  mon_y + mon_height - (focuswin->height + conf.borderwidth* 2);
-                movewindow(focuswin->id, &focuswin->x, &focuswin->y);
+                movewindow(focuswin->id, focuswin->x, focuswin->y);
                 xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, pointx, pointy);
             }
         }
@@ -2054,6 +2054,6 @@ int main()
         if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno) )) 
             if (setup(scrno))
                 run();
-    cleanup(&sigcode); /* Die gracefully. */
+    cleanup(sigcode); /* Die gracefully. */
     exit(0);
 }
