@@ -633,10 +633,11 @@ int setup_keyboard(void)
        for (unsigned int j=0; j<reply->keycodes_per_modifier; j++) {
            xcb_keycode_t keycode = modmap[i * reply->keycodes_per_modifier + j];
            if (keycode == XCB_NO_SYMBOL) continue;
-           for (unsigned int n=0; numlock[n] != XCB_NO_SYMBOL; n++)
-               if (numlock[n] == keycode) {
-                   numlockmask = 1 << i;
-                   break;
+           if(numlock!=NULL)
+               for (unsigned int n=0; numlock[n] != XCB_NO_SYMBOL; n++)
+                   if (numlock[n] == keycode) {
+                       numlockmask = 1 << i;
+                       break;
                }
        }
     return 0;
