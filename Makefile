@@ -1,7 +1,7 @@
 VERSION=2013-3
 CC=clang
 DIST=mcwm-$(VERSION)
-SRC=mcwm.c list.c events.h list.h hidden.c config.h
+SRC=mcwm.c list.h hidden.c config.h
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
 
 CFLAGS+=-g -std=c99 -Wall -O3 -Wextra -I/usr/local/include -DDOUBLEBORDER -DNDMALLOC -DNSPOOKY_RESIZE -DNMODULORESIZE
@@ -11,7 +11,7 @@ RM=/bin/rm
 PREFIX=/usr/local
 
 TARGETS=mcwm hidden
-OBJS=mcwm.o list.o
+OBJS=mcwm.o
 
 all: $(TARGETS)
 
@@ -24,9 +24,7 @@ hidden: hidden.c
 mcwm-static: $(OBJS)
 	$(CC) $(OBJS) -static $(CFLAGS) $(LDFLAGS) -lXau -lpthread -o $@
 
-mcwm.o: mcwm.c events.h list.h config.h Makefile
-
-list.o: list.c list.h Makefile
+mcwm.o: mcwm.c list.h config.h Makefile
 
 install: $(TARGETS)
 	install -m 755 mcwm $(PREFIX)/bin
