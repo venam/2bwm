@@ -1078,8 +1078,9 @@ void mousemove(const int16_t rel_x, const int16_t rel_y)
 void mouseresize(const int16_t rel_x, const int16_t rel_y, const bool accept_resize)
 {
     if(focuswin->id==screen->root||focuswin->maxed) return;
-    /* this solve the problem of over cpu usage while redrawing */
+    #ifdef MODULORESIZE
     if (abs(rel_x - focuswin->x) % MOVE_STEP_SLOW ==0 || abs(rel_y - focuswin->y) %MOVE_STEP_SLOW == 0 || accept_resize) {
+    #endif
         focuswin->width  = abs(rel_x);
         focuswin->width -= (focuswin->width - focuswin->base_width) % focuswin->width_inc;
         focuswin->height = abs(rel_y);
@@ -1088,7 +1089,9 @@ void mouseresize(const int16_t rel_x, const int16_t rel_y, const bool accept_res
     
         if (focuswin->vertmaxed) focuswin->vertmaxed = false;
         if (focuswin->hormaxed)  focuswin->hormaxed  = false;
+    #ifdef MODULORESIZE
     }
+    #endif
 }
 
 void movestep(const Arg *arg)
