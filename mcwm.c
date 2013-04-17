@@ -1752,7 +1752,7 @@ static void mousemotion(const Arg *arg)
     int16_t mx, my,winx, winy,winw, winh;
     xcb_query_pointer_reply_t *pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, screen->root), 0);
 
-    if (!pointer) return;
+    if (!pointer||focuswin->maxed) return;
     mx   = pointer->root_x;        my   = pointer->root_y;
     winx = focuswin->x;            winy = focuswin->y; 
     winw = focuswin->width;        winh = focuswin->height;
