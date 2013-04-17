@@ -54,6 +54,7 @@
 static const char *menucmd[] = { "/bin/my_menu.sh", NULL };
 static const char *terminal[] = { "urxvtc", NULL };
 ///---Shortcuts---///
+/* Check /usr/include/X11/keysymdef.h  for the list of all keys */
 #define DESKTOPCHANGE(K,N) \
 {  MOD ,             K,              changeworkspace, {.i = N}}, \
 {  MOD |SHIFT,       K,              sendtoworkspace, {.i = N}},
