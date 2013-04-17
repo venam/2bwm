@@ -156,6 +156,7 @@ static void circulaterequest(xcb_generic_event_t *ev);
 static void clientmessage(xcb_generic_event_t *ev);
 static void newwin(xcb_generic_event_t *ev);
 static void handle_keypress(xcb_generic_event_t *e);
+static xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph);
 static xcb_keycode_t* xcb_get_keycodes(xcb_keysym_t keysym);
 static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen);
 static struct client *setupwin(xcb_window_t win);
@@ -1731,6 +1732,18 @@ void configurerequest(xcb_generic_event_t *ev)
     }
 }
 
+xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph) 
+{
+    static xcb_font_t cursor_font;
+    if (!cursor_font) {
+        cursor_font = xcb_generate_id (conn);
+        xcb_open_font (conn, cursor_font, strlen ("cursor"), "cursor");
+    }
+    xcb_cursor_t cursor = xcb_generate_id (conn);
+    xcb_create_glyph_cursor (conn, cursor, cursor_font, cursor_font,glyph, glyph+1,0, 0, 0, 0xffff, 0xffff, 0xffff);
+    return cursor;
+}
+
 static void mousemotion(const Arg *arg)
 {
     int16_t mx, my,winx, winy,winw, winh;
@@ -1741,8 +1754,11 @@ static void mousemotion(const Arg *arg)
     winx = focuswin->x;            winy = focuswin->y; 
     winw = focuswin->width;        winh = focuswin->height;
     raise_current_window();
+    xcb_cursor_t cursor;
+    if(arg->i == MCWM_MOVE) cursor = Create_Font_Cursor (conn, 52 ); /* fleur */
+    else                    cursor = Create_Font_Cursor (conn, 120); /* sizing */ 
     xcb_grab_pointer_reply_t *grab_reply = xcb_grab_pointer_reply(conn, xcb_grab_pointer(conn, 0, screen->root, BUTTONMASK|
-        XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION,XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME), NULL);
+        XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION,XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, cursor, XCB_CURRENT_TIME), NULL);
     if (!grab_reply || grab_reply->status != XCB_GRAB_STATUS_SUCCESS) return;
     xcb_motion_notify_event_t *ev = NULL;
     xcb_generic_event_t *e = NULL;
@@ -1782,6 +1798,7 @@ static void mousemotion(const Arg *arg)
         break;
         }
     } while (!ungrab && focuswin!=NULL);
+    xcb_free_cursor(conn,cursor);
     xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
 }
 
