@@ -12,6 +12,7 @@ http://www.hack.org/mc/hacks/mcwm/features.html<br>
 http://www.hack.org/mc/hacks/mcwm/<br>
 The binary might not be as "small" as it used to be but it's still lightweight and memory consumption is diminished.<br>
 When talking in size proportion, the bin is 28KB, when dwm bin is 33KB, dvtm 37KB,i3 343KB.<br>
+
 <pre>
 raptor $ size /usr/local/bin/mcwm                                                                                                        <
     text   data    bss    dec    hex   filename
@@ -44,6 +45,7 @@ raptor /usr/bin $ size awesome
     text   data     bss     dec     hex filename
     296570 1984    1832  300386   49562 awesome
 </pre>
+
 Notice that all those WM are really small and that size doesn't really matter in the end.
 Still, I'll try to mess with it a little to make it smaller.
 
