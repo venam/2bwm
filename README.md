@@ -86,6 +86,8 @@ Screenshots:
 [logo2]: http://hack.org/mc/images/mcwm-screen-20120426.png "mcwm non-patched"
 ![alt text][logo]
 [logo]: http://venam.1.ai/screenshot.png  "mcwm-beast"
+![alt text][logo3]
+[logo3]: http://fc05.deviantart.net/fs71/f/2013/098/d/2/_freebsd_and_mcwm_beast__by_ybeastie-d60w2xc.png "Beastie's mcwm-beast"
 
 Authors:
 =======
