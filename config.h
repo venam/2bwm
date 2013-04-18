@@ -50,6 +50,10 @@
 #define BORDERWIDTH  10
 /* this is the power of the magnet, normally you should never put it less than your MOVE_STEP_SLOW */
 #define MAGNET_BORDER 9
+///---Cursor---///
+/* Check /usr/include/X11/cursorfont.h for more details */
+#define CURSOR_MOVING   52
+#define CURSOR_RESIZING 120
 ///--Menus and Programs---///
 static const char *menucmd[] = { "/bin/my_menu.sh", NULL };
 static const char *terminal[] = { "urxvtc", NULL };

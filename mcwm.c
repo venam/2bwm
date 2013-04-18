@@ -487,7 +487,6 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,wm_state, wm_state, 32, 2, data);
     /* Move cursor into the middle of the window so we don't lose the pointer to another window. */
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,client->width / 2, client->height / 2);
-    grabbuttons(client);
     xcb_flush(conn);
 }
 
@@ -619,7 +618,6 @@ int setupscreen(void)               // Walk through all existing windows and set
         if (!attr->override_redirect && attr->map_state == XCB_MAP_STATE_VIEWABLE) {
             client = setupwin(children[i]);
             setborders(client,false);
-            
             if (NULL != client) {
                 /* Find the physical output this window will be on if RANDR is active. */
                 if (-1 != randrbase) client->monitor = findmonbycoord(client->x, client->y);
@@ -942,6 +940,7 @@ void setfocus(struct client *client)// Set focus on window client.
     xcb_flush(conn);
     focuswin = client;  /* Remember the new window as the current focused window. */
     setborders(client,true);
+    grabbuttons(client);
 }
 
 void start(const Arg *arg)
@@ -1082,9 +1081,9 @@ void mouseresize(const int16_t rel_x, const int16_t rel_y, const bool accept_res
     if (abs(rel_x - focuswin->x) % MOVE_STEP_SLOW ==0 || abs(rel_y - focuswin->y) %MOVE_STEP_SLOW == 0 || accept_resize) {
     #endif
         focuswin->width  = abs(rel_x);
-        focuswin->width -= (focuswin->width - focuswin->base_width) % focuswin->width_inc;
+     //   focuswin->width -= (focuswin->width - focuswin->base_width) % focuswin->width_inc;
         focuswin->height = abs(rel_y);
-        focuswin->height -= (focuswin->height - focuswin->base_height) % focuswin->height_inc;
+     //   focuswin->height -= (focuswin->height - focuswin->base_height) % focuswin->height_inc;
         resizelim(focuswin);
     
         if (focuswin->vertmaxed) focuswin->vertmaxed = false;
@@ -1758,8 +1757,8 @@ static void mousemotion(const Arg *arg)
     winw = focuswin->width;        winh = focuswin->height;
     raise_current_window();
     xcb_cursor_t cursor;
-    if(arg->i == MCWM_MOVE) cursor = Create_Font_Cursor (conn, 52 ); /* fleur */
-    else                    cursor = Create_Font_Cursor (conn, 120); /* sizing */ 
+    if(arg->i == MCWM_MOVE) cursor = Create_Font_Cursor (conn, CURSOR_MOVING ); /* fleur */
+    else                    cursor = Create_Font_Cursor (conn, CURSOR_RESIZING); /* sizing */ 
     xcb_grab_pointer_reply_t *grab_reply = xcb_grab_pointer_reply(conn, xcb_grab_pointer(conn, 0, screen->root, BUTTONMASK|
         XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION,XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, cursor, XCB_CURRENT_TIME), NULL);
     if (!grab_reply || grab_reply->status != XCB_GRAB_STATUS_SUCCESS) return;
