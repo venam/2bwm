@@ -482,6 +482,7 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
             if (NULL != monlist) client->monitor = monlist->data;
     }
     fitonscreen(client);
+    setborders(client,true);
     xcb_map_window(conn, client->id);                     /* Show window on screen. */
     long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };/* Declare window normal. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,wm_state, wm_state, 32, 2, data);
