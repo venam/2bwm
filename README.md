@@ -11,22 +11,22 @@ You can check what mcwm already had here: <br>
 http://www.hack.org/mc/hacks/mcwm/features.html<br>
 http://www.hack.org/mc/hacks/mcwm/<br>
 The binary might not be as "small" as it used to be but it's still lightweight and memory consumption is diminished.<br>
-When talking in size proportion, the bin is 28KB, when dwm bin is 33KB, dvtm 37KB,i3 343KB.<br>
+When talking in size proportion, the bin is 28KB, when dwm bin is 33KB, dvtm 37KB,i3 343KB.
 
-<pre>
-raptor $ size /usr/local/bin/mcwm                                                                                                        <
+```
+raptor $ size /usr/local/bin/mcwm
     text   data    bss    dec    hex   filename
     24851  1904    664  27419   6b1b   /usr/local/bin/mcwm
-raptor ~/BUILDING/40k/mcwm-beast $ size /usr/bin/i3                                                                                                                <
+raptor ~/BUILDING/40k/mcwm-beast $ size /usr/bin/i3 
     text    data    bss    dec    hex   filename
     284247  10020   5704 299971  493c3  /usr/bin/i3
-raptor $ size /usr/local/bin/dwm                                                                                                                  <
+raptor $ size /usr/local/bin/dwm
     text   data    bss    dec  hex   filename
     28802  1932    528  31262   7a1e  /usr/local/bin/dwm
-raptor /usr/local/bin $ size dvtm                                                                                                     <
+raptor /usr/local/bin $ size dvtm
     text   data    bss    dec    hex    filename
     30955  2212  33408    66575  1040f  dvtm
-raptor /usr/local/bin $ size monsterwm                                                                                           <
+raptor /usr/local/bin $ size monsterwm
     text   data    bss    dec    hex    filename
     17778  1428     72    19278  4b4e   monsterwm
 % size /usr/local/bin/w9wm
@@ -44,7 +44,7 @@ raptor /usr/local/bin $ size monsterwm                                          
 raptor /usr/bin $ size awesome
     text   data     bss     dec     hex filename
     296570 1984    1832  300386   49562 awesome
-</pre>
+```
 
 Notice that all those WM are really small and that size doesn't really matter in the end.
 Still, I'll try to mess with it a little to make it smaller.
