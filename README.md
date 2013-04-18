@@ -84,6 +84,7 @@ Screenshots:
 ============
 ![alt text][logo]
 [logo]: http://hack.org/mc/images/mcwm-screen-20120426.png "mcwm non-patched"
+![alt text][logo]
 [logo]: http://venam.1.ai/screenshot.png  "mcwm-beast"
 
 Authors:
