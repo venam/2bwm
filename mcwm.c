@@ -49,10 +49,9 @@ struct monitor {
     uint16_t width,height;          // Width/Height in pixels.
     struct item *item;              // Pointer to our place in output list.
 };
-typedef struct {
+typedef union {
     const char** com;
-    const int i;
-    const bool flag,flag2;
+    const int8_t i;
 } Arg;
 typedef struct {
     unsigned int mod;
@@ -74,8 +73,7 @@ struct client {                     // Everything we know about a window.
     int16_t x, y;                   // X/Y coordinate.
     uint16_t width,height;          // Width,Height in pixels.
     struct sizepos origsize;        // Original size if we're currently maxed.
-    uint16_t min_width, min_height; // Hints from application.
-    uint16_t max_width, max_height;
+    uint16_t max_width, max_height,min_width, min_height; // Hints from application.
     int32_t width_inc, height_inc,base_width, base_height;
     bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor;
     struct monitor *monitor;        // The physical output this window is on.
@@ -133,8 +131,8 @@ static void changescreen(const Arg *arg);
 static void grabkeys(void);
 static void mcwm_restart();
 static void mcwm_exit();
-static int  setup_keyboard(void);
-static int  setupscreen(void);
+static bool setup_keyboard(void);
+static bool setupscreen(void);
 static int  setuprandr(void);
 static void arrangewindows(void);
 static void prevworkspace();
@@ -201,7 +199,7 @@ void fix(){fixwindow(focuswin);}
 void unkillable(void){unkillablewindow(focuswin);}
 void delmonitor(struct monitor *mon){ free(mon->name);    freeitem(&monlist, NULL, mon->item);}
 void raise_current_window(void){raisewindow(focuswin->id);}
-void focusnext(const Arg *arg){ focusnext_helper(arg->flag);}
+void focusnext(const Arg *arg){ if(arg->i>0)focusnext_helper(true); else focusnext_helper(false);}
 void delfromworkspace(struct client *client, uint32_t ws){delitem(&wslist[ws], client->wsitem[ws]); client->wsitem[ws] = NULL; }
 
 xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen) 
@@ -221,7 +219,7 @@ void cleanup(const int code)        // Set keyboard focus to follow mouse pointe
     exit(code);
 }
 
-void arrangewindows(void)           //Rearrange windows to fit new screen size.
+void arrangewindows(void)           // Rearrange windows to fit new screen size.
 {
     struct client *client;
     /* Go through all windows and resize them appropriately to fit the screen. */
@@ -255,7 +253,7 @@ int32_t getwmdesktop(xcb_drawable_t win)
 
 bool get_unkil_state(xcb_drawable_t win) 
 {                                   // check if the window is unkillable, if yes return true
-    uint32_t *wsp, ws;
+    uint8_t *wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, atom_unkillable,XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(int8_t));
     xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
     
@@ -265,9 +263,8 @@ bool get_unkil_state(xcb_drawable_t win)
         return false;
     }
     wsp = xcb_get_property_value(reply);
-    ws = * wsp;
     free(reply);
-    if (ws == 1) return true;
+    if (*wsp == 1) return true;
     else         return false;
 }
 
@@ -365,8 +362,7 @@ void forgetclient(struct client *client)
 {                                   // Forget everything about client client.
     if (NULL == client) return;
     for (uint32_t ws = 0; ws < WORKSPACES; ws ++) /* Delete client from the workspace lists it belongs to.(can be on several) */
-        if (NULL != client->wsitem[ws])
-            delfromworkspace(client, ws);
+        if (NULL != client->wsitem[ws]) delfromworkspace(client, ws);
     freeitem(&winlist, NULL, client->winitem); /* Remove from global window list. */
 }
 
@@ -576,14 +572,14 @@ void grabkeys(void)
     }
 }
 
-int setup_keyboard(void)
+bool setup_keyboard(void)
 {
     xcb_get_modifier_mapping_reply_t *reply = xcb_get_modifier_mapping_reply(conn, xcb_get_modifier_mapping_unchecked(conn), NULL); 
 
-    if (!reply) return -1;
+    if (!reply) return false;
     xcb_keycode_t *modmap = xcb_get_modifier_mapping_keycodes(reply);
 
-    if (!modmap) return -1;
+    if (!modmap) return false;
     xcb_keycode_t *numlock = xcb_get_keycodes(XK_Num_Lock);
     for (unsigned int i=0; i<8; i++)
        for (unsigned int j=0; j<reply->keycodes_per_modifier; j++) {
@@ -596,17 +592,17 @@ int setup_keyboard(void)
                        break;
                }
        }
-    return 0;
+    return true;
 }
 
-int setupscreen(void)               // Walk through all existing windows and set them up.
+bool setupscreen(void)              // Walk through all existing windows and set them up.
 {                                   // Returns 0 on success.
     xcb_get_window_attributes_reply_t *attr;
     struct client *client;
     uint32_t ws;
     xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn,xcb_query_tree(conn, screen->root), 0);/* Get all children. */
                                  
-    if (NULL == reply) return -1;
+    if (NULL == reply) return false;
     int len = xcb_query_tree_children_length(reply);
     xcb_window_t *children = xcb_query_tree_children(reply);
     for (int i = 0; i < len; i ++) {    /* Set up all windows on this root. */
@@ -652,7 +648,7 @@ int setupscreen(void)               // Walk through all existing windows and set
     }
     xcb_flush(conn);
     free(reply);
-    return 0;
+    return true;
 }
 
 int setuprandr(void)                // Set up RANDR extension. Get the extension base and subscribe to
@@ -1011,15 +1007,16 @@ void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height)
 
 void resizestep(const Arg *arg)
 {                                   // Resize window client in direction.
-    uint8_t step;
+    uint8_t step,cases = arg->i;
 
-    if (arg->flag) step = MOVE_STEP;
-    else           step = MOVE_STEP_SLOW;
-    
+    if (arg->i<4)  step = MOVE_STEP;
+    else { 
+        cases-=4;        
+        step = MOVE_STEP_SLOW;
+    }
     if (NULL == focuswin||focuswin->maxed) return;
     raise_current_window();
-    
-    switch (arg->i) {
+    switch (cases) {
     case 0:
         focuswin->width = focuswin->width - step;
         break;
@@ -1051,7 +1048,7 @@ void resizestep_aspect(const Arg *arg)
     if (NULL == focuswin||focuswin->maxed) return;
     raise_current_window();
     
-    if (arg->flag) {
+    if (arg->i>0) {
         focuswin->width  = focuswin->width  / 1.03;
         focuswin->height = focuswin->height / 1.03;
     }
@@ -1082,11 +1079,8 @@ void mouseresize(const int16_t rel_x, const int16_t rel_y, const bool accept_res
     if (abs(rel_x - focuswin->x) % MOVE_STEP_SLOW ==0 || abs(rel_y - focuswin->y) %MOVE_STEP_SLOW == 0 || accept_resize) {
     #endif
         focuswin->width  = abs(rel_x);
-     //   focuswin->width -= (focuswin->width - focuswin->base_width) % focuswin->width_inc;
         focuswin->height = abs(rel_y);
-     //   focuswin->height -= (focuswin->height - focuswin->base_height) % focuswin->height_inc;
         resizelim(focuswin);
-    
         if (focuswin->vertmaxed) focuswin->vertmaxed = false;
         if (focuswin->hormaxed)  focuswin->hormaxed  = false;
     #ifdef MODULORESIZE
@@ -1097,27 +1091,28 @@ void mouseresize(const int16_t rel_x, const int16_t rel_y, const bool accept_res
 void movestep(const Arg *arg)
 {
     int16_t start_x, start_y;
-    uint8_t step;
+    uint8_t step,cases=arg->i;
     
-    if(arg->flag) step = MOVE_STEP;
-    else          step = MOVE_STEP_SLOW;
-    
+    if (arg->i<4) step = MOVE_STEP;
+    else {
+        cases-=4;
+        step = MOVE_STEP_SLOW;
+    }
     if (NULL == focuswin||focuswin->maxed) return;
     /* Save pointer position so we can warp pointer here later. */
     if (!getpointer(&focuswin->id, &start_x, &start_y)) return;
     raise_current_window();
-   
-    switch (arg->i) {
-    case 1:
+    switch (cases) {
+    case 0:
         focuswin->x = focuswin->x - step;
         break;
-    case 2:
+    case 1:
         focuswin->y = focuswin->y + step;
         break;
-    case 3:
+    case 2:
         focuswin->y = focuswin->y - step;
         break;
-    case 4:
+    case 3:
         focuswin->x = focuswin->x + step;
         break;
     default :
@@ -1343,7 +1338,7 @@ void maxvert_hor(const Arg *arg)
     /* Store original coordinates and geometry.*/
     focuswin->origsize.x = focuswin->x;            focuswin->origsize.y = focuswin->y;
     focuswin->origsize.width = focuswin->width;    focuswin->origsize.height = focuswin->height;
-    if (arg->flag) {
+    if (arg->i>0) {
         focuswin->y = mon_y+OFFSETY;
         /* Compute new height considering height increments and screen height. */
         focuswin->height = mon_height - (conf.borderwidth * 2) - MAXHEIGHT;
@@ -1398,12 +1393,12 @@ void maxhalf(const Arg *arg)
     focuswin->origsize.y = focuswin->y;
     focuswin->origsize.width = focuswin->width;
     focuswin->origsize.height = focuswin->height;
-    if (arg->flag) {
+    if (arg->i>0) {
         focuswin->y = mon_y+OFFSETY;
         focuswin->height =   mon_height - (MAXHEIGHT + (conf.borderwidth * 2));
         focuswin->width = ((float)(mon_width)/2)- (MAXWIDTH+ (conf.borderwidth * 2));
     
-        if (arg->flag2) focuswin->x = mon_x+OFFSETX;
+        if (arg->i>1) focuswin->x = mon_x+OFFSETX;
         else focuswin->x = mon_x - OFFSETX + mon_width -(focuswin->width + conf.borderwidth * 2);
     }
     else {
@@ -1411,7 +1406,7 @@ void maxhalf(const Arg *arg)
         focuswin->width =   mon_width - (MAXWIDTH + (conf.borderwidth * 2));
         focuswin->height = ((float)(mon_height)/2)- (MAXHEIGHT+ (conf.borderwidth * 2));
 
-        if (arg->flag2) focuswin->y = mon_y+OFFSETY;
+        if (arg->i<-1) focuswin->y = mon_y+OFFSETY;
         else focuswin->y = mon_y - OFFSETY + mon_height -(focuswin->height + conf.borderwidth * 2);
     }
     values[0] = focuswin->width;        values[1] = focuswin->height;
@@ -1426,7 +1421,7 @@ void maxhalf(const Arg *arg)
 
 void hide()
 {
-    if (conf.allowicons) {
+    if (conf.allowicons&&focuswin!=NULL) {
         long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
         /* Unmap window and declare iconic. Unmapping will generate an UnmapNotify event so we can forget about the window later. */
         xcb_unmap_window(conn, focuswin->id);
@@ -1478,7 +1473,7 @@ void teleport(const Arg *arg)
     
     if (!getpointer(&focuswin->id, &pointx, &pointy)) return;
 
-    if (arg->i==1) {
+    if (arg->i==0) {
         focuswin->x = mon_x;
         focuswin->x += mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
         focuswin->y  = mon_y + mon_height - (focuswin->height + conf.borderwidth* 2);
@@ -1493,8 +1488,8 @@ void teleport(const Arg *arg)
 
     }
     else {
-        if (arg->flag) {
-            if (arg->flag2) {
+        if (arg->i>0) {
+            if (arg->i>1) {
                 focuswin->x = mon_x;        focuswin->y = mon_y;
                 movewindow(focuswin->id, focuswin->x, focuswin->y);
                 xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, pointx, pointy);
@@ -1507,7 +1502,7 @@ void teleport(const Arg *arg)
             }
         }
         else {
-            if (arg->flag2) {
+            if (arg->i<-1) {
                 focuswin->x = mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
                 focuswin->y = mon_y;
                 movewindow(focuswin->id, focuswin->x, focuswin->y);
@@ -1556,7 +1551,7 @@ void changescreen(const Arg *arg)
     
     if (NULL == focuswin || NULL == focuswin->monitor) return;
     
-    if (arg->flag) item = focuswin->monitor->item->next;
+    if (arg->i>0) item = focuswin->monitor->item->next;
     else item = focuswin->monitor->item->prev;
     
     if (NULL == item) return;
@@ -1574,10 +1569,13 @@ void changescreen(const Arg *arg)
 
 void cursor_move(const Arg *arg)
 {                                   // Function to make the cursor move with the keyboard
-    uint16_t speed;
-    if (arg->flag) speed = MOUSE_MOVE_FAST;
-    else           speed = MOUSE_MOVE_SLOW;
-    switch (arg->i) {
+    uint16_t speed; uint8_t cases=arg->i;
+    if (arg->i<4) speed = MOUSE_MOVE_FAST;
+    else  {
+        cases -=4;
+        speed = MOUSE_MOVE_SLOW;
+    }
+    switch (cases) {
     case 0:
         xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, 0, -speed);
         break;
@@ -1966,8 +1964,8 @@ bool setup(int scrno)
     wm_delete_window     = getatom("WM_DELETE_WINDOW");    wm_change_state      = getatom("WM_CHANGE_STATE");
     wm_state             = getatom("WM_STATE");            wm_protocols         = getatom("WM_PROTOCOLS");
     randrbase = setuprandr();
-    if (0 != setupscreen()) return false;
-    if (0 != setup_keyboard()) return false;
+    if (!setupscreen())    return false;
+    if (!setup_keyboard()) return false;
     unsigned int values[1] = {XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT|XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY|XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_BUTTON_PRESS};
     xcb_generic_error_t *error = xcb_request_check(conn, xcb_change_window_attributes_checked(conn, screen->root, XCB_CW_EVENT_MASK, values));
     xcb_flush(conn);

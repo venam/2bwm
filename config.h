@@ -9,7 +9,7 @@
 #define Button3         XCB_BUTTON_INDEX_3
 ///--Speed---///
 /* Move this many pixels when moving or resizing with keyboard unless the window has hints saying otherwise. */
-#define MOVE_STEP 40
+#define MOVE_STEP      40
 #define MOVE_STEP_SLOW 10
 /* Set the Fast and Slow mouse movement via keyboard. You can set the fast movement to something big so you can
  * quickly move your cursor to another monitor. */
@@ -72,67 +72,67 @@ static const char *terminal[] = { "urxvtc", NULL };
  *      DESKTOPCHANGE(     XK_agrave,                        9)*
  */
 #define DESKTOPCHANGE(K,N) \
-{  MOD ,             K,              changeworkspace, {.i = N}}, \
-{  MOD |SHIFT,       K,              sendtoworkspace, {.i = N}},
+{  MOD ,             K,              changeworkspace, {.i=N}}, \
+{  MOD |SHIFT,       K,              sendtoworkspace, {.i=N}},
 static key keys[] = {
     /* modifier           key            function           argument */
     // Focus to next/previous window
-    {  MOD ,              XK_Tab,        focusnext,         {.flag = false}},
-    {  MOD |SHIFT,        XK_Tab,        focusnext,         {.flag = true}},
+    {  MOD ,              XK_Tab,        focusnext,         {.i=0}},
+    {  MOD |SHIFT,        XK_Tab,        focusnext,         {.i=1}},
     // Kill a window
     {  MOD ,              XK_q,          deletewin,         {.i=0}},        
     // Resize a window
-    {  MOD |SHIFT,        XK_k,          resizestep,        {.flag=true,.i=2}},
-    {  MOD |SHIFT,        XK_j,          resizestep,        {.flag=true,.i=1}},
-    {  MOD |SHIFT,        XK_l,          resizestep,        {.flag=true,.i=3}},
-    {  MOD |SHIFT,        XK_h,          resizestep,        {.flag=true,.i=0}},
+    {  MOD |SHIFT,        XK_k,          resizestep,        {.i=2}},
+    {  MOD |SHIFT,        XK_j,          resizestep,        {.i=1}},
+    {  MOD |SHIFT,        XK_l,          resizestep,        {.i=3}},
+    {  MOD |SHIFT,        XK_h,          resizestep,        {.i=0}},
     // Resize a window slower
-    {  MOD |SHIFT|CONTROL,XK_k,          resizestep,        {.flag=false,.i=2}},
-    {  MOD |SHIFT|CONTROL,XK_j,          resizestep,        {.flag=false,.i=1}},
-    {  MOD |SHIFT|CONTROL,XK_l,          resizestep,        {.flag=false,.i=3}},
-    {  MOD |SHIFT|CONTROL,XK_h,          resizestep,        {.flag=false,.i=0}},
+    {  MOD |SHIFT|CONTROL,XK_k,          resizestep,        {.i=6}},
+    {  MOD |SHIFT|CONTROL,XK_j,          resizestep,        {.i=5}},
+    {  MOD |SHIFT|CONTROL,XK_l,          resizestep,        {.i=7}},
+    {  MOD |SHIFT|CONTROL,XK_h,          resizestep,        {.i=4}},
     // Move a window
-    {  MOD ,              XK_k,          movestep,          {.flag=true,.i=3}},
-    {  MOD ,              XK_j,          movestep,          {.flag=true,.i=2}},
-    {  MOD ,              XK_l,          movestep,          {.flag=true,.i=4}},
-    {  MOD ,              XK_h,          movestep,          {.flag=true,.i=1}},
+    {  MOD ,              XK_k,          movestep,          {.i=2}},
+    {  MOD ,              XK_j,          movestep,          {.i=1}},
+    {  MOD ,              XK_l,          movestep,          {.i=3}},
+    {  MOD ,              XK_h,          movestep,          {.i=0}},
     // Move a window slower
-    {  MOD |CONTROL,      XK_k,          movestep,          {.flag=false,.i=3}},
-    {  MOD |CONTROL,      XK_j,          movestep,          {.flag=false,.i=2}},
-    {  MOD |CONTROL,      XK_l,          movestep,          {.flag=false,.i=4}},
-    {  MOD |CONTROL,      XK_h,          movestep,          {.flag=false,.i=1}},
+    {  MOD |CONTROL,      XK_k,          movestep,          {.i=6}},
+    {  MOD |CONTROL,      XK_j,          movestep,          {.i=5}},
+    {  MOD |CONTROL,      XK_l,          movestep,          {.i=7}},
+    {  MOD |CONTROL,      XK_h,          movestep,          {.i=4}},
     // Teleport the window to an area of the screen.
     // Center:
-    {  MOD ,              XK_g,          teleport,          {.i = 1}},
+    {  MOD ,              XK_g,          teleport,          {.i=0}},
     // Top left:
-    {  MOD ,              XK_y,          teleport,          {.i = -1,.flag=true,.flag2=true}},
+    {  MOD ,              XK_y,          teleport,          {.i=2}},
     // Top right:
-    {  MOD ,              XK_u,          teleport,          {.i = -1,.flag=false,.flag2=true}},
+    {  MOD ,              XK_u,          teleport,          {.i=-2}},
     // Bottom left:
-    {  MOD ,              XK_b,          teleport,          {.i = -1,.flag=true,.flag2=false}},
+    {  MOD ,              XK_b,          teleport,          {.i=1}},
     // Bottom right:
-    {  MOD ,              XK_n,          teleport,          {.i = -1,.flag=false,.flag2=false}},
+    {  MOD ,              XK_n,          teleport,          {.i=-1}},
     // Resize while keeping the window aspect
-    {  MOD ,              XK_Home,       resizestep_aspect, {.flag=false}},
-    {  MOD ,              XK_End,        resizestep_aspect, {.flag=true}},
+    {  MOD ,              XK_Home,       resizestep_aspect, {.i=0}},
+    {  MOD ,              XK_End,        resizestep_aspect, {.i=1}},
     // Full screen window without borders
     {  MOD ,              XK_x,          maximize,          {.i=0}},
     // Maximize vertically
-    {  MOD ,              XK_m,          maxvert_hor,       {.flag=true}},
+    {  MOD ,              XK_m,          maxvert_hor,       {.i=1}},
     // Maximize horizontally
-    {  MOD |SHIFT,        XK_m,          maxvert_hor,       {.flag=false}},
+    {  MOD |SHIFT,        XK_m,          maxvert_hor,       {.i=0}},
     // Maximize and move
     // vertically left
-    {  MOD |SHIFT,        XK_y,          maxhalf,           {.flag=true,.flag2=true}},
+    {  MOD |SHIFT,        XK_y,          maxhalf,           {.i=2}},
     // vertically right
-    {  MOD |SHIFT,        XK_u,          maxhalf,           {.flag=true,.flag2=false}},
+    {  MOD |SHIFT,        XK_u,          maxhalf,           {.i=1}},
     // horizontally left
-    {  MOD |SHIFT,        XK_b,          maxhalf,           {.flag=false,.flag2=false}},
+    {  MOD |SHIFT,        XK_b,          maxhalf,           {.i=-1}},
     // horizontally right
-    {  MOD |SHIFT,        XK_n,          maxhalf,           {.flag=false,.flag2=true}},
+    {  MOD |SHIFT,        XK_n,          maxhalf,           {.i=-2}},
     // Next/Previous screen
-    {  MOD ,              XK_comma,      changescreen,      {.flag=true}},
-    {  MOD ,              XK_period,     changescreen,      {.flag=false}},
+    {  MOD ,              XK_comma,      changescreen,      {.i=1}},
+    {  MOD ,              XK_period,     changescreen,      {.i=0}},
     // Raise or lower a window
     {  MOD ,              XK_r,          raiseorlower,      {.i=0}},
     // Next/Previous workspace
@@ -145,15 +145,15 @@ static key keys[] = {
     // Make the window stay on all workspaces
     {  MOD ,              XK_f,          fix,               {.i=0}},
     // Move the cursor
-    {  MOD ,              XK_Up,         cursor_move,       {.flag=false,.i=0}},
-    {  MOD ,              XK_Down,       cursor_move,       {.flag=false,.i=1}},
-    {  MOD ,              XK_Right,      cursor_move,       {.flag=false,.i=2}},
-    {  MOD ,              XK_Left,       cursor_move,       {.flag=false,.i=3}},
+    {  MOD ,              XK_Up,         cursor_move,       {.i=4}},
+    {  MOD ,              XK_Down,       cursor_move,       {.i=5}},
+    {  MOD ,              XK_Right,      cursor_move,       {.i=6}},
+    {  MOD ,              XK_Left,       cursor_move,       {.i=7}},
     // Move the cursor faster
-    {  MOD |SHIFT,        XK_Up,         cursor_move,       {.flag=true,.i=0}},
-    {  MOD |SHIFT,        XK_Down,       cursor_move,       {.flag=true,.i=1}},
-    {  MOD |SHIFT,        XK_Right,      cursor_move,       {.flag=true,.i=2}},
-    {  MOD |SHIFT,        XK_Left,       cursor_move,       {.flag=true,.i=3}},
+    {  MOD |SHIFT,        XK_Up,         cursor_move,       {.i=0}},
+    {  MOD |SHIFT,        XK_Down,       cursor_move,       {.i=1}},
+    {  MOD |SHIFT,        XK_Right,      cursor_move,       {.i=2}},
+    {  MOD |SHIFT,        XK_Left,       cursor_move,       {.i=3}},
     // Start programs
     {  MOD ,              XK_Return,     start,             {.com = terminal}},
     {  MOD ,              XK_w,          start,             {.com = menucmd}},    
@@ -173,7 +173,7 @@ static key keys[] = {
        DESKTOPCHANGE(     XK_0,                             9)
 };
 static Button buttons[] = {
-    {  MOD ,        Button1,     mousemotion,   {.i = MCWM_MOVE}},
-    {  MOD ,        Button3,     mousemotion,   {.i = MCWM_RESIZE}},
+    {  MOD ,        Button1,     mousemotion,   {.i=MCWM_MOVE}},
+    {  MOD ,        Button3,     mousemotion,   {.i=MCWM_RESIZE}},
     {  MOD |CONTROL,Button3,     start,         {.com = menucmd}},
 };
