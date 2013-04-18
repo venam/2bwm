@@ -1,18 +1,18 @@
 MCWM-Beast
 ==========
-An mcwm fork.
-mcwm-beast is a minimalist window manager for the X Window System written directly on top of the X protocol C-language Binding, XCB. 
-It is a traditional floating window manager with no fancy smarts like those in modern tiling window managers.
-In mcwm-beast all functions are available from the keyboard but a pointing device can be used for move, resize and raise/lower.
+An mcwm fork.<br>
+mcwm-beast is a minimalist window manager for the X Window System written directly on top of the X protocol C-language Binding, XCB. <br>
+It is a traditional floating window manager with no fancy smarts like those in modern tiling window managers.<br>
+In mcwm-beast all functions are available from the keyboard but a pointing device can be used for move, resize and raise/lower.<br>
 
 Features:
 =========
-You can check what mcwm already had here: 
-http://www.hack.org/mc/hacks/mcwm/features.html
-http://www.hack.org/mc/hacks/mcwm/
-The binary might not be as "small" as it used to be but it's still lightweight and memory consumption is diminished.
-When talking in size proportion, the bin is 28KB, when dwm bin is 33KB, dvtm 37KB,i3 343KB.
-`
+You can check what mcwm already had here: <br>
+http://www.hack.org/mc/hacks/mcwm/features.html<br>
+http://www.hack.org/mc/hacks/mcwm/<br>
+The binary might not be as "small" as it used to be but it's still lightweight and memory consumption is diminished.<br>
+When talking in size proportion, the bin is 28KB, when dwm bin is 33KB, dvtm 37KB,i3 343KB.<br>
+<pre>
 raptor $ size /usr/local/bin/mcwm                                                                                                        <
     text   data    bss    dec    hex   filename
     24851  1904    664  27419   6b1b   /usr/local/bin/mcwm
@@ -43,7 +43,7 @@ raptor /usr/local/bin $ size monsterwm                                          
 raptor /usr/bin $ size awesome
     text   data     bss     dec     hex filename
     296570 1984    1832  300386   49562 awesome
-`
+</pre>
 Notice that all those WM are really small and that size doesn't really matter in the end.
 Still, I'll try to mess with it a little to make it smaller.
 
