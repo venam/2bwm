@@ -10,7 +10,7 @@ Features:
 You can check what mcwm already had here: <br>
 http://www.hack.org/mc/hacks/mcwm/features.html<br>
 http://www.hack.org/mc/hacks/mcwm/<br>
-The binary might not be as "small" as it used to be but it's still lightweight and memory consumption is diminished.<br>
+The data size might not be as "small" as it used to be but it's still lightweight, memory consumption is diminished and binary size also.<br>
 When talking in size proportion, the bin is 28KB, when dwm bin is 33KB, dvtm 37KB,i3 343KB.
 
 ```
