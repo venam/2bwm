@@ -7,17 +7,9 @@
  *2)mouse slow       3)mouse fast     */
 static const uint16_t movements[] = {10,40,15,400};
 ///---Offsets---///
-<<<<<<< HEAD
 /*0)offsetx          1)offsety
  *2)maxwidth         3)maxheight */
 static const uint8_t offsets[] = {0,0,0,0};
-=======
-/* Offset when windows are in fullscreen or vert maxed for bars */
-#define OFFSETX     0
-#define OFFSETY     0
-#define MAXWIDTH    0
-#define MAXHEIGHT   0
->>>>>>> da025eed4bc6407dffe419275097e8405305c182
 ///---Colors---///
 /*0)focuscol         1)unfocuscol
  *2)fixedcol         3)unkilcol
