@@ -1961,10 +1961,17 @@ bool setup(int scrno)
 #ifdef DOUBLEBORDER
     conf.outer_border= borders[0];
 #endif
+<<<<<<< HEAD
     conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
     conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
     conf.outer_border_col= getcolor(colors[5]);             conf.fixed_unkil_col = getcolor(colors[4]);
     conf.empty_col       = getcolor(colors[6]);
+=======
+    conf.focuscol        = getcolor(FOCUSCOL);             conf.unfocuscol      = getcolor(UNFOCUSCOL);
+    conf.fixedcol        = getcolor(FIXEDCOL);             conf.unkillcol       = getcolor(UNKILLCOL);
+    conf.outer_border_col= getcolor(OUTER_BORDER_COL);     conf.fixed_unkil_col = getcolor(FIXED_UNKIL_COL);
+    conf.empty_col       = getcolor(EMPTY_COL);
+>>>>>>> da025eed4bc6407dffe419275097e8405305c182
     atom_desktop         = getatom("_NET_WM_DESKTOP");     atom_current_desktop = getatom("_NET_CURRENT_DESKTOP");
     atom_unkillable      = getatom("_NET_UNKILLABLE");
     wm_delete_window     = getatom("WM_DELETE_WINDOW");    wm_change_state      = getatom("WM_CHANGE_STATE");

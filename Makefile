@@ -4,7 +4,11 @@ DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.h hidden.c config.h
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
 
+<<<<<<< HEAD
 CFLAGS+=-g -std=c99 -Wall -Os -s -march=i686 -mtune=i686 -Wextra -I/usr/local/include -DDOUBLEBORDER -DNSPOOKY_RESIZE -DNICON -DNMODULORESIZE
+=======
+CFLAGS+=-g -std=c99 -Wall -Os -s -Wextra -I/usr/local/include -DDOUBLEBORDER -DNSPOOKY_RESIZE -DNICON -DNMODULORESIZE
+>>>>>>> da025eed4bc6407dffe419275097e8405305c182
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util
 
 RM=/bin/rm
