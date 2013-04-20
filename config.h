@@ -21,8 +21,6 @@
 #define OFFSETY     0
 #define MAXWIDTH    0
 #define MAXHEIGHT   0
-///---Iconics?---///
-#define ALLOWICONS true
 ///---Colors---///
 /* Default colour on border for focused windows.*/
 #define FOCUSCOL "#323232"
@@ -139,7 +137,7 @@ static key keys[] = {
     {  MOD ,              XK_v,          nextworkspace,     {.i=0}},
     {  MOD ,              XK_c,          prevworkspace,     {.i=0}},
     // Iconify the window
-    {  MOD ,              XK_i,          hide,              {.i=0}},
+//    {  MOD ,              XK_i,          hide,              {.i=0}},
     // Make the window unkillable
     {  MOD ,              XK_a,          unkillable,        {.i=0}},
     // Make the window stay on all workspaces

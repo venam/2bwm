@@ -107,7 +107,6 @@ struct conf {
     int8_t outer_border;            // The size of the outer border
 #endif
     uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
-    bool allowicons;                // Allow windows to be unmapped.
 } conf;
 xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols;
 
@@ -142,7 +141,10 @@ static void raise_current_window(void);
 static void raiseorlower();
 static void setunfocus(void);
 static void maximize();
+#ifdef ICON
 static void hide();
+static void clientmessage(xcb_generic_event_t *ev);
+#endif
 static void deletewin();
 static void unkillable();
 static void fix();
@@ -151,7 +153,6 @@ static void buttonpress(xcb_generic_event_t *ev);
 static void unmapnotify(xcb_generic_event_t *ev);
 static void destroynotify(xcb_generic_event_t *ev);
 static void circulaterequest(xcb_generic_event_t *ev);
-static void clientmessage(xcb_generic_event_t *ev);
 static void newwin(xcb_generic_event_t *ev);
 static void handle_keypress(xcb_generic_event_t *e);
 static xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph);
@@ -1419,9 +1420,10 @@ void maxhalf(const Arg *arg)
 #endif
 }
 
+#ifdef ICON
 void hide()
 {
-    if (conf.allowicons&&focuswin!=NULL) {
+    if (focuswin!=NULL) {
         long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
         /* Unmap window and declare iconic. Unmapping will generate an UnmapNotify event so we can forget about the window later. */
         xcb_unmap_window(conn, focuswin->id);
@@ -1429,6 +1431,7 @@ void hide()
         xcb_flush(conn);
     }
 }
+#endif
 
 bool getpointer(const xcb_drawable_t *win, int16_t *x, int16_t *y)
 {
@@ -1813,16 +1816,18 @@ void buttonpress(xcb_generic_event_t *ev)
         }
 }
 
+#ifdef ICON
 void clientmessage(xcb_generic_event_t *ev)
 {
     xcb_client_message_event_t *e= (xcb_client_message_event_t *)ev;
-    if (conf.allowicons && e->type == wm_change_state && e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
+    if (e->type == wm_change_state && e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
             long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
             xcb_unmap_window(conn, e->window); /* Unmap window and declare iconic. */
             xcb_change_property(conn, XCB_PROP_MODE_REPLACE, e->window,wm_state, wm_state, 32, 2, data);
             xcb_flush(conn);
     }
 }
+#endif
 
 void destroynotify(xcb_generic_event_t *ev)
 {
@@ -1954,7 +1959,6 @@ bool setup(int scrno)
 #ifdef DOUBLEBORDER
     conf.outer_border= OUTER_BORDER;
 #endif
-    conf.allowicons  = ALLOWICONS;
     conf.focuscol        = getcolor(FOCUSCOL);             conf.unfocuscol      = getcolor(UNFOCUSCOL);
     conf.fixedcol        = getcolor(FIXEDCOL);             conf.unkillcol       = getcolor(UNKILLCOL);
     conf.outer_border_col= getcolor(OUTER_BORDER_COL);     conf.fixed_unkil_col = getcolor(FIXED_UNKIL_COL);
@@ -1975,11 +1979,14 @@ bool setup(int scrno)
     grabkeys();
     /* set events */
     for (unsigned int i=0; i<XCB_NO_OPERATION; i++) events[i] = NULL;
-    events[XCB_BUTTON_PRESS]        = buttonpress;        events[XCB_CLIENT_MESSAGE]      = clientmessage;
     events[XCB_CONFIGURE_REQUEST]   = configurerequest;   events[XCB_DESTROY_NOTIFY]      = destroynotify;
     events[XCB_ENTER_NOTIFY]        = enternotify;        events[XCB_KEY_PRESS]           = handle_keypress;
     events[XCB_MAP_REQUEST]         = newwin;             events[XCB_UNMAP_NOTIFY]        = unmapnotify; 
     events[XCB_CONFIGURE_NOTIFY]    = confignotify;       events[XCB_CIRCULATE_REQUEST]   = circulaterequest;
+    events[XCB_BUTTON_PRESS]        = buttonpress;        
+#ifdef ICON
+    events[XCB_CLIENT_MESSAGE]      = clientmessage;
+#endif
     return true;
 }
 
