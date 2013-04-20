@@ -1,55 +1,26 @@
 ///---User configurable stuff---///
 ///---Modifiers---///
 #define MOD             XCB_MOD_MASK_4       /* Super/Windows key */
-#define CONTROL         XCB_MOD_MASK_CONTROL /* Control key */
-#define ALT             XCB_MOD_MASK_1       /* ALT key */
-#define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
-#define Button1         XCB_BUTTON_INDEX_1
-#define Button2         XCB_BUTTON_INDEX_2
-#define Button3         XCB_BUTTON_INDEX_3
 ///--Speed---///
-/* Move this many pixels when moving or resizing with keyboard unless the window has hints saying otherwise. */
-#define MOVE_STEP      40
-#define MOVE_STEP_SLOW 10
-/* Set the Fast and Slow mouse movement via keyboard. You can set the fast movement to something big so you can
- * quickly move your cursor to another monitor. */
-#define MOUSE_MOVE_SLOW 15
-#define MOUSE_MOVE_FAST 400
+/* Move this many pixels when moving or resizing with keyboard unless the window has hints saying otherwise. 
+ *0)move step slow   1)move step fast
+ *2)mouse slow       3)mouse fast     */
+static const uint16_t movements[] = {10,40,15,400};
 ///---Offsets---///
-/* Offset when windows are in fullscreen or vert maxed for bars */
-#define OFFSETX     0
-#define OFFSETY     0
-#define MAXWIDTH    0
-#define MAXHEIGHT   0
-///---Iconics?---///
-#define ALLOWICONS true
+/*0)offsetx          1)offsety
+ *2)maxwidth         3)maxheight */
+static const uint8_t offsets[] = {0,0,0,0};
 ///---Colors---///
-/* Default colour on border for focused windows.*/
-#define FOCUSCOL "#323232"
-/* Ditto for unfocused.*/
-#define UNFOCUSCOL "#191919"
-/* Ditto for fixed windows.*/
-#define FIXEDCOL "#7a8c5c"
-/* Ditto for unkillable windows. */
-#define UNKILLCOL "#ff6666"
-/* Ditto for unkillable and fixed windows. */
-#define FIXED_UNKIL_COL "#cc9933"
-/* the color of the outer border */
-#define OUTER_BORDER_COL "#121212"
-/* Ditto for default back, when the WM don't know what to put.
- * example: in mplayer when you resize.
- * If you put 0 than it's going to be transparent
- * If you comile with the double border option, this color
- * will be the outer-default color for the window without status. */
-#define EMPTY_COL "#000000"
+/*0)focuscol         1)unfocuscol
+ *2)fixedcol         3)unkilcol
+ *4)fixedunkilcol    5)outerbordercol
+ *6)emptycol         */
+static const char *colors[] = {"#323232","#191919","#7a8c5c","#ff6666","#cc9933","#121212","#000000"};
 ///---Borders---///
-/* Outer border size. If you put this negative it will be a square. */
-#define OUTER_BORDER 2
-/* Full border size. A simple math gives you the inner border size
- * Don't forget to enable the border flag when compiling. */
-#define BORDERWIDTH  10
-/* this is the power of the magnet, normally you should never put it less than your MOVE_STEP_SLOW */
-#define MAGNET_BORDER 9
+/*0) Outer border size. If you put this negative it will be a square. 
+ *1) Full borderwidth
+ *2) Magnet border size     */
+static const uint8_t borders[] = {2,10,9};
 ///---Cursor---///
 /* Check /usr/include/X11/cursorfont.h for more details */
 #define CURSOR_MOVING   52
@@ -139,7 +110,7 @@ static key keys[] = {
     {  MOD ,              XK_v,          nextworkspace,     {.i=0}},
     {  MOD ,              XK_c,          prevworkspace,     {.i=0}},
     // Iconify the window
-    {  MOD ,              XK_i,          hide,              {.i=0}},
+//    {  MOD ,              XK_i,          hide,              {.i=0}},
     // Make the window unkillable
     {  MOD ,              XK_a,          unkillable,        {.i=0}},
     // Make the window stay on all workspaces
@@ -173,7 +144,7 @@ static key keys[] = {
        DESKTOPCHANGE(     XK_0,                             9)
 };
 static Button buttons[] = {
-    {  MOD ,        Button1,     mousemotion,   {.i=MCWM_MOVE}},
-    {  MOD ,        Button3,     mousemotion,   {.i=MCWM_RESIZE}},
-    {  MOD |CONTROL,Button3,     start,         {.com = menucmd}},
+    {  MOD        ,XCB_BUTTON_INDEX_1,     mousemotion,   {.i=MCWM_MOVE}},
+    {  MOD        ,XCB_BUTTON_INDEX_3,     mousemotion,   {.i=MCWM_RESIZE}},
+    {  MOD|CONTROL,XCB_BUTTON_INDEX_3,     start,         {.com = menucmd}},
 };

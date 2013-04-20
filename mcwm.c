@@ -40,7 +40,9 @@ enum {MCWM_MOVE,MCWM_RESIZE};
 #define MCWM_NOWS    0xfffffffe     // This means we didn't get any window hint at all.
 #define LENGTH(x)    (sizeof(x)/sizeof(*x))
 #define CLEANMASK(mask) (mask & ~(numlockmask|XCB_MOD_MASK_LOCK))
-
+#define CONTROL         XCB_MOD_MASK_CONTROL /* Control key */
+#define ALT             XCB_MOD_MASK_1       /* ALT key */
+#define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
 ///---Types---///
 struct monitor {
     xcb_randr_output_t id;
@@ -107,7 +109,6 @@ struct conf {
     int8_t outer_border;            // The size of the outer border
 #endif
     uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
-    bool allowicons;                // Allow windows to be unmapped.
 } conf;
 xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols;
 
@@ -142,7 +143,10 @@ static void raise_current_window(void);
 static void raiseorlower();
 static void setunfocus(void);
 static void maximize();
+#ifdef ICON
 static void hide();
+static void clientmessage(xcb_generic_event_t *ev);
+#endif
 static void deletewin();
 static void unkillable();
 static void fix();
@@ -151,7 +155,6 @@ static void buttonpress(xcb_generic_event_t *ev);
 static void unmapnotify(xcb_generic_event_t *ev);
 static void destroynotify(xcb_generic_event_t *ev);
 static void circulaterequest(xcb_generic_event_t *ev);
-static void clientmessage(xcb_generic_event_t *ev);
 static void newwin(xcb_generic_event_t *ev);
 static void handle_keypress(xcb_generic_event_t *e);
 static xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph);
@@ -493,7 +496,7 @@ struct client *setupwin(xcb_window_t win)
     struct item *item;
     struct client *client;
     xcb_size_hints_t hints;
-    if (strcmp(EMPTY_COL,"0")==0) {                     /* Populate the "empty" background of a window. */
+    if (strcmp(colors[6],"0")==0) {                     /* Populate the "empty" background of a window. */
         values[0] = 1;
         xcb_change_window_attributes(conn, win, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
     } 
@@ -843,12 +846,12 @@ void movelim(struct client *client) //Keep the window inside the screen
     }
     /* Is it outside the physical monitor or close to the side? */
     if (client->y-conf.borderwidth < mon_y)     client->y = mon_y;    
-    else if (client->y < MAGNET_BORDER + mon_y) client->y = mon_y;
-    else if ( client->y+client->height+(conf.borderwidth*2) > mon_y + mon_height -MAGNET_BORDER)
+    else if (client->y < borders[2] + mon_y) client->y = mon_y;
+    else if ( client->y+client->height+(conf.borderwidth*2) > mon_y + mon_height -borders[2])
         client->y = mon_y+ mon_height- client->height - conf.borderwidth*2;
 
-    if (client->x < MAGNET_BORDER + mon_x) client->x = mon_x;
-    else if (client->x+client->width+(conf.borderwidth*2) > mon_x + mon_width - MAGNET_BORDER)
+    if (client->x < borders[2] + mon_x) client->x = mon_x;
+    else if (client->x+client->width+(conf.borderwidth*2) > mon_x + mon_width - borders[2])
         client->x = mon_x +mon_width- client->width- conf.borderwidth*2;
 
     if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
@@ -1009,10 +1012,10 @@ void resizestep(const Arg *arg)
 {                                   // Resize window client in direction.
     uint8_t step,cases = arg->i;
 
-    if (arg->i<4)  step = MOVE_STEP;
+    if (arg->i<4)  step = movements[1];
     else { 
         cases-=4;        
-        step = MOVE_STEP_SLOW;
+        step = movements[0];
     }
     if (NULL == focuswin||focuswin->maxed) return;
     raise_current_window();
@@ -1076,7 +1079,7 @@ void mouseresize(const int16_t rel_x, const int16_t rel_y, const bool accept_res
 {
     if(focuswin->id==screen->root||focuswin->maxed) return;
     #ifdef MODULORESIZE
-    if (abs(rel_x - focuswin->x) % MOVE_STEP_SLOW ==0 || abs(rel_y - focuswin->y) %MOVE_STEP_SLOW == 0 || accept_resize) {
+    if (abs(rel_x - focuswin->x) % movements[0] ==0 || abs(rel_y - focuswin->y) %movements[0] == 0 || accept_resize) {
     #endif
         focuswin->width  = abs(rel_x);
         focuswin->height = abs(rel_y);
@@ -1093,10 +1096,10 @@ void movestep(const Arg *arg)
     int16_t start_x, start_y;
     uint8_t step,cases=arg->i;
     
-    if (arg->i<4) step = MOVE_STEP;
+    if (arg->i<4) step = movements[1];
     else {
         cases-=4;
-        step = MOVE_STEP_SLOW;
+        step = movements[0];
     }
     if (NULL == focuswin||focuswin->maxed) return;
     /* Save pointer position so we can warp pointer here later. */
@@ -1297,8 +1300,8 @@ void maximize()
     values[0] = 0;  /* Remove borders. */
     mask = XCB_CONFIG_WINDOW_BORDER_WIDTH;
     xcb_configure_window(conn, focuswin->id, mask, values);
-    focuswin->x = mon_x+OFFSETX;             focuswin->y = mon_y+OFFSETY;
-    focuswin->width = mon_width-MAXWIDTH;    focuswin->height = mon_height-MAXHEIGHT;
+    focuswin->x = mon_x+offsets[0];             focuswin->y = mon_y+offsets[1];
+    focuswin->width = mon_width-offsets[2];    focuswin->height = mon_height-offsets[3];
     values[0] = focuswin->x;                 values[1] = focuswin->y;
     values[2] = focuswin->width;             values[3] = focuswin->height;
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_X|XCB_CONFIG_WINDOW_Y
@@ -1339,9 +1342,9 @@ void maxvert_hor(const Arg *arg)
     focuswin->origsize.x = focuswin->x;            focuswin->origsize.y = focuswin->y;
     focuswin->origsize.width = focuswin->width;    focuswin->origsize.height = focuswin->height;
     if (arg->i>0) {
-        focuswin->y = mon_y+OFFSETY;
+        focuswin->y = mon_y+offsets[1];
         /* Compute new height considering height increments and screen height. */
-        focuswin->height = mon_height - (conf.borderwidth * 2) - MAXHEIGHT;
+        focuswin->height = mon_height - (conf.borderwidth * 2) - offsets[3];
         /* Move to top of screen and resize. */
         values[0] = focuswin->y;        values[1] = focuswin->height;
         xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_Y
@@ -1349,8 +1352,8 @@ void maxvert_hor(const Arg *arg)
         focuswin->vertmaxed = true;
     }
     else {
-        focuswin->x = mon_x+OFFSETX;
-        focuswin->width = mon_width - (conf.borderwidth * 2) - MAXWIDTH;
+        focuswin->x = mon_x+offsets[0];
+        focuswin->width = mon_width - (conf.borderwidth * 2) - offsets[2];
         values[0] = focuswin->x;        values[1] = focuswin->width;
         xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_X
                            | XCB_CONFIG_WINDOW_WIDTH, values);
@@ -1394,20 +1397,20 @@ void maxhalf(const Arg *arg)
     focuswin->origsize.width = focuswin->width;
     focuswin->origsize.height = focuswin->height;
     if (arg->i>0) {
-        focuswin->y = mon_y+OFFSETY;
-        focuswin->height =   mon_height - (MAXHEIGHT + (conf.borderwidth * 2));
-        focuswin->width = ((float)(mon_width)/2)- (MAXWIDTH+ (conf.borderwidth * 2));
+        focuswin->y = mon_y+offsets[1];
+        focuswin->height =   mon_height - (offsets[3] + (conf.borderwidth * 2));
+        focuswin->width = ((float)(mon_width)/2)- (offsets[2]+ (conf.borderwidth * 2));
     
-        if (arg->i>1) focuswin->x = mon_x+OFFSETX;
-        else focuswin->x = mon_x - OFFSETX + mon_width -(focuswin->width + conf.borderwidth * 2);
+        if (arg->i>1) focuswin->x = mon_x+offsets[0];
+        else focuswin->x = mon_x - offsets[0] + mon_width -(focuswin->width + conf.borderwidth * 2);
     }
     else {
-        focuswin->x = mon_x+OFFSETX;
-        focuswin->width =   mon_width - (MAXWIDTH + (conf.borderwidth * 2));
-        focuswin->height = ((float)(mon_height)/2)- (MAXHEIGHT+ (conf.borderwidth * 2));
+        focuswin->x = mon_x+offsets[0];
+        focuswin->width =   mon_width - (offsets[2] + (conf.borderwidth * 2));
+        focuswin->height = ((float)(mon_height)/2)- (offsets[3]+ (conf.borderwidth * 2));
 
-        if (arg->i<-1) focuswin->y = mon_y+OFFSETY;
-        else focuswin->y = mon_y - OFFSETY + mon_height -(focuswin->height + conf.borderwidth * 2);
+        if (arg->i<-1) focuswin->y = mon_y+offsets[1];
+        else focuswin->y = mon_y - offsets[1] + mon_height -(focuswin->height + conf.borderwidth * 2);
     }
     values[0] = focuswin->width;        values[1] = focuswin->height;
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT, values);
@@ -1419,9 +1422,10 @@ void maxhalf(const Arg *arg)
 #endif
 }
 
+#ifdef ICON
 void hide()
 {
-    if (conf.allowicons&&focuswin!=NULL) {
+    if (focuswin!=NULL) {
         long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
         /* Unmap window and declare iconic. Unmapping will generate an UnmapNotify event so we can forget about the window later. */
         xcb_unmap_window(conn, focuswin->id);
@@ -1429,6 +1433,7 @@ void hide()
         xcb_flush(conn);
     }
 }
+#endif
 
 bool getpointer(const xcb_drawable_t *win, int16_t *x, int16_t *y)
 {
@@ -1459,13 +1464,13 @@ void teleport(const Arg *arg)
     if (NULL == focuswin|| NULL == wslist[curws]|| focuswin->maxed) return;
     
     if (NULL == focuswin->monitor) {
-        mon_width = screen->width_in_pixels + MAXWIDTH;
-        mon_height= screen->height_in_pixels+ MAXHEIGHT;
+        mon_width = screen->width_in_pixels + offsets[2];
+        mon_height= screen->height_in_pixels+ offsets[3];
         mon_x = mon_y = 0;
     }
     else {
-        mon_width = focuswin->monitor->width + MAXWIDTH;
-        mon_height= focuswin->monitor->height+ MAXHEIGHT;
+        mon_width = focuswin->monitor->width + offsets[2];
+        mon_height= focuswin->monitor->height+ offsets[3];
         mon_x = focuswin->monitor->x;
         mon_y = focuswin->monitor->y;
     }
@@ -1570,10 +1575,10 @@ void changescreen(const Arg *arg)
 void cursor_move(const Arg *arg)
 {                                   // Function to make the cursor move with the keyboard
     uint16_t speed; uint8_t cases=arg->i;
-    if (arg->i<4) speed = MOUSE_MOVE_FAST;
+    if (arg->i<4) speed = movements[3];
     else  {
         cases -=4;
-        speed = MOUSE_MOVE_SLOW;
+        speed = movements[2];
     }
     switch (cases) {
     case 0:
@@ -1813,16 +1818,18 @@ void buttonpress(xcb_generic_event_t *ev)
         }
 }
 
+#ifdef ICON
 void clientmessage(xcb_generic_event_t *ev)
 {
     xcb_client_message_event_t *e= (xcb_client_message_event_t *)ev;
-    if (conf.allowicons && e->type == wm_change_state && e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
+    if (e->type == wm_change_state && e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
             long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
             xcb_unmap_window(conn, e->window); /* Unmap window and declare iconic. */
             xcb_change_property(conn, XCB_PROP_MODE_REPLACE, e->window,wm_state, wm_state, 32, 2, data);
             xcb_flush(conn);
     }
 }
+#endif
 
 void destroynotify(xcb_generic_event_t *ev)
 {
@@ -1950,15 +1957,14 @@ bool setup(int scrno)
     screen = xcb_screen_of_display(conn, scrno);
 
     if (!screen) return false;
-    conf.borderwidth = BORDERWIDTH;
+    conf.borderwidth = borders[1];
 #ifdef DOUBLEBORDER
-    conf.outer_border= OUTER_BORDER;
+    conf.outer_border= borders[0];
 #endif
-    conf.allowicons  = ALLOWICONS;
-    conf.focuscol        = getcolor(FOCUSCOL);             conf.unfocuscol      = getcolor(UNFOCUSCOL);
-    conf.fixedcol        = getcolor(FIXEDCOL);             conf.unkillcol       = getcolor(UNKILLCOL);
-    conf.outer_border_col= getcolor(OUTER_BORDER_COL);     conf.fixed_unkil_col = getcolor(FIXED_UNKIL_COL);
-    conf.empty_col       = getcolor(EMPTY_COL);
+    conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
+    conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
+    conf.outer_border_col= getcolor(colors[5]);             conf.fixed_unkil_col = getcolor(colors[4]);
+    conf.empty_col       = getcolor(colors[6]);
     atom_desktop         = getatom("_NET_WM_DESKTOP");     atom_current_desktop = getatom("_NET_CURRENT_DESKTOP");
     atom_unkillable      = getatom("_NET_UNKILLABLE");
     wm_delete_window     = getatom("WM_DELETE_WINDOW");    wm_change_state      = getatom("WM_CHANGE_STATE");
@@ -1975,11 +1981,14 @@ bool setup(int scrno)
     grabkeys();
     /* set events */
     for (unsigned int i=0; i<XCB_NO_OPERATION; i++) events[i] = NULL;
-    events[XCB_BUTTON_PRESS]        = buttonpress;        events[XCB_CLIENT_MESSAGE]      = clientmessage;
     events[XCB_CONFIGURE_REQUEST]   = configurerequest;   events[XCB_DESTROY_NOTIFY]      = destroynotify;
     events[XCB_ENTER_NOTIFY]        = enternotify;        events[XCB_KEY_PRESS]           = handle_keypress;
     events[XCB_MAP_REQUEST]         = newwin;             events[XCB_UNMAP_NOTIFY]        = unmapnotify; 
     events[XCB_CONFIGURE_NOTIFY]    = confignotify;       events[XCB_CIRCULATE_REQUEST]   = circulaterequest;
+    events[XCB_BUTTON_PRESS]        = buttonpress;        
+#ifdef ICON
+    events[XCB_CLIENT_MESSAGE]      = clientmessage;
+#endif
     return true;
 }
 
