@@ -14,18 +14,6 @@
 
   _NET_NUMBER_OF_DESKTOPS can be set to the constant WORKSPACES.
 
-* add xbindkeys/xchainkeys
-
-* Write a better README.md
-
-* resizing like in monsterwm? no pointer warp and be able to resize the 4 corners
-
-* change the pointer while moving or resizing
-
-* make the resize only draw lines
-
-* the keep aspect ratio with mouse
-
 * configs in a text file, dynamically updated
 
 * Handle new modes on physical outputs. What do we have to do?
@@ -33,17 +21,6 @@
 * A separate workspace list for every monitor.
 
 * static Makefile problem
-
-* Menu
-
-  We might need a menu for hidden windows. Since I'm probably
-  implementing menu windows anyway, perhaps I should add a menu with
-  basic window functions, like 9wm and twm. This way, one might use
-  the window manager without keyboard, if necessary. Not much work if
-  I have to do the menu anyway... But also chords?
-
-  On the other hand, see hidden.c and forthcoming external menu
-  program.
 
 * Chords
 
