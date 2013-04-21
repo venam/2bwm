@@ -188,7 +188,7 @@ static void setfocus(struct client *client);
 static void resizelim(struct client *client);
 static void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height);
 static void mousemove(const int16_t rel_x,const int16_t rel_y);
-static void mouseresize(struct client *client,const int16_t rel_x,const int16_t rel_y,const bool accept_resize);
+static void mouseresize(struct client *client,const int16_t rel_x,const int16_t rel_y);
 static void setborders(struct client *client,const bool isitfocused);
 static void unmax(struct client *client);
 static bool getpointer(const xcb_drawable_t *win, int16_t *x,int16_t *y);
@@ -1076,20 +1076,14 @@ void mousemove(const int16_t rel_x, const int16_t rel_y)
     movelim(focuswin);
 }
 
-void mouseresize(struct client *client, const int16_t rel_x, const int16_t rel_y, const bool accept_resize)
+void mouseresize(struct client *client, const int16_t rel_x, const int16_t rel_y)
 {
     if(focuswin->id==screen->root||focuswin->maxed) return;
-    #ifdef MODULORESIZE
-    if (abs(rel_x - client->x) % movements[0] ==0 || abs(rel_y - client->y) %movements[0] == 0 || accept_resize) {
-    #endif
         client->width  = abs(rel_x);
         client->height = abs(rel_y);
         resizelim(client);
         if (client->vertmaxed) client->vertmaxed = false;
         if (client->hormaxed)  client->hormaxed  = false;
-    #ifdef MODULORESIZE
-    }
-    #endif
 }
 
 void movestep(const Arg *arg)
@@ -1809,15 +1803,13 @@ static void mousemotion(const Arg *arg)
         case XCB_MOTION_NOTIFY:
             ev = (xcb_motion_notify_event_t*)e;
             if (arg->i == MCWM_MOVE) mousemove(winx +ev->root_x-mx, winy+ev->root_y-my);
-#ifndef SPOOKY_RESIZE
             if (arg->i == MCWM_RESIZE) {
 #ifdef RESIZE_BORDER_ONLY
-                mouseresize(&example,winw +ev->root_x-mx, winh+ev->root_y-my,false);
+                mouseresize(&example,winw +ev->root_x-mx, winh+ev->root_y-my);
 #else           
-                mouseresize(focuswin,winw +ev->root_x-mx, winh+ev->root_y-my,false);
+                mouseresize(focuswin,winw +ev->root_x-mx, winh+ev->root_y-my);
 #endif
             }
-#endif
             xcb_flush(conn);
         break;
         case XCB_KEY_PRESS:
@@ -1827,7 +1819,7 @@ static void mousemotion(const Arg *arg)
         {
             if (arg->i==MCWM_RESIZE) {
                 ev = (xcb_motion_notify_event_t*)e;
-                if (arg->i == MCWM_RESIZE) mouseresize(focuswin,winw +ev->root_x-mx, winh+ev->root_y-my,true);
+                if (arg->i == MCWM_RESIZE) mouseresize(focuswin,winw +ev->root_x-mx, winh+ev->root_y-my);
                 free(pointer);
             }
             ungrab = true;

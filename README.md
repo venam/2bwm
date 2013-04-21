@@ -74,7 +74,6 @@ Patches
 - keep approximately the same position when sending window to next screen
 - Magnet borders
 - Resize and move with the mouse from anywhere
-- Modulo resize (can be enabled at compile time)
 - Resize border only (can be enabled at compile time)
 - Cursor change while moving/resizing
 - Efficiency updated
