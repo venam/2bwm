@@ -161,6 +161,7 @@ static xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph);
 static xcb_keycode_t* xcb_get_keycodes(xcb_keysym_t keysym);
 static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen);
 static struct client *setupwin(xcb_window_t win);
+static struct client create_back_win(void);
 static void cleanup(const int code);
 static int32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
@@ -187,7 +188,7 @@ static void setfocus(struct client *client);
 static void resizelim(struct client *client);
 static void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height);
 static void mousemove(const int16_t rel_x,const int16_t rel_y);
-static void mouseresize(const int16_t rel_x,const int16_t rel_y,const bool accept_resize);
+static void mouseresize(struct client *client,const int16_t rel_x,const int16_t rel_y,const bool accept_resize);
 static void setborders(struct client *client,const bool isitfocused);
 static void unmax(struct client *client);
 static bool getpointer(const xcb_drawable_t *win, int16_t *x,int16_t *y);
@@ -1075,17 +1076,17 @@ void mousemove(const int16_t rel_x, const int16_t rel_y)
     movelim(focuswin);
 }
 
-void mouseresize(const int16_t rel_x, const int16_t rel_y, const bool accept_resize)
+void mouseresize(struct client *client, const int16_t rel_x, const int16_t rel_y, const bool accept_resize)
 {
     if(focuswin->id==screen->root||focuswin->maxed) return;
     #ifdef MODULORESIZE
-    if (abs(rel_x - focuswin->x) % movements[0] ==0 || abs(rel_y - focuswin->y) %movements[0] == 0 || accept_resize) {
+    if (abs(rel_x - client->x) % movements[0] ==0 || abs(rel_y - client->y) %movements[0] == 0 || accept_resize) {
     #endif
-        focuswin->width  = abs(rel_x);
-        focuswin->height = abs(rel_y);
-        resizelim(focuswin);
-        if (focuswin->vertmaxed) focuswin->vertmaxed = false;
-        if (focuswin->hormaxed)  focuswin->hormaxed  = false;
+        client->width  = abs(rel_x);
+        client->height = abs(rel_y);
+        resizelim(client);
+        if (client->vertmaxed) client->vertmaxed = false;
+        if (client->hormaxed)  client->hormaxed  = false;
     #ifdef MODULORESIZE
     }
     #endif
@@ -1750,6 +1751,24 @@ xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph)
     return cursor;
 }
 
+struct client create_back_win(void)
+{
+    struct client temp_win;
+    temp_win.id = xcb_generate_id(conn);
+    uint32_t values[1] = {XCB_COPY_FROM_PARENT};
+    xcb_create_window (conn, XCB_COPY_FROM_PARENT,/* depth */ temp_win.id, /* window Id */  screen->root, /* parent window */
+        focuswin->x, focuswin->y, /* x, y */ focuswin->width, focuswin->height,  /* width, height */
+        1, /* border width */ XCB_WINDOW_CLASS_INPUT_OUTPUT, /* class */ screen->root_visual, /* visual */ XCB_CW_BACK_PIXEL, values
+    );  
+    values[0]=1;
+    xcb_change_window_attributes(conn, temp_win.id, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
+    temp_win.x=focuswin->x;temp_win.y=focuswin->y;temp_win.width=focuswin->width;temp_win.unkillable=focuswin->unkillable; 
+    temp_win.fixed=focuswin->fixed;temp_win.height=focuswin->height;temp_win.width_inc=focuswin->width_inc;temp_win.height_inc=focuswin->height_inc;
+    temp_win.base_width=focuswin->base_width;temp_win.base_height=focuswin->base_height;temp_win.monitor=focuswin->monitor; 
+    temp_win.min_height = focuswin->min_height; temp_win.min_width=focuswin->min_height;
+    return temp_win;
+}
+
 static void mousemotion(const Arg *arg)
 {
     int16_t mx, my,winx, winy,winw, winh;
@@ -1761,8 +1780,16 @@ static void mousemotion(const Arg *arg)
     winw = focuswin->width;        winh = focuswin->height;
     raise_current_window();
     xcb_cursor_t cursor;
+#ifdef RESIZE_BORDER_ONLY
+    struct client example = create_back_win();
+    setborders(&example,true);
+#endif
     if(arg->i == MCWM_MOVE) cursor = Create_Font_Cursor (conn, CURSOR_MOVING ); /* fleur */
-    else                    cursor = Create_Font_Cursor (conn, CURSOR_RESIZING); /* sizing */ 
+    else  {                  cursor = Create_Font_Cursor (conn, CURSOR_RESIZING); /* sizing */ 
+#ifdef RESIZE_BORDER_ONLY
+        xcb_map_window(conn,example.id);
+#endif
+    }
     xcb_grab_pointer_reply_t *grab_reply = xcb_grab_pointer_reply(conn, xcb_grab_pointer(conn, 0, screen->root, BUTTONMASK|
         XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION,XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, cursor, XCB_CURRENT_TIME), NULL);
     if (!grab_reply || grab_reply->status != XCB_GRAB_STATUS_SUCCESS) return;
@@ -1779,16 +1806,20 @@ static void mousemotion(const Arg *arg)
         case XCB_CONFIGURE_REQUEST: case XCB_MAP_REQUEST:
             events[e->response_type & ~0x80](e);
         break;
-
         case XCB_MOTION_NOTIFY:
             ev = (xcb_motion_notify_event_t*)e;
             if (arg->i == MCWM_MOVE) mousemove(winx +ev->root_x-mx, winy+ev->root_y-my);
 #ifndef SPOOKY_RESIZE
-            if (arg->i == MCWM_RESIZE) mouseresize(winw +ev->root_x-mx, winh+ev->root_y-my,false);
+            if (arg->i == MCWM_RESIZE) {
+#ifdef RESIZE_BORDER_ONLY
+                mouseresize(&example,winw +ev->root_x-mx, winh+ev->root_y-my,false);
+#else           
+                mouseresize(focuswin,winw +ev->root_x-mx, winh+ev->root_y-my,false);
+#endif
+            }
 #endif
             xcb_flush(conn);
         break;
-
         case XCB_KEY_PRESS:
         case XCB_KEY_RELEASE:
         case XCB_BUTTON_PRESS:
@@ -1796,7 +1827,7 @@ static void mousemotion(const Arg *arg)
         {
             if (arg->i==MCWM_RESIZE) {
                 ev = (xcb_motion_notify_event_t*)e;
-                if (arg->i == MCWM_RESIZE) mouseresize(winw +ev->root_x-mx, winh+ev->root_y-my,true);
+                if (arg->i == MCWM_RESIZE) mouseresize(focuswin,winw +ev->root_x-mx, winh+ev->root_y-my,true);
                 free(pointer);
             }
             ungrab = true;
@@ -1806,6 +1837,9 @@ static void mousemotion(const Arg *arg)
     } while (!ungrab && focuswin!=NULL);
     xcb_free_cursor(conn,cursor);
     xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
+#ifdef RESIZE_BORDER_ONLY
+    xcb_unmap_window(conn,example.id);
+#endif
 }
 
 void buttonpress(xcb_generic_event_t *ev)
