@@ -1,24 +1,23 @@
-MCWM-Beast
+2bwm
 ==========
-A fast floating WM written over the XCB library derived from mcwm written by Michael Cardell.<br>
-mcwm-beast is a minimalist window manager for the X Window System written directly on top of the X protocol C-language Binding, XCB. <br>
-It is a traditional floating window manager with no fancy smarts like those in modern tiling window managers.<br>
-In mcwm-beast all functions are available from the keyboard but a pointing device can be used for move, resize and raise/lower.<br>
-MCWM-Beast will soon be renamed.<br>
+A fast floating WM  with the particularity of having 2 borders written over the XCB library and derived from mcwm written by Michael Cardell.<br>
+2bwm is a minimalist window manager for the X Window System written directly on top of the X protocol C-language Binding, XCB. <br>
+In 2bWM everything is accessible from the keyboard but a pointing device can be used for move, resize and raise/lower.<br>
+The name has recently changed from mcwm-beast to 2bwm<br>
 
 Features:
 =========
 You can check what mcwm already had here: <br>
 http://www.hack.org/mc/hacks/mcwm/features.html<br>
 http://www.hack.org/mc/hacks/mcwm/<br>
-The data size might not be as "small" as it used to be but it's still lightweight, memory consumption is diminished and binary size also.<br>
-When talking in size proportion, the bin is 28KB, when dwm bin is 33KB, dvtm 37KB,i3 343KB.
+
+When talking in size proportion, 2bwm binary is 28KB, when dwm bin is 33KB, dvtm 37KB, and i3 343KB.
 
 ```
-raptor $ size /usr/local/bin/mcwm
+raptor $ size /usr/local/bin/2bwm
     text   data    bss    dec    hex   filename
-    24851  1904    664  27419   6b1b   /usr/local/bin/mcwm
-raptor ~/BUILDING/40k/mcwm-beast $ size /usr/bin/i3 
+    24851  1904    664  27419   6b1b   /usr/local/bin/2bwm
+raptor $ size /usr/bin/i3
     text    data    bss    dec    hex   filename
     284247  10020   5704 299971  493c3  /usr/bin/i3
 raptor $ size /usr/local/bin/dwm
@@ -39,7 +38,7 @@ raptor /usr/local/bin $ size monsterwm
 % size /usr/local/bin/openbox
     text   data     bss     dec     hex filename
     316466 3572    2368  322406   4eb66 /usr/local/bin/openbox
-% size /usr/local/bin/ctwm   
+% size /usr/local/bin/ctwm
     text   data     bss     dec     hex filename
     336742 12076    23840  372658   5afb2 /usr/local/bin/ctwm
 raptor /usr/bin $ size awesome
@@ -50,7 +49,7 @@ raptor /usr/bin $ size awesome
 Notice that all those WM are really small and that size doesn't really matter in the end.
 Still, I'll try to mess with it a little to make it smaller.
 
-Patches
+New features:
 =======
 - Center, put the window to the center of the screen with mod+g (patched -- now center well with 2 monitors)
 - chwfocus, focus a window when changing workspace
@@ -83,12 +82,10 @@ Patches
 
 Screenshots:
 ============
-![alt text][logo2]
-[logo2]: http://hack.org/mc/images/mcwm-screen-20120426.png "mcwm non-patched"
 ![alt text][logo]
-[logo]: http://venam.1.ai/screenshot.png  "mcwm-beast"
+[logo]: http://venam.1.ai/screenshot.png  "2bWM"
 ![alt text][logo3]
-[logo3]: http://fc05.deviantart.net/fs71/f/2013/098/d/2/_freebsd_and_mcwm_beast__by_ybeastie-d60w2xc.png "Beastie's mcwm-beast"
+[logo3]: http://fc05.deviantart.net/fs71/f/2013/098/d/2/_freebsd_and_mcwm_beast__by_ybeastie-d60w2xc.png "Beastie's 2bWM"
 
 Authors:
 =======

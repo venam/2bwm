@@ -1,8 +1,8 @@
 ///---User configurable stuff---///
 ///---Modifiers---///
-#define MOD             XCB_MOD_MASK_4       /* Super/Windows key */
+#define MOD             XCB_MOD_MASK_4       /* Super/Windows key  or check xmodmap(1) with -pm*/
 ///--Speed---///
-/* Move this many pixels when moving or resizing with keyboard unless the window has hints saying otherwise. 
+/* Move this many pixels when moving or resizing with keyboard unless the window has hints saying otherwise.
  *0)move step slow   1)move step fast
  *2)mouse slow       3)mouse fast     */
 static const uint16_t movements[] = {10,40,15,400};
@@ -17,7 +17,7 @@ static const uint8_t offsets[] = {0,0,0,0};
  *6)emptycol         */
 static const char *colors[] = {"#323232","#191919","#7a8c5c","#ff6666","#cc9933","#121212","#000000"};
 ///---Borders---///
-/*0) Outer border size. If you put this negative it will be a square. 
+/*0) Outer border size. If you put this negative it will be a square.
  *1) Full borderwidth
  *2) Magnet border size     */
 static const uint8_t borders[] = {2,10,9};
@@ -29,7 +29,7 @@ static const uint8_t borders[] = {2,10,9};
 static const char *menucmd[] = { "/bin/my_menu.sh", NULL };
 static const char *terminal[] = { "urxvtc", NULL };
 ///---Shortcuts---///
-/* Check /usr/include/X11/keysymdef.h for the list of all keys 
+/* Check /usr/include/X11/keysymdef.h for the list of all keys
  * For AZERTY keyboards XK_1...0 should be replaced by :
  *      DESKTOPCHANGE(     XK_ampersand,                     0)
  *      DESKTOPCHANGE(     XK_eacute,                        1)
@@ -51,7 +51,7 @@ static key keys[] = {
     {  MOD ,              XK_Tab,        focusnext,         {.i=0}},
     {  MOD |SHIFT,        XK_Tab,        focusnext,         {.i=1}},
     // Kill a window
-    {  MOD ,              XK_q,          deletewin,         {.i=0}},        
+    {  MOD ,              XK_q,          deletewin,         {.i=0}},
     // Resize a window
     {  MOD |SHIFT,        XK_k,          resizestep,        {.i=2}},
     {  MOD |SHIFT,        XK_j,          resizestep,        {.i=1}},
@@ -127,10 +127,10 @@ static key keys[] = {
     {  MOD |SHIFT,        XK_Left,       cursor_move,       {.i=3}},
     // Start programs
     {  MOD ,              XK_Return,     start,             {.com = terminal}},
-    {  MOD ,              XK_w,          start,             {.com = menucmd}},    
-    // Exit or restart mcwm
-    {  MOD |CONTROL,      XK_q,          mcwm_exit,         {.i=0}},
-    {  MOD |CONTROL,      XK_r,          mcwm_restart,      {.i=0}},
+    {  MOD ,              XK_w,          start,             {.com = menucmd}},
+    // Exit or restart 2bwm
+    {  MOD |CONTROL,      XK_q,          twobwm_exit,         {.i=0}},
+    {  MOD |CONTROL,      XK_r,          twobwm_restart,      {.i=0}},
     // Change current workspace
        DESKTOPCHANGE(     XK_1,                             0)
        DESKTOPCHANGE(     XK_2,                             1)
@@ -144,7 +144,7 @@ static key keys[] = {
        DESKTOPCHANGE(     XK_0,                             9)
 };
 static Button buttons[] = {
-    {  MOD        ,XCB_BUTTON_INDEX_1,     mousemotion,   {.i=MCWM_MOVE}},
-    {  MOD        ,XCB_BUTTON_INDEX_3,     mousemotion,   {.i=MCWM_RESIZE}},
+    {  MOD        ,XCB_BUTTON_INDEX_1,     mousemotion,   {.i=TWOBWM_MOVE}},
+    {  MOD        ,XCB_BUTTON_INDEX_3,     mousemotion,   {.i=TWOBWM_RESIZE}},
     {  MOD|CONTROL,XCB_BUTTON_INDEX_3,     start,         {.com = menucmd}},
 };

@@ -1,41 +1,43 @@
 VERSION=2013-3
 #CC=clang
-DIST=mcwm-$(VERSION)
-SRC=mcwm.c list.h hidden.c config.h
-DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
+DIST=2bwm-$(VERSION)
+SRC=2bwm.c list.h hidden.c config.h
+DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST 2bwm.man $(SRC)
 
-CFLAGS+=-g -std=c99 -Wall -Os -s -Wextra -I/usr/local/include -DDOUBLEBORDER -DNICON -DRESIZE_BORDER_ONLY -DCOMPTON
+CFLAGS+=-g -std=c99 -Wall -Os -s -march=i686 -mtune=i686 -Wextra -I/usr/local/include \
+	-DDOUBLEBORDER -DNICON -DRESIZE_BORDER_ONLY -DNCOMPTON
+
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util
 
 RM=/bin/rm
 PREFIX=/usr/local
 
-TARGETS=mcwm hidden
-OBJS=mcwm.o
+TARGETS=2bwm hidden
+OBJS=2bwm.o
 
 all: $(TARGETS)
 
-mcwm: $(OBJS)
+2bwm: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
 
 hidden: hidden.c
 	$(CC) $(CFLAGS) hidden.c $(LDFLAGS) -o $@
 
-mcwm-static: $(OBJS)
+2bwm-static: $(OBJS)
 	$(CC) $(OBJS) -static $(CFLAGS) $(LDFLAGS) -lXau -lpthread -o $@
 
-mcwm.o: mcwm.c list.h config.h Makefile
+2bwm.o: 2bwm.c list.h config.h Makefile
 
 install: $(TARGETS)
-	install -m 755 mcwm $(PREFIX)/bin
-	install -m 644 mcwm.man $(PREFIX)/man/man1/mcwm.1
+	install -m 755 2bwm $(PREFIX)/bin
+	install -m 644 2bwm.man $(PREFIX)/man/man1/2bwm.1
 	install -m 755 hidden $(PREFIX)/bin
 	install -m 644 hidden.man $(PREFIX)/man/man1/hidden.1
 
 uninstall: deinstall
 deinstall:
-	$(RM) $(PREFIX)/bin/mcwm
-	$(RM) $(PREFIX)/man/man1/mcwm.1
+	$(RM) $(PREFIX)/bin/2bwm
+	$(RM) $(PREFIX)/man/man1/2bwm.1
 	$(RM) $(PREFIX)/bin/hidden
 	$(RM) $(PREFIX)/man/man1/hidden.1
 
