@@ -1,9 +1,10 @@
 MCWM-Beast
 ==========
-An mcwm fork.<br>
+A fast floating WM written over the XCB library derived from mcwm written by Michael Cardell.<br>
 mcwm-beast is a minimalist window manager for the X Window System written directly on top of the X protocol C-language Binding, XCB. <br>
 It is a traditional floating window manager with no fancy smarts like those in modern tiling window managers.<br>
 In mcwm-beast all functions are available from the keyboard but a pointing device can be used for move, resize and raise/lower.<br>
+MCWM-Beast will soon be renamed.<br>
 
 Features:
 =========

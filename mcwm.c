@@ -983,7 +983,7 @@ void resizelim(struct client *client)
         client->height = mon_height - ((client->y - mon_y) + conf.borderwidth*2);
     resize(client->id, client->width, client->height);
 #ifdef DOUBLEBORDER
-    setborders(client,true);
+//    setborders(client,true);
 #endif
 }
 
@@ -1037,7 +1037,7 @@ void resizestep(const Arg *arg)
         break;
     } 
     resizelim(focuswin);
-    
+    setborders(focuswin,true); 
     if (focuswin->vertmaxed) focuswin->vertmaxed = false;
     
     if (focuswin->hormaxed)  focuswin->hormaxed  = false;
@@ -1061,7 +1061,7 @@ void resizestep_aspect(const Arg *arg)
         focuswin->width  = focuswin->width  * 1.03;
     }
     resizelim(focuswin);
-    
+    setborders(focuswin,true); 
     if (focuswin->vertmaxed) focuswin->vertmaxed = false;
     
     if (focuswin->hormaxed) focuswin->hormaxed =false;
@@ -1749,10 +1749,10 @@ struct client create_back_win(void)
 {
     struct client temp_win;
     temp_win.id = xcb_generate_id(conn);
-    uint32_t values[1] = {XCB_COPY_FROM_PARENT};
+    uint32_t values[1] = {conf.focuscol};
     xcb_create_window (conn, XCB_COPY_FROM_PARENT,/* depth */ temp_win.id, /* window Id */  screen->root, /* parent window */
         focuswin->x, focuswin->y, /* x, y */ focuswin->width, focuswin->height,  /* width, height */
-        1, /* border width */ XCB_WINDOW_CLASS_INPUT_OUTPUT, /* class */ screen->root_visual, /* visual */ XCB_CW_BACK_PIXEL, values
+        borders[1], /* border width */ XCB_WINDOW_CLASS_INPUT_OUTPUT, /* class */ screen->root_visual, /* visual */ XCB_CW_BORDER_PIXEL, values
     );  
     values[0]=1;
     xcb_change_window_attributes(conn, temp_win.id, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
@@ -1776,7 +1776,6 @@ static void mousemotion(const Arg *arg)
     xcb_cursor_t cursor;
 #ifdef RESIZE_BORDER_ONLY
     struct client example = create_back_win();
-    setborders(&example,true);
 #endif
     if(arg->i == MCWM_MOVE) cursor = Create_Font_Cursor (conn, CURSOR_MOVING ); /* fleur */
     else  {                  cursor = Create_Font_Cursor (conn, CURSOR_RESIZING); /* sizing */ 
@@ -1823,6 +1822,7 @@ static void mousemotion(const Arg *arg)
                 free(pointer);
             }
             ungrab = true;
+            setborders(focuswin,true);
         }
         break;
         }
