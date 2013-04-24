@@ -1754,8 +1754,13 @@ struct client create_back_win(void)
         focuswin->x, focuswin->y, /* x, y */ focuswin->width, focuswin->height,  /* width, height */
         borders[1], /* border width */ XCB_WINDOW_CLASS_INPUT_OUTPUT, /* class */ screen->root_visual, /* visual */ XCB_CW_BORDER_PIXEL, values
     );  
+#ifndef COMPTON
     values[0]=1;
     xcb_change_window_attributes(conn, temp_win.id, XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
+#else
+    values[0] = conf.unfocuscol;
+    xcb_change_window_attributes(conn, temp_win.id, XCB_CW_BACK_PIXEL, values);
+#endif
     temp_win.x=focuswin->x;temp_win.y=focuswin->y;temp_win.width=focuswin->width;temp_win.unkillable=focuswin->unkillable; 
     temp_win.fixed=focuswin->fixed;temp_win.height=focuswin->height;temp_win.width_inc=focuswin->width_inc;temp_win.height_inc=focuswin->height_inc;
     temp_win.base_width=focuswin->base_width;temp_win.base_height=focuswin->base_height;temp_win.monitor=focuswin->monitor; 
