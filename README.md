@@ -1,3 +1,6 @@
+![alt text][logo2bwm]
+[logo2bwm]: https://raw.github.com/venam/2bwm/master/2bWM.png "2bWM"
+
 2bwm
 ==========
 A fast floating WM  with the particularity of having 2 borders written over the XCB library and derived from mcwm written by Michael Cardell.<br>
