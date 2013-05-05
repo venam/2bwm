@@ -1,5 +1,7 @@
 -*- text -*-
 
+* Toggable sticky workspace per monitor
+
 * Extended Window Manager Hints (EWMH)
 
   - Use the new xcb-ewmh for the EWMH hints.
