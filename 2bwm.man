@@ -20,7 +20,7 @@ move
 resize window
 .RE
 .PP
-MOUSEMODKEY + CTRL + mouse buttons (On the Desktop) :
+MOUSEMODKEY + CTRL + mouse buttons :
 .RS
 .IP \(bu 2
 .B 3
@@ -56,6 +56,12 @@ resize down.
 .IP \(bu 2
 .B shift+K
 resize up.
+.IP \(bu 2
+.B w
+start the menu (my_menu.sh)
+.IP \(bu 2
+.B ctr+q ctrl+r
+quit or restart 2bwm
 .IP \(bu 2
 .B shift+L
 resize right.
@@ -168,6 +174,7 @@ Also, if you want to know the current workspace you can use `xprop -root _NET_CU
 .B 2bwm\fP obeys the $DISPLAY variable.
 
 .SH STARTING
+Warning you should not put "Urxvt.depth: 32" in your .Xressources if you are using urxvt, it will disable the borders.
 Typically the window manager is started from a script, either run by
 .B startx(1)
 or a login manager such as
