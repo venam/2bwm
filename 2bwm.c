@@ -1368,24 +1368,11 @@ void maxhalf(const Arg *arg)
         mon_width = focuswin->monitor->width;
         mon_height = focuswin->monitor->height;
     }
-//    if (focuswin->verthor && (arg->i<3 && arg->i>-3) ){ /* Check if maximized already. If so, revert to stored geometry. */
-//        unmax(focuswin);
-//        focuswin->verthor = false;
-//        setborders(focuswin,true);
-//        fitonscreen(focuswin);
-//        return;
-//    }
     raise_current_window();
-//    if (arg->i<3 && arg->i>-3){
-//    focuswin->origsize.x = focuswin->x;
-//    focuswin->origsize.y = focuswin->y;
-//    focuswin->origsize.width = focuswin->width;
-//    focuswin->origsize.height = focuswin->height;
-//    }
     if (arg->i>0) {
         if (arg->i>2) { /* in folding mode */
             if (arg->i>3) focuswin->height = focuswin->height/2 - (conf.borderwidth);
-            else          focuswin->height = focuswin->height*2 + (conf.borderwidth);
+            else          focuswin->height = focuswin->height*2 + (2*conf.borderwidth);
         }
         else {
             focuswin->y = mon_y+offsets[1];
@@ -1398,7 +1385,7 @@ void maxhalf(const Arg *arg)
     else {
         if (arg->i<-2) { /* in folding mode */
             if (arg->i<-3) focuswin->width = focuswin->width/2 -conf.borderwidth;
-            else           focuswin->width = focuswin->width*2 +conf.borderwidth;
+            else           focuswin->width = focuswin->width*2 +(2*conf.borderwidth);
         }
         else {
             focuswin->x = mon_x+offsets[0];
