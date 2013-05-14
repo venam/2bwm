@@ -284,20 +284,20 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
 {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&ws);
     struct client *client;
-
     if (ws == curws) return;
     for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
     /* Go through list of current ws. Unmap everything that isn't fixed. */
         client = item->data;
         if (!client->fixed) xcb_unmap_window(conn, client->id);
     }
+    curws = ws;
     for (struct item *item = wslist[ws]; item != NULL; item = item->next) {
     /* Go through list of new ws. Map everything that isn't fixed. */
         client = item->data;
         if (!client->fixed) xcb_map_window(conn, client->id);
     }
+    setfocus(NULL);
     xcb_flush(conn);
-    curws = ws;
 }
 void changeworkspace(const Arg *arg){changeworkspace_helper(arg->i);}
 void nextworkspace(){curws==WORKSPACES-1?changeworkspace_helper(0):changeworkspace_helper(curws+1);}
@@ -457,7 +457,6 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
     xcb_map_request_event_t *e = (xcb_map_request_event_t *) ev;
     xcb_window_t win = e->window;
     struct client *client;
-
     if (NULL != findclient(&win)) return; /* The window is trying to map itself on the current workspace, but since
                                            * it's unmapped it probably belongs on another workspace.*/
     client = setupwin(win);
@@ -1893,7 +1892,6 @@ void enternotify(xcb_generic_event_t *ev)
             /* Otherwise, set focus to the window we just entered if we can find it among the windows we
             * know about. If not, just keep focus in the old window. */
             client = findclient(&e->event);
-
             if (NULL != client) {
                 setfocus(client);
                 setborders(client,true);
