@@ -288,7 +288,10 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
     for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
     /* Go through list of current ws. Unmap everything that isn't fixed. */
         client = item->data;
-        if (!client->fixed) xcb_unmap_window(conn, client->id);
+        if (!client->fixed) {
+            setborders(client,false);
+            xcb_unmap_window(conn, client->id);
+        }
     }
     curws = ws;
     for (struct item *item = wslist[ws]; item != NULL; item = item->next) {
