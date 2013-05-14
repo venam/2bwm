@@ -89,7 +89,6 @@ struct winconf {                    // Window configuration data.
     uint8_t      stackmode;
     xcb_window_t sibling;
 };
-
 ///---Globals---///
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 static unsigned int numlockmask = 0;
@@ -102,7 +101,6 @@ struct client *focuswin;            // Current focus window.
 struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
 struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
-
 ///---Global configuration.---///
 struct conf {
     int8_t borderwidth;             // Do we draw borders for non-focused window? If so, how large?
@@ -112,7 +110,6 @@ struct conf {
     uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
 } conf;
 xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols;
-
 ///---Functions prototypes---///
 static void run(void);
 static bool setup(int screen);
@@ -301,7 +298,6 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
     }
     xcb_flush(conn);
     curws = ws;
-    focusnext_helper(false);
 }
 void changeworkspace(const Arg *arg){changeworkspace_helper(arg->i);}
 void nextworkspace(){curws==WORKSPACES-1?changeworkspace_helper(0):changeworkspace_helper(curws+1);}
@@ -1244,17 +1240,10 @@ void unmax(struct client *client)
     client->width  = client->origsize.width;
     client->height = client->origsize.height;
     /* Restore geometry. */
-    if (client->maxed || client->hormaxed) {
-        values[0] = client->x;            values[1] = client->y;
-        values[2] = client->width;        values[3] = client->height;
-        client->maxed   = client->hormaxed= 0;
-        mask = XCB_CONFIG_WINDOW_X|XCB_CONFIG_WINDOW_Y|XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT;
-    }
-    else {
-        values[0] = client->y;        values[1] = client->width;
-        values[2] = client->height;
-        mask = XCB_CONFIG_WINDOW_Y|XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT;
-    }
+    values[0] = client->x;            values[1] = client->y;
+    values[2] = client->width;        values[3] = client->height;
+    client->maxed   = client->hormaxed= 0;
+    mask = XCB_CONFIG_WINDOW_X|XCB_CONFIG_WINDOW_Y|XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT;
     xcb_configure_window(conn, client->id, mask, values);
     xcb_warp_pointer(conn, XCB_NONE, client->id,0,0,0,0,client->width/2,client->height/2);
     setborders(client,true);
@@ -1380,39 +1369,52 @@ void maxhalf(const Arg *arg)
         mon_width = focuswin->monitor->width;
         mon_height = focuswin->monitor->height;
     }
-    if (focuswin->verthor) { /* Check if maximized already. If so, revert to stored geometry. */
-        unmax(focuswin);
-        focuswin->verthor = false;
-        setborders(focuswin,true);
-        fitonscreen(focuswin);
-        return;
-    }
+//    if (focuswin->verthor && (arg->i<3 && arg->i>-3) ){ /* Check if maximized already. If so, revert to stored geometry. */
+//        unmax(focuswin);
+//        focuswin->verthor = false;
+//        setborders(focuswin,true);
+//        fitonscreen(focuswin);
+//        return;
+//    }
     raise_current_window();
-    focuswin->origsize.x = focuswin->x;
-    focuswin->origsize.y = focuswin->y;
-    focuswin->origsize.width = focuswin->width;
-    focuswin->origsize.height = focuswin->height;
+//    if (arg->i<3 && arg->i>-3){
+//    focuswin->origsize.x = focuswin->x;
+//    focuswin->origsize.y = focuswin->y;
+//    focuswin->origsize.width = focuswin->width;
+//    focuswin->origsize.height = focuswin->height;
+//    }
     if (arg->i>0) {
-        focuswin->y = mon_y+offsets[1];
-        focuswin->height =   mon_height - (offsets[3] + (conf.borderwidth * 2));
-        focuswin->width = ((float)(mon_width)/2)- (offsets[2]+ (conf.borderwidth * 2));
-
-        if (arg->i>1) focuswin->x = mon_x+offsets[0];
-        else focuswin->x = mon_x - offsets[0] + mon_width -(focuswin->width + conf.borderwidth * 2);
+        if (arg->i>2) { /* in folding mode */
+            if (arg->i>3) focuswin->height = focuswin->height/2 - (conf.borderwidth);
+            else          focuswin->height = focuswin->height*2 + (conf.borderwidth);
+        }
+        else {
+            focuswin->y = mon_y+offsets[1];
+            focuswin->height =   mon_height - (offsets[3] + (conf.borderwidth * 2));
+            focuswin->width = ((float)(mon_width)/2)- (offsets[2]+ (conf.borderwidth * 2));
+            if (arg->i>1) focuswin->x = mon_x+offsets[0];
+            else focuswin->x = mon_x - offsets[0] + mon_width -(focuswin->width + conf.borderwidth * 2);
+        }
     }
     else {
-        focuswin->x = mon_x+offsets[0];
-        focuswin->width =   mon_width - (offsets[2] + (conf.borderwidth * 2));
-        focuswin->height = ((float)(mon_height)/2)- (offsets[3]+ (conf.borderwidth * 2));
-
-        if (arg->i<-1) focuswin->y = mon_y+offsets[1];
-        else focuswin->y = mon_y - offsets[1] + mon_height -(focuswin->height + conf.borderwidth * 2);
+        if (arg->i<-2) { /* in folding mode */
+            if (arg->i<-3) focuswin->width = focuswin->width/2 -conf.borderwidth;
+            else           focuswin->width = focuswin->width*2 +conf.borderwidth;
+        }
+        else {
+            focuswin->x = mon_x+offsets[0];
+            focuswin->width =   mon_width - (offsets[2] + (conf.borderwidth * 2));
+            focuswin->height = ((float)(mon_height)/2)- (offsets[3]+ (conf.borderwidth * 2));
+            if (arg->i<-1) focuswin->y = mon_y+offsets[1];
+            else focuswin->y = mon_y - offsets[1] + mon_height -(focuswin->height + conf.borderwidth * 2);
+        }
     }
     values[0] = focuswin->width;        values[1] = focuswin->height;
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT, values);
     xcb_flush(conn);
     movewindow(focuswin->id, focuswin->x, focuswin->y);
     focuswin->verthor = true;
+    fitonscreen(focuswin);
 #ifdef DOUBLEBORDER
     setborders(focuswin,true);
 #endif

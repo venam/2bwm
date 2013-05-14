@@ -101,6 +101,14 @@ static key keys[] = {
     {  MOD |SHIFT,        XK_b,          maxhalf,           {.i=-1}},
     // horizontally right
     {  MOD |SHIFT,        XK_n,          maxhalf,           {.i=-2}},
+    //fold half vertically
+    {  MOD |SHIFT|CONTROL,XK_y,          maxhalf,           {.i=4}},
+    //fold half horizontally
+    {  MOD |SHIFT|CONTROL,XK_b,          maxhalf,           {.i=-4}},
+    //unfold vertically
+    {  MOD |SHIFT|CONTROL,XK_u,          maxhalf,           {.i=3}},
+    //unfold horizontally
+    {  MOD |SHIFT|CONTROL,XK_n,          maxhalf,           {.i=-3}},
     // Next/Previous screen
     {  MOD ,              XK_comma,      changescreen,      {.i=1}},
     {  MOD ,              XK_period,     changescreen,      {.i=0}},
