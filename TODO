@@ -1,8 +1,10 @@
 -*- text -*-
 
 * Toggable sticky workspace per monitor
- 
-* foldable windows, it split the window in half or maximize it by half (hor or ver)
+
+* Stay on top
+
+* Disable border per window name 
 
 * Extended Window Manager Hints (EWMH)
 
