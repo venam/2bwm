@@ -2,8 +2,6 @@
 
 * Toggable sticky workspace per monitor
 
-* Stay on top
-
 * Disable border per window name 
 
 * Extended Window Manager Hints (EWMH)

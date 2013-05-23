@@ -138,6 +138,9 @@ fix window so it is visible on all workspaces (toggles).
 .B a
 Make a window unkillable (toggles).
 .IP \(bu 2
+.B t
+Make a window stay on top.
+.IP \(bu 2
 .B i
 iconify (or hide) window from the display.
 .IP \(bu 2

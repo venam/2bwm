@@ -98,6 +98,7 @@ xcb_screen_t     *screen;           // Our current screen.
 int randrbase;                      // Beginning of RANDR extension events.
 uint8_t curws = 0;                  // Current workspace.
 struct client *focuswin;            // Current focus window.
+struct client *top_win=NULL;        // Window always on top.
 struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
 struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
@@ -130,6 +131,7 @@ static void changescreen(const Arg *arg);
 static void grabkeys(void);
 static void twobwm_restart();
 static void twobwm_exit();
+static void always_on_top();
 static bool setup_keyboard(void);
 static bool setupscreen(void);
 static int  setuprandr(void);
@@ -236,29 +238,25 @@ int32_t getwmdesktop(xcb_drawable_t win)
                                     // Returns either workspace, NET_WM_FIXED if this window should be
                                     // visible on all workspaces or TWOBWM_NOWS if we didn't find any hints.
     xcb_get_property_reply_t *reply;
-    uint32_t *wsp, ws;
+    uint32_t *wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, atom_desktop,
-                              XCB_GET_PROPERTY_TYPE_ANY, 0,
-                              sizeof(int32_t));
+        XCB_GET_PROPERTY_TYPE_ANY, 0, sizeof(int32_t));
     reply = xcb_get_property_reply(conn, cookie, NULL);
-
     if (NULL == reply) return TWOBWM_NOWS;
     if (0 == xcb_get_property_value_length(reply)) { /* 0 if we didn't find it. */
         free(reply);
         return TWOBWM_NOWS;
     }
     wsp = xcb_get_property_value(reply);
-    ws = *wsp;
     free(reply);
-    return ws;
+    return *wsp;
 }
 
 bool get_unkil_state(xcb_drawable_t win)
 {                                   // check if the window is unkillable, if yes return true
     uint8_t *wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, atom_unkillable,XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(int8_t));
-    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
-
+    xcb_get_property_reply_t *reply  = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL == reply) return false;
     if (0 == xcb_get_property_value_length(reply)){
         free(reply);
@@ -267,7 +265,7 @@ bool get_unkil_state(xcb_drawable_t win)
     wsp = xcb_get_property_value(reply);
     free(reply);
     if (*wsp == 1) return true;
-    else         return false;
+    else           return false;
 }
 
 void addtoworkspace(struct client *client, uint32_t ws)
@@ -302,13 +300,23 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
     setfocus(NULL);
     xcb_flush(conn);
 }
+
+void always_on_top()
+{
+    if(focuswin!=NULL){
+        if(top_win!=focuswin){
+            top_win = focuswin; 
+            raisewindow(top_win->id);
+        }
+        else top_win = NULL;
+    }
+}
 void changeworkspace(const Arg *arg){changeworkspace_helper(arg->i);}
 void nextworkspace(){curws==WORKSPACES-1?changeworkspace_helper(0):changeworkspace_helper(curws+1);}
 void prevworkspace(){curws>0?changeworkspace_helper(curws-1):changeworkspace_helper(WORKSPACES-1);}
 
 void fixwindow(struct client *client)
 {                                   // Fix or unfix a window client from all workspaces. If setcolour is
-                                    // set, also change back to ordinary focus colour when unfixing.
     if (NULL == client) return;
     if (client->fixed) {
         client->fixed = false;
@@ -331,7 +339,6 @@ void fixwindow(struct client *client)
 
 void unkillablewindow(struct client *client)
 {                                   // Make unkillable or killable a window client. If setcolour is
-                                    // set, also change back to ordinary focus colour when *unkillabilling*.
     if (NULL == client) return;
     if (client->unkillable) {
         client->unkillable = false;
@@ -517,15 +524,15 @@ struct client *setupwin(xcb_window_t win)
 
     if (NULL == client) return NULL;
 
-    item->data = client;
-    client->id = win;
+    item->data            = client;
+    client->id            = win;
     client->x = client->y = client->width = client->height = client->min_width = client->min_height = client->base_width = client->base_height = 0;
-    client->max_width = screen->width_in_pixels;
-    client->max_height = screen->height_in_pixels;
-    client->width_inc = client->height_inc = 1;
-    client->usercoord = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed = false;
-    client->monitor = NULL;
-    client->winitem = item;
+    client->max_width     = screen->width_in_pixels;
+    client->max_height    = screen->height_in_pixels;
+    client->width_inc     = client->height_inc = 1;
+    client->usercoord     = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed=false;
+    client->monitor       = NULL;
+    client->winitem       = item;
 
     for (uint32_t ws = 0; ws < WORKSPACES; ws ++) client->wsitem[ws] = NULL;
     getgeom(&client->id, &client->x, &client->y, &client->width, &client->height);/* Get window geometry. */
@@ -625,7 +632,6 @@ bool setupscreen(void)              // Walk through all existing windows and set
                 ws = getwmdesktop(children[i]);/* Check if this window has a workspace set already as a WM hint. */
 
                 if (get_unkil_state(children[i])) unkillablewindow(client);
-
                 if (ws == NET_WM_FIXED) {
                     addtoworkspace(client, curws); /* Add to current workspace. */
                     fixwindow(client);             /* Add to all other workspaces. */
@@ -643,7 +649,6 @@ bool setupscreen(void)              // Walk through all existing windows and set
     changeworkspace_helper(0);
     /* Get pointer position so we can set focus on any window which might be under it. */
     xcb_query_pointer_reply_t *pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, screen->root), 0);
-
     if (NULL == pointer) focuswin = NULL;
     else {
         setfocus(findclient(&pointer->child));
@@ -687,8 +692,7 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
     xcb_randr_get_crtc_info_cookie_t icookie;
     xcb_randr_get_crtc_info_reply_t *crtc = NULL;
     xcb_randr_get_output_info_reply_t *output;
-    struct monitor *mon;
-    struct monitor *clonemon;
+    struct monitor *mon, *clonemon;
     xcb_randr_get_output_info_cookie_t ocookie[len];
 
     for (int i = 0; i < len; i++) ocookie[i] = xcb_randr_get_output_info(conn, outputs[i], timestamp);
@@ -740,7 +744,6 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
                                                                                       * and move them to the next or to the
                                                                                       * first monitor if there is no next. */
                     client = item->data;
-
                     if (client->monitor == mon) {
                         if (NULL == client->monitor->item->next)
                             if (NULL == monlist) client->monitor = NULL;
@@ -981,15 +984,11 @@ void resizelim(struct client *client)
     if (client->y + client->height + conf.borderwidth * 2 > mon_y + mon_height)
         client->height = mon_height - ((client->y - mon_y) + conf.borderwidth*2);
     resize(client->id, client->width, client->height);
-#ifdef DOUBLEBORDER
-//    setborders(client,true);
-#endif
 }
 
 void moveresize(xcb_drawable_t win, const uint16_t x, const uint16_t y,const uint16_t width, const uint16_t height)
 {
     uint32_t values[4];
-
     if (screen->root == win || 0 == win) return;
     values[0] = x;            values[1] = y;
     values[2] = width;        values[3] = height;
@@ -1001,7 +1000,6 @@ void moveresize(xcb_drawable_t win, const uint16_t x, const uint16_t y,const uin
 void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height)
 {                                   // Resize window win to width,height.
     uint32_t values[2];
-
     if (screen->root == win || 0 == win) return;
     values[0] = width;        values[1] = height;
     xcb_configure_window(conn, win,XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT, values);
@@ -1038,7 +1036,6 @@ void resizestep(const Arg *arg)
     resizelim(focuswin);
     setborders(focuswin,true);
     if (focuswin->vertmaxed) focuswin->vertmaxed = false;
-
     if (focuswin->hormaxed)  focuswin->hormaxed  = false;
 
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id,0,0,0,0,focuswin->width/2, focuswin->height/2);
@@ -1062,8 +1059,7 @@ void resizestep_aspect(const Arg *arg)
     resizelim(focuswin);
     setborders(focuswin,true);
     if (focuswin->vertmaxed) focuswin->vertmaxed = false;
-
-    if (focuswin->hormaxed) focuswin->hormaxed =false;
+    if (focuswin->hormaxed)  focuswin->hormaxed  = false;
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id,0,0,0,0,focuswin->width/2, focuswin->height/2);
     xcb_flush(conn);
 }
@@ -1540,7 +1536,6 @@ void deletewin()
 void changescreen(const Arg *arg)
 {
     struct item *item;
-
     if (NULL == focuswin || NULL == focuswin->monitor) return;
 
     if (arg->i>0) item = focuswin->monitor->item->next;
@@ -1944,6 +1939,7 @@ void run(void)
             if(ev->response_type==randrbase + XCB_RANDR_SCREEN_CHANGE_NOTIFY) getrandr();
             if (events[ev->response_type & ~0x80]) events[ev->response_type & ~0x80](ev);
         free(ev);
+        if(top_win!=NULL) raisewindow(top_win->id);
         }
     }
 }
@@ -2022,12 +2018,7 @@ void twobwm_restart()
     execvp("/usr/local/bin/2bwm", argv);
 }
 
-void twobwm_exit()
-{
-    sigcode = 0;
-    cleanup(0);
-    exit(0);
-}
+void twobwm_exit(){sigcode = 0; cleanup(0); exit(0);}
 
 int main()
 {
