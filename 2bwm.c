@@ -98,7 +98,7 @@ xcb_screen_t     *screen;           // Our current screen.
 int randrbase;                      // Beginning of RANDR extension events.
 uint8_t curws = 0;                  // Current workspace.
 struct client *focuswin;            // Current focus window.
-xcb_drawable_t top_win=0;          // Window always on top.
+xcb_drawable_t top_win=0;           // Window always on top.
 struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
 struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
@@ -307,8 +307,10 @@ void always_on_top()
         if(top_win!=focuswin->id){
             top_win = focuswin->id; 
             raisewindow(top_win);
+            setborders(focuswin,true);
         }
         else top_win = 0;
+        setborders(focuswin,true);
     }
 }
 void changeworkspace(const Arg *arg){changeworkspace_helper(arg->i);}
@@ -1127,8 +1129,10 @@ void setborders(struct client *client,const bool isitfocused)
 
     if (!client->maxed) {
         values[0] = conf.borderwidth; /* Set border width. */
-        xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
-        uint16_t half = conf.outer_border;
+        xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);        
+        uint16_t half = 0;
+        if (top_win!=0 &&client->id ==top_win) half = -conf.outer_border;
+        else half = conf.outer_border;
         xcb_rectangle_t rect_inner[] = {
             { client->width,0, conf.borderwidth-half,client->height+conf.borderwidth-half},
             { client->width+conf.borderwidth+half,0, conf.borderwidth-half,client->height+conf.borderwidth-half},
