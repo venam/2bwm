@@ -1517,6 +1517,7 @@ void deletewin()
     bool use_delete = false;
 
     if (NULL == focuswin || focuswin->unkillable==true) return;
+    if (focuswin->id == top_win) top_win = 0;
     /* Check if WM_DELETE is supported.  */
     xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id,wm_protocols);
 
