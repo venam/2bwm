@@ -98,7 +98,7 @@ xcb_screen_t     *screen;           // Our current screen.
 int randrbase;                      // Beginning of RANDR extension events.
 uint8_t curws = 0;                  // Current workspace.
 struct client *focuswin;            // Current focus window.
-struct client *top_win=NULL;        // Window always on top.
+xcb_drawable_t top_win=0;          // Window always on top.
 struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
 struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
@@ -304,11 +304,11 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
 void always_on_top()
 {
     if(focuswin!=NULL){
-        if(top_win!=focuswin){
-            top_win = focuswin; 
-            raisewindow(top_win->id);
+        if(top_win!=focuswin->id){
+            top_win = focuswin->id; 
+            raisewindow(top_win);
         }
-        else top_win = NULL;
+        else top_win = 0;
     }
 }
 void changeworkspace(const Arg *arg){changeworkspace_helper(arg->i);}
@@ -1939,7 +1939,7 @@ void run(void)
             if(ev->response_type==randrbase + XCB_RANDR_SCREEN_CHANGE_NOTIFY) getrandr();
             if (events[ev->response_type & ~0x80]) events[ev->response_type & ~0x80](ev);
         free(ev);
-        if(top_win!=NULL) raisewindow(top_win->id);
+        if(top_win!=0) raisewindow(top_win);
         }
     }
 }
