@@ -26,8 +26,9 @@ static const uint8_t borders[] = {2,10,9};
 #define CURSOR_MOVING   52
 #define CURSOR_RESIZING 120
 ///--Menus and Programs---///
-static const char *menucmd[] = { "/bin/my_menu.sh", NULL };
-static const char *terminal[] = { "urxvtc", NULL };
+static const char *menucmd[]   = { "/bin/my_menu.sh", NULL };
+static const char *terminal[]  = { "urxvtc", NULL };
+static const char *twobwm_path = "/usr/local/bin/2bwm";
 ///---Shortcuts---///
 /* Check /usr/include/X11/keysymdef.h for the list of all keys
  * For AZERTY keyboards XK_1...0 should be replaced by :

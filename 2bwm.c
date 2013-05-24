@@ -2020,7 +2020,7 @@ void twobwm_restart()
     xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,XCB_CURRENT_TIME);
     xcb_flush(conn);
     char* argv[2] = {"",NULL};
-    execvp("/usr/local/bin/2bwm", argv);
+    execvp(twobwm_path, argv);
 }
 
 void twobwm_exit(){sigcode = 0; cleanup(0); exit(0);}
