@@ -35,15 +35,17 @@
 
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
-#define WORKSPACES   10             // Number of workspaces.
 #define BUTTONMASK   XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE
 #define NET_WM_FIXED 0xffffffff     // Value in WM hint which means this window is fixed on all workspaces.
-#define TWOBWM_NOWS    0xfffffffe     // This means we didn't get any window hint at all.
+#define TWOBWM_NOWS    0xfffffffe   // This means we didn't get any window hint at all.
 #define LENGTH(x)    (sizeof(x)/sizeof(*x))
 #define CLEANMASK(mask) (mask & ~(numlockmask|XCB_MOD_MASK_LOCK))
 #define CONTROL         XCB_MOD_MASK_CONTROL /* Control key */
 #define ALT             XCB_MOD_MASK_1       /* ALT key */
 #define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
+
+#define WORKSPACES 10
+static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---Types---///
 struct monitor {
     xcb_randr_output_t id;
@@ -110,7 +112,7 @@ struct conf {
 #endif
     uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
 } conf;
-xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols;
+xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols,atom_nb_workspace;
 ///---Functions prototypes---///
 static void run(void);
 static bool setup(int screen);
@@ -1989,7 +1991,7 @@ bool setup(int scrno)
     conf.outer_border_col= getcolor(colors[5]);             conf.fixed_unkil_col = getcolor(colors[4]);
     conf.empty_col       = getcolor(colors[6]);
     atom_desktop         = getatom("_NET_WM_DESKTOP");     atom_current_desktop = getatom("_NET_CURRENT_DESKTOP");
-    atom_unkillable      = getatom("_NET_UNKILLABLE");
+    atom_unkillable      = getatom("_NET_UNKILLABLE");     atom_nb_workspace    = getatom("_NET_NUMBER_OF_DESKTOPS");
     wm_delete_window     = getatom("WM_DELETE_WINDOW");    wm_change_state      = getatom("WM_CHANGE_STATE");
     wm_state             = getatom("WM_STATE");            wm_protocols         = getatom("WM_PROTOCOLS");
     randrbase = setuprandr();
@@ -2001,6 +2003,7 @@ bool setup(int scrno)
     if (error) return false;
 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&curws);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_nb_workspace   , XCB_ATOM_CARDINAL, 32, 1,&_WORKSPACES);
     grabkeys();
     /* set events */
     for (unsigned int i=0; i<XCB_NO_OPERATION; i++) events[i] = NULL;
