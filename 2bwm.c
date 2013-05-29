@@ -904,7 +904,9 @@ void focusnext_helper(bool arg)
         /* Raise window if it's occluded, then warp pointer into it and set keyboard focus to it. */
         uint32_t values[] = { XCB_STACK_MODE_TOP_IF };
         xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_STACK_MODE,values);
+#ifndef  DONT_WARP_POINTER
         xcb_warp_pointer(conn, XCB_NONE, client->id,0,0,0,0,client->width/2, client->height/2);
+#endif
         setfocus(client);
     }
 }

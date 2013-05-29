@@ -6,6 +6,7 @@ DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST 2bwm.man $(SRC)
 
 CFLAGS+=-g -std=c99 -Wall -Os -Wextra -I/usr/local/include \
 	-DNICON -DRESIZE_BORDER_ONLY -DNCOMPTON
+#-DDONT_WARP_POINTER
 
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util
 
