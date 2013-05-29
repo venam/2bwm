@@ -1312,6 +1312,9 @@ void maxvert_hor(const Arg *arg)
                            | XCB_CONFIG_WINDOW_WIDTH, values);
         focuswin->hormaxed = true;
     }
+#ifndef  DONT_WARP_POINTER
+    xcb_warp_pointer(conn, XCB_NONE, focuswin->id,0,0,0,0,focuswin->width/2, focuswin->height/2);
+#endif
     xcb_flush(conn);
     setborders(focuswin,true);
 }
@@ -1369,6 +1372,9 @@ void maxhalf(const Arg *arg)
     focuswin->verthor = true;
     fitonscreen(focuswin);
     setborders(focuswin,true);
+#ifndef  DONT_WARP_POINTER
+    xcb_warp_pointer(conn, XCB_NONE, focuswin->id,0,0,0,0,focuswin->width/2, focuswin->height/2);
+#endif
 }
 
 #ifdef ICON
