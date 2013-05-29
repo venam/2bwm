@@ -107,12 +107,10 @@ struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NU
 ///---Global configuration.---///
 struct conf {
     int8_t borderwidth;             // Do we draw borders for non-focused window? If so, how large?
-#ifdef DOUBLEBORDER
     int8_t outer_border;            // The size of the outer border
-#endif
     uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
 } conf;
-xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols,atom_nb_workspace;
+xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols,atom_nb_workspace,atom_focus;
 ///---Functions prototypes---///
 static void run(void);
 static bool setup(int screen);
@@ -948,6 +946,7 @@ void setfocus(struct client *client)// Set focus on window client.
     focuswin = client;  /* Remember the new window as the current focused window. */
     setborders(client,true);
     grabbuttons(client);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_CARDINAL, 32, 1,&focuswin->id);
 }
 
 void start(const Arg *arg)
@@ -1126,7 +1125,6 @@ void movestep(const Arg *arg)
 
 void setborders(struct client *client,const bool isitfocused)
 {
-#ifdef DOUBLEBORDER
     uint32_t values[1];  /* this is the color maintainer */
 
     if (!client->maxed) {
@@ -1196,42 +1194,6 @@ void setborders(struct client *client,const bool isitfocused)
         xcb_free_gc(conn,gc);
         xcb_flush(conn);
     }
-
-#else
-    uint32_t values[1];
-    if (!client->maxed) {
-        values[0] = conf.borderwidth; /* Set border width. */
-        xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
-
-        if (isitfocused) {
-            if (!client->unkillable && !client->fixed) {
-                values[0]         = conf.focuscol;
-                xcb_change_window_attributes(conn,client->id, XCB_CW_BORDER_PIXEL, &values[0]);
-            }
-            else {
-                if (client->unkillable && client->fixed) {
-                    values[0]         = conf.fixed_unkil_col;
-                    xcb_change_window_attributes(conn,client->id,XCB_CW_BORDER_PIXEL,&values[0]);
-                }
-                else {
-                    if (client->fixed) {
-                        values[0]         = conf.fixedcol;
-                        xcb_change_window_attributes(conn,client->id,XCB_CW_BORDER_PIXEL, &values[0]);
-                    }
-                    else {
-                        values[0]         = conf.unkillcol;
-                        xcb_change_window_attributes(conn,client->id,XCB_CW_BORDER_PIXEL, &values[0]);
-                    }
-                }
-            }
-        }
-        else {
-            values[0] = conf.unfocuscol;
-            xcb_change_window_attributes(conn,client->id,XCB_CW_BORDER_PIXEL,&values[0]);
-        }
-    }
-    xcb_flush(conn);
-#endif
 }
 
 void unmax(struct client *client)
@@ -1349,9 +1311,7 @@ void maxvert_hor(const Arg *arg)
         focuswin->hormaxed = true;
     }
     xcb_flush(conn);
-#ifdef DOUBLEBORDER
     setborders(focuswin,true);
-#endif
 }
 
 void maxhalf(const Arg *arg)
@@ -1406,9 +1366,7 @@ void maxhalf(const Arg *arg)
     movewindow(focuswin->id, focuswin->x, focuswin->y);
     focuswin->verthor = true;
     fitonscreen(focuswin);
-#ifdef DOUBLEBORDER
     setborders(focuswin,true);
-#endif
 }
 
 #ifdef ICON
@@ -1983,9 +1941,7 @@ bool setup(int scrno)
 
     if (!screen) return false;
     conf.borderwidth = borders[1];
-#ifdef DOUBLEBORDER
     conf.outer_border= borders[0];
-#endif
     conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
     conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
     conf.outer_border_col= getcolor(colors[5]);             conf.fixed_unkil_col = getcolor(colors[4]);
@@ -1994,6 +1950,7 @@ bool setup(int scrno)
     atom_unkillable      = getatom("_NET_UNKILLABLE");     atom_nb_workspace    = getatom("_NET_NUMBER_OF_DESKTOPS");
     wm_delete_window     = getatom("WM_DELETE_WINDOW");    wm_change_state      = getatom("WM_CHANGE_STATE");
     wm_state             = getatom("WM_STATE");            wm_protocols         = getatom("WM_PROTOCOLS");
+    atom_focus           = getatom("_NET_ACTIVE_WINDOW");
     randrbase = setuprandr();
     if (!setupscreen())    return false;
     if (!setup_keyboard()) return false;
@@ -2001,7 +1958,6 @@ bool setup(int scrno)
     xcb_generic_error_t *error = xcb_request_check(conn, xcb_change_window_attributes_checked(conn, screen->root, XCB_CW_EVENT_MASK, values));
     xcb_flush(conn);
     if (error) return false;
-
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&curws);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_nb_workspace   , XCB_ATOM_CARDINAL, 32, 1,&_WORKSPACES);
     grabkeys();
