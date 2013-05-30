@@ -948,7 +948,7 @@ void setfocus(struct client *client)// Set focus on window client.
     focuswin = client;  /* Remember the new window as the current focused window. */
     setborders(client,true);
     grabbuttons(client);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_CARDINAL, 32, 1,&focuswin->id);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&focuswin->id);
 }
 
 void start(const Arg *arg)
@@ -1957,7 +1957,7 @@ bool setup(int scrno)
     atom_desktop         = getatom("_NET_WM_DESKTOP");     atom_current_desktop = getatom("_NET_CURRENT_DESKTOP");
     atom_unkillable      = getatom("_NET_UNKILLABLE");     atom_nb_workspace    = getatom("_NET_NUMBER_OF_DESKTOPS");
     wm_delete_window     = getatom("WM_DELETE_WINDOW");    wm_change_state      = getatom("WM_CHANGE_STATE");
-    wm_state             = getatom("WM_STATE");            wm_protocols         = getatom("WM_PROTOCOLS");
+    wm_state             = getatom("_NET_WM_STATE");            wm_protocols         = getatom("WM_PROTOCOLS");
     atom_focus           = getatom("_NET_ACTIVE_WINDOW");
     randrbase = setuprandr();
     if (!setupscreen())    return false;
