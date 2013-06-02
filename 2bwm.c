@@ -568,7 +568,7 @@ struct client *setupwin(xcb_window_t win)
     client->max_width     = screen->width_in_pixels;
     client->max_height    = screen->height_in_pixels;
     client->width_inc     = client->height_inc = 1;
-    client->usercoord     = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed= client->ignore_borders=false;
+    client->usercoord     = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed= client->ignore_borders=client->ignore_focus=false;
     client->monitor       = NULL;
     client->winitem       = item;
 
