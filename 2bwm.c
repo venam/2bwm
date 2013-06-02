@@ -80,7 +80,7 @@ struct client {                     // Everything we know about a window.
     struct sizepos origsize;        // Original size if we're currently maxed.
     uint16_t max_width, max_height,min_width, min_height; // Hints from application.
     int32_t width_inc, height_inc,base_width, base_height;
-    bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders;
+    bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,ignore_focus;
     struct monitor *monitor;        // The physical output this window is on.
     struct item *winitem;           // Pointer to our place in global windows list.
     struct item *wsitem[WORKSPACES];// Pointer to our place in every workspace window list.
@@ -287,6 +287,12 @@ void check_name(struct client *client)
             client->ignore_borders = true;
             uint32_t values[1] = {0};
             xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
+            break;
+        }
+    }
+    for(int i=0;i<NB_F_NAMES;i++) {
+        if (strstr(wm_name_window, ignore_f_names[i]) !=NULL) {
+            client->ignore_focus = true;
             break;
         }
     }
@@ -936,7 +942,7 @@ void focusnext_helper(bool arg)
         }
     } /* if NULL focuswin */
 
-    if (NULL != client) {
+    if (NULL != client && !client->ignore_focus) {
         /* Raise window if it's occluded, then warp pointer into it and set keyboard focus to it. */
         uint32_t values[] = { XCB_STACK_MODE_TOP_IF };
         xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_STACK_MODE,values);
@@ -970,7 +976,7 @@ void setfocus(struct client *client)// Set focus on window client.
 {
     /* If client is NULL, we focus on whatever the pointer is on. This is a pathological case, but it will
      * make the poor user able to focus on windows anyway, even though this windowmanager might be buggy. */
-    if (NULL == client) {
+    if (NULL == client || client->ignore_focus) {
         focuswin = NULL;
         xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_POINTER_ROOT,XCB_CURRENT_TIME);
         xcb_flush(conn);
