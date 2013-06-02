@@ -26,8 +26,8 @@ static const uint8_t borders[] = {2,10,9};
 #define LOOK_INTO "WM_NAME"
 static const char *ignore_names[] = {"MPlayer","bar"};
 /* Windows that won't get any focus. */
-#define NB_F_NAMES 2
-static const char *ignore_f_names[]={"MPlayer","bar"};
+#define NB_F_NAMES 1
+static const char *ignore_f_names[]={"bar"};
 ///---Cursor---///
 /* Check /usr/include/X11/cursorfont.h for more details */
 #define CURSOR_MOVING   52
