@@ -80,7 +80,7 @@ struct client {                     // Everything we know about a window.
     struct sizepos origsize;        // Original size if we're currently maxed.
     uint16_t max_width, max_height,min_width, min_height; // Hints from application.
     int32_t width_inc, height_inc,base_width, base_height;
-    bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor;
+    bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders;
     struct monitor *monitor;        // The physical output this window is on.
     struct item *winitem;           // Pointer to our place in global windows list.
     struct item *wsitem[WORKSPACES];// Pointer to our place in every workspace window list.
@@ -150,6 +150,7 @@ static void clientmessage(xcb_generic_event_t *ev);
 static void deletewin();
 static void unkillable();
 static void fix();
+static void check_name(struct client *client);
 static void configurerequest(xcb_generic_event_t *ev);
 static void buttonpress(xcb_generic_event_t *ev);
 static void unmapnotify(xcb_generic_event_t *ev);
@@ -266,6 +267,30 @@ bool get_unkil_state(xcb_drawable_t win)
     free(reply);
     if (*wsp == 1) return true;
     else           return false;
+}
+
+void check_name(struct client *client)
+{
+    char *wm_name_window;
+    xcb_atom_t atom_name = getatom(LOOK_INTO);
+    xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, client->id, atom_name,XCB_GET_PROPERTY_TYPE_ANY, 0,60);
+    xcb_get_property_reply_t *reply  = xcb_get_property_reply(conn, cookie, NULL);
+    if (NULL == reply) return;
+    if (0 == xcb_get_property_value_length(reply)){
+        free(reply);
+        return;
+    }
+    wm_name_window = xcb_get_property_value(reply);
+    free(reply);
+    for(int i=0;i<NB_NAMES;i++) {
+        if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
+            client->ignore_borders = true;
+            uint32_t values[1] = {0};
+            xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
+            break;
+        }
+    }
+    xcb_flush(conn);
 }
 
 void addtoworkspace(struct client *client, uint32_t ws)
@@ -393,7 +418,7 @@ void forgetwin(xcb_window_t win)    // Forget everything about a client with cli
 
 void fitonscreen(struct client *client)
 {                                   // Fit client on physical screen, moving and resizing as necessary.
-    int16_t mon_x, mon_y;
+    int16_t mon_x, mon_y,temp=0;
     uint16_t mon_width, mon_height;
     bool willmove,willresize;
     willmove = willresize = client->vertmaxed = false;
@@ -438,6 +463,10 @@ void fitonscreen(struct client *client)
         client->width = client->min_width;
         willresize = true;
     }
+    if(client->ignore_borders) { 
+        temp = conf.borderwidth;
+        conf.borderwidth = 0;
+    }
     /* If the window is larger than our screen, just place it in the corner and resize. */
     if (client->width + conf.borderwidth * 2 > mon_width) {
         client->x = mon_x;
@@ -462,6 +491,7 @@ void fitonscreen(struct client *client)
 
     if (willmove) movewindow(client->id, client->x, client->y);
     if (willresize) resize(client->id, client->width, client->height);
+    if(client->ignore_borders) conf.borderwidth = temp;
 }
 
 void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of a new window and show it
@@ -532,7 +562,7 @@ struct client *setupwin(xcb_window_t win)
     client->max_width     = screen->width_in_pixels;
     client->max_height    = screen->height_in_pixels;
     client->width_inc     = client->height_inc = 1;
-    client->usercoord     = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed=false;
+    client->usercoord     = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed= client->ignore_borders=false;
     client->monitor       = NULL;
     client->winitem       = item;
 
@@ -559,6 +589,7 @@ struct client *setupwin(xcb_window_t win)
         client->base_width = hints.base_width;
         client->base_height = hints.base_height;
     }
+    check_name(client);
     return client;
 }
 
@@ -835,7 +866,7 @@ void raiseorlower()
 
 void movelim(struct client *client) //Keep the window inside the screen
 {
-    int16_t mon_y, mon_x;
+    int16_t mon_y, mon_x,temp=0;
     uint16_t mon_height, mon_width;
 
     if (NULL == client->monitor) {
@@ -848,6 +879,10 @@ void movelim(struct client *client) //Keep the window inside the screen
         mon_x = client->monitor->x;
         mon_height = client->monitor->height;
         mon_width  = client->monitor->width;
+    }
+    if(client->ignore_borders) {
+        temp  = conf.borderwidth;
+        conf.borderwidth = 0;
     }
     /* Is it outside the physical monitor or close to the side? */
     if (client->y-conf.borderwidth < mon_y)     client->y = mon_y;
@@ -862,6 +897,7 @@ void movelim(struct client *client) //Keep the window inside the screen
     if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
         client->y = (mon_y + mon_height - conf.borderwidth * 2) - client->height;
     movewindow(client->id, client->x, client->y);
+    if(client->ignore_borders) conf.borderwidth = temp;
 }
 
 void movewindow(xcb_drawable_t win, const int16_t x, const int16_t y)
@@ -962,7 +998,7 @@ void start(const Arg *arg)
 
 void resizelim(struct client *client)
 {                                   // Resize with limit.
-    int16_t mon_x, mon_y;
+    int16_t mon_x, mon_y,temp=0;
     uint16_t mon_width, mon_height;
 
     if (NULL == client->monitor) {
@@ -975,6 +1011,10 @@ void resizelim(struct client *client)
         mon_y = client->monitor->y;
         mon_width = client->monitor->width;
         mon_height = client->monitor->height;
+    }
+    if (client->ignore_borders) {
+        temp = conf.borderwidth;
+        conf.borderwidth = 0;
     }
     /* Is it smaller than it wants to  be? */
     if (0 != client->min_height && client->height < client->min_height)
@@ -989,6 +1029,7 @@ void resizelim(struct client *client)
     if (client->y + client->height + conf.borderwidth * 2 > mon_y + mon_height)
         client->height = mon_height - ((client->y - mon_y) + conf.borderwidth*2);
     resize(client->id, client->width, client->height);
+    if(client->ignore_borders) conf.borderwidth = temp;
 }
 
 void moveresize(xcb_drawable_t win, const uint16_t x, const uint16_t y,const uint16_t width, const uint16_t height)
@@ -1129,7 +1170,7 @@ void setborders(struct client *client,const bool isitfocused)
 {
     uint32_t values[1];  /* this is the color maintainer */
 
-    if (!client->maxed) {
+    if (!client->maxed && !client->ignore_borders) {
         values[0] = conf.borderwidth; /* Set border width. */
         xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);        
         uint16_t half = 0;
@@ -1266,7 +1307,7 @@ void maximize()
 void maxvert_hor(const Arg *arg)
 {
     uint32_t values[2];
-    int16_t mon_y, mon_x;
+    int16_t mon_y, mon_x,temp=0;
     uint16_t mon_height, mon_width;
 
     if (NULL == focuswin) return;
@@ -1294,6 +1335,10 @@ void maxvert_hor(const Arg *arg)
     /* Store original coordinates and geometry.*/
     focuswin->origsize.x = focuswin->x;            focuswin->origsize.y = focuswin->y;
     focuswin->origsize.width = focuswin->width;    focuswin->origsize.height = focuswin->height;
+    if (focuswin->ignore_borders) {
+        temp = conf.borderwidth;
+        conf.borderwidth = 0;
+    }
     if (arg->i>0) {
         focuswin->y = mon_y+offsets[1];
         /* Compute new height considering height increments and screen height. */
@@ -1316,13 +1361,14 @@ void maxvert_hor(const Arg *arg)
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id,0,0,0,0,focuswin->width/2, focuswin->height/2);
 #endif
     xcb_flush(conn);
-    setborders(focuswin,true);
+    if(focuswin->ignore_borders) conf.borderwidth = temp;
+    else  setborders(focuswin,true);
 }
 
 void maxhalf(const Arg *arg)
 {
     uint32_t values[4];
-    int16_t mon_x, mon_y;
+    int16_t mon_x, mon_y,temp=0;
     uint16_t mon_width, mon_height;
 
     if (NULL == focuswin||focuswin->maxed) return;
@@ -1339,6 +1385,10 @@ void maxhalf(const Arg *arg)
         mon_height = focuswin->monitor->height;
     }
     raise_current_window();
+    if (focuswin->ignore_borders) {
+        temp = conf.borderwidth;
+        conf.borderwidth = 0;
+    }
     if (arg->i>0) {
         if (arg->i>2) { /* in folding mode */
             if (arg->i>3) focuswin->height = focuswin->height/2 - (conf.borderwidth);
@@ -1371,7 +1421,8 @@ void maxhalf(const Arg *arg)
     movewindow(focuswin->id, focuswin->x, focuswin->y);
     focuswin->verthor = true;
     fitonscreen(focuswin);
-    setborders(focuswin,true);
+    if (focuswin->ignore_borders) conf.borderwidth =  temp;
+    else setborders(focuswin,true);
 #ifndef  DONT_WARP_POINTER
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id,0,0,0,0,focuswin->width/2, focuswin->height/2);
 #endif
@@ -1413,7 +1464,7 @@ bool getgeom(const xcb_drawable_t *win, int16_t *x, int16_t *y, uint16_t *width,
 
 void teleport(const Arg *arg)
 {
-    int16_t pointx, pointy, mon_x;
+    int16_t pointx, pointy, mon_x,temp=0;
     uint16_t mon_y, mon_width, mon_height;
 
     if (NULL == focuswin|| NULL == wslist[curws]|| focuswin->maxed) return;
@@ -1433,6 +1484,10 @@ void teleport(const Arg *arg)
 
     if (!getpointer(&focuswin->id, &pointx, &pointy)) return;
 
+    if (focuswin->ignore_borders) {
+        temp = conf.borderwidth;
+        conf.borderwidth = 0;
+    }
     if (arg->i==0) {
         focuswin->x = mon_x;
         focuswin->x += mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
@@ -1476,6 +1531,7 @@ void teleport(const Arg *arg)
             }
         }
     }
+    if(focuswin->ignore_borders) conf.borderwidth = temp;
     xcb_flush(conn);
 }
 
