@@ -21,13 +21,6 @@
 
 * static Makefile problem
 
-* Chords
-
-  Maybe have mouse button chords to do move and resize? Configurable
-  if on or off?
-
-  Idea from Christian Neukirchen.
-
 * Code cleaning
 
   - Use bitfields instead of extra lists for workspaces?
