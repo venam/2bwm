@@ -2,8 +2,6 @@
 
 * Toggable sticky workspace per monitor
 
-* Disable border per window name 
-
 * Extended Window Manager Hints (EWMH)
 
   - Use the new xcb-ewmh for the EWMH hints.
