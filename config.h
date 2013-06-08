@@ -18,13 +18,13 @@ static const uint8_t offsets[] = {0,0,0,0};
 static const char *colors[] = {"#323232","#191919","#4c5739","#682a2a","#604818","#121212","#222222"};
 ///---Borders---///
 /*0) Outer border size. If you put this negative it will be a square.
- *1) Full borderwidth
- *2) Magnet border size     */
-static const uint8_t borders[] = {2,10,9};
+ *1) Full borderwidth    2) Magnet border size    
+ *3) Resize border size  */
+static const uint8_t borders[] = {2,10,9,9};
 /* Windows that won't have a border.*/
-#define NB_NAMES 2
+#define NB_NAMES 1
 #define LOOK_INTO "WM_NAME"
-static const char *ignore_names[] = {"MPlayer","bar"};
+static const char *ignore_names[] = {"bar"};
 /* Windows that won't get any focus. */
 #define NB_F_NAMES 1
 static const char *ignore_f_names[]={"bar"};
@@ -33,7 +33,7 @@ static const char *ignore_f_names[]={"bar"};
 #define CURSOR_MOVING   52
 #define CURSOR_RESIZING 120
 ///--Menus and Programs---///
-static const char *menucmd[]   = { "/bin/my_menu.sh", NULL };
+static const char *menucmd[]   = { "/usr/bin/my_menu.sh", NULL };
 static const char *terminal[]  = { "urxvtc", NULL };
 static const char *twobwm_path = "/usr/local/bin/2bwm";
 ///---Shortcuts---///

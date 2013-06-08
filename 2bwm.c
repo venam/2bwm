@@ -1774,7 +1774,7 @@ struct client create_back_win(void)
     uint32_t values[1] = {conf.focuscol};
     xcb_create_window (conn, XCB_COPY_FROM_PARENT,/* depth */ temp_win.id, /* window Id */  screen->root, /* parent window */
         focuswin->x, focuswin->y, /* x, y */ focuswin->width, focuswin->height,  /* width, height */
-        borders[1], /* border width */ XCB_WINDOW_CLASS_INPUT_OUTPUT, /* class */ screen->root_visual, /* visual */ XCB_CW_BORDER_PIXEL, values
+        borders[3], /* border width */ XCB_WINDOW_CLASS_INPUT_OUTPUT, /* class */ screen->root_visual, /* visual */ XCB_CW_BORDER_PIXEL, values
     );
 #ifndef COMPTON
     values[0]=1;
