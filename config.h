@@ -6,6 +6,8 @@
  *0)move step slow   1)move step fast
  *2)mouse slow       3)mouse fast     */
 static const uint16_t movements[] = {10,40,15,400};
+/* resize by line like in mcwm -- jjumbi */
+static const bool     resize_by_line = true;
 ///---Offsets---///
 /*0)offsetx          1)offsety
  *2)maxwidth         3)maxheight */

@@ -1126,11 +1126,19 @@ void mousemove(const int16_t rel_x, const int16_t rel_y)
 void mouseresize(struct client *client, const int16_t rel_x, const int16_t rel_y)
 {
     if(focuswin->id==screen->root||focuswin->maxed) return;
+    if (!resize_by_line) {
         client->width  = abs(rel_x);
         client->height = abs(rel_y);
-        resizelim(client);
-        if (client->vertmaxed) client->vertmaxed = false;
-        if (client->hormaxed)  client->hormaxed  = false;
+    }
+    else {
+        client->width =  abs(rel_x);
+        client->height = abs(rel_y); 
+        client->width -= (client->width - client->base_width) % client->width_inc;
+        client->height -= (client->height - client->base_height) % client->height_inc;
+    }
+    resizelim(client);
+    if (client->vertmaxed) client->vertmaxed = false;
+    if (client->hormaxed)  client->hormaxed  = false;
 }
 
 void movestep(const Arg *arg)
