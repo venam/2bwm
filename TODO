@@ -21,6 +21,8 @@
 
 * static Makefile problem
 
+* Check why the input focus doesn't work well with applications such as macopix
+
 * Code cleaning
 
   - Use bitfields instead of extra lists for workspaces?

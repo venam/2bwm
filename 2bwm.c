@@ -29,6 +29,7 @@
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
+#include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
 #include "list.h"
 #include <signal.h>
@@ -80,7 +81,7 @@ struct client {                     // Everything we know about a window.
     struct sizepos origsize;        // Original size if we're currently maxed.
     uint16_t max_width, max_height,min_width, min_height; // Hints from application.
     int32_t width_inc, height_inc,base_width, base_height;
-    bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,ignore_focus;
+    bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders;
     struct monitor *monitor;        // The physical output this window is on.
     struct item *winitem;           // Pointer to our place in global windows list.
     struct item *wsitem[WORKSPACES];// Pointer to our place in every workspace window list.
@@ -96,6 +97,7 @@ static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 static unsigned int numlockmask = 0;
 int sigcode;                        // Signal code. Non-zero if we've been interruped by a signal.
 xcb_connection_t *conn;             // Connection to X server.
+xcb_ewmh_connection_t *ewmh;        // Ewmh Connection.
 xcb_screen_t     *screen;           // Our current screen.
 int randrbase;                      // Beginning of RANDR extension events.
 uint8_t curws = 0;                  // Current workspace.
@@ -110,7 +112,7 @@ struct conf {
     int8_t outer_border;            // The size of the outer border
     uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
 } conf;
-xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols,atom_nb_workspace,atom_focus;
+xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols,atom_nb_workspace,atom_focus,wm_hidden;
 ///---Functions prototypes---///
 static void run(void);
 static bool setup(int screen);
@@ -196,6 +198,7 @@ static bool getpointer(const xcb_drawable_t *win, int16_t *x,int16_t *y);
 static bool getgeom(const xcb_drawable_t *win, int16_t *x, int16_t *y, uint16_t *width,uint16_t *height);
 static void configwin(xcb_window_t win, uint16_t mask,const struct winconf *wc);
 static void sigcatch(const int sig);
+static void ewmh_init(void);
 static xcb_atom_t getatom(char *atom_name);
 #include "config.h"
 
@@ -220,6 +223,8 @@ void cleanup(const int code)        // Set keyboard focus to follow mouse pointe
                                     // should all be in the X server's Save Set and should be mapped automagically.
     xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,XCB_CURRENT_TIME);
     xcb_flush(conn);
+    xcb_ewmh_connection_wipe(ewmh);
+    if (ewmh)   free(ewmh);
     xcb_disconnect(conn);
     exit(code);
 }
@@ -271,6 +276,7 @@ bool get_unkil_state(xcb_drawable_t win)
 
 void check_name(struct client *client)
 {
+    if (NULL==client) return;
     char *wm_name_window;
     xcb_atom_t atom_name = getatom(LOOK_INTO);
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, client->id, atom_name,XCB_GET_PROPERTY_TYPE_ANY, 0,60);
@@ -287,12 +293,6 @@ void check_name(struct client *client)
             client->ignore_borders = true;
             uint32_t values[1] = {0};
             xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
-            break;
-        }
-    }
-    for(int i=0;i<NB_F_NAMES;i++) {
-        if (strstr(wm_name_window, ignore_f_names[i]) !=NULL) {
-            client->ignore_focus = true;
             break;
         }
     }
@@ -537,6 +537,18 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
 
 struct client *setupwin(xcb_window_t win)
 {                                   // Set border colour, width and event mask for window.
+    xcb_ewmh_get_atoms_reply_t win_type;
+    if (xcb_ewmh_get_wm_window_type_reply(ewmh, xcb_ewmh_get_wm_window_type(ewmh, win), &win_type, NULL) == 1) {
+        for (unsigned int i = 0; i < win_type.atoms_len; i++) {
+            xcb_atom_t a = win_type.atoms[i];
+            if (a == ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR ||a == ewmh->_NET_WM_WINDOW_TYPE_DOCK ) {
+                xcb_ewmh_get_atoms_reply_wipe(&win_type);
+                xcb_map_window(conn,win);
+                return NULL;
+            }
+        }
+    }
+
     uint32_t values[2];
     struct item *item;
     struct client *client;
@@ -568,7 +580,7 @@ struct client *setupwin(xcb_window_t win)
     client->max_width     = screen->width_in_pixels;
     client->max_height    = screen->height_in_pixels;
     client->width_inc     = client->height_inc = 1;
-    client->usercoord     = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed= client->ignore_borders=client->ignore_focus=false;
+    client->usercoord     = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed= client->ignore_borders=false;
     client->monitor       = NULL;
     client->winitem       = item;
 
@@ -663,8 +675,8 @@ bool setupscreen(void)              // Walk through all existing windows and set
          * normal case we wouldn't have seen them. Only handle visible windows. */
         if (!attr->override_redirect && attr->map_state == XCB_MAP_STATE_VIEWABLE) {
             client = setupwin(children[i]);
-            setborders(client,false);
             if (NULL != client) {
+                setborders(client,false);
                 /* Find the physical output this window will be on if RANDR is active. */
                 if (-1 != randrbase) client->monitor = findmonbycoord(client->x, client->y);
                 fitonscreen(client);    /* Fit window on physical screen. */
@@ -942,7 +954,7 @@ void focusnext_helper(bool arg)
         }
     } /* if NULL focuswin */
 
-    if (NULL != client && !client->ignore_focus) {
+    if (NULL != client) {
         /* Raise window if it's occluded, then warp pointer into it and set keyboard focus to it. */
         uint32_t values[] = { XCB_STACK_MODE_TOP_IF };
         xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_STACK_MODE,values);
@@ -955,6 +967,7 @@ void focusnext_helper(bool arg)
 
 void setunfocus(void)
 {                                   // Mark window win as unfocused.
+    xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_NONE,XCB_CURRENT_TIME);
     if (NULL == focuswin) return;
     if (focuswin->id == screen->root) return;
     setborders(focuswin,false);
@@ -976,9 +989,11 @@ void setfocus(struct client *client)// Set focus on window client.
 {
     /* If client is NULL, we focus on whatever the pointer is on. This is a pathological case, but it will
      * make the poor user able to focus on windows anyway, even though this windowmanager might be buggy. */
-    if (NULL == client || client->ignore_focus) {
+    if (NULL == client) {
         focuswin = NULL;
-        xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_POINTER_ROOT,XCB_CURRENT_TIME);
+        xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_PARENT,XCB_CURRENT_TIME);
+        xcb_window_t not_win = 0;
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&not_win);
         xcb_flush(conn);
         return;
     }
@@ -1446,10 +1461,10 @@ void maxhalf(const Arg *arg)
 void hide()
 {
     if (focuswin!=NULL) {
-        long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
+        long data[] = { XCB_ICCCM_WM_STATE_ICONIC, wm_hidden, XCB_NONE };
         /* Unmap window and declare iconic. Unmapping will generate an UnmapNotify event so we can forget about the window later. */
         xcb_unmap_window(conn, focuswin->id);
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, focuswin->id,wm_state, wm_state,32,2, data);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, focuswin->id, wm_state, XCB_ATOM_ATOM, 32, 3, data); 
         xcb_flush(conn);
     }
 }
@@ -2013,9 +2028,37 @@ void grabbuttons(struct client *c)  // set the given client to listen to button 
                 screen->root, XCB_NONE, buttons[b].button, buttons[b].mask|modifiers[m]);
 }
 
+void ewmh_init(void)
+{
+    if (!(ewmh = calloc(1, sizeof(xcb_ewmh_connection_t))))    printf("Fail\n");
+    xcb_intern_atom_cookie_t *cookie = xcb_ewmh_init_atoms(conn, ewmh);
+    xcb_ewmh_init_atoms_replies(ewmh, cookie, (void *)0);
+}
+
 bool setup(int scrno)
 {
     screen = xcb_screen_of_display(conn, scrno);
+    ewmh_init();
+    xcb_ewmh_set_wm_name(ewmh, screen->root, 4, "2bwm");
+    xcb_atom_t net_atoms[] = {
+        ewmh->_NET_SUPPORTED,
+        ewmh->_NET_WM_DESKTOP,
+        ewmh->_NET_NUMBER_OF_DESKTOPS,
+        ewmh->_NET_CURRENT_DESKTOP,
+        ewmh->_NET_ACTIVE_WINDOW,
+        ewmh->_NET_WM_ICON,
+        ewmh->_NET_WM_STATE,
+        ewmh->_NET_WM_STATE_HIDDEN,
+        ewmh->_NET_WM_ICON_NAME,
+        ewmh->_NET_WM_WINDOW_TYPE,
+        ewmh->_NET_WM_WINDOW_TYPE_DOCK,
+
+
+
+        ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR,
+        ewmh->_NET_WM_PID
+    };
+    xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
 
     if (!screen) return false;
     conf.borderwidth = borders[1];
@@ -2027,8 +2070,8 @@ bool setup(int scrno)
     atom_desktop         = getatom("_NET_WM_DESKTOP");     atom_current_desktop = getatom("_NET_CURRENT_DESKTOP");
     atom_unkillable      = getatom("_NET_UNKILLABLE");     atom_nb_workspace    = getatom("_NET_NUMBER_OF_DESKTOPS");
     wm_delete_window     = getatom("WM_DELETE_WINDOW");    wm_change_state      = getatom("WM_CHANGE_STATE");
-    wm_state             = getatom("_NET_WM_STATE");            wm_protocols         = getatom("WM_PROTOCOLS");
-    atom_focus           = getatom("_NET_ACTIVE_WINDOW");
+    wm_state             = getatom("_NET_WM_STATE");       wm_protocols         = getatom("WM_PROTOCOLS");
+    atom_focus           = getatom("_NET_ACTIVE_WINDOW");  wm_hidden            = getatom("_NET_WM_STATE_HIDDEN");
     randrbase = setuprandr();
     if (!setupscreen())    return false;
     if (!setup_keyboard()) return false;

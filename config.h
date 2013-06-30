@@ -25,11 +25,8 @@ static const char *colors[] = {"#323232","#191919","#4c5739","#682a2a","#604818"
 static const uint8_t borders[] = {2,10,9,9};
 /* Windows that won't have a border.*/
 #define NB_NAMES 1
-#define LOOK_INTO "WM_NAME"
+#define LOOK_INTO "_NET_WM_NAME"
 static const char *ignore_names[] = {"bar"};
-/* Windows that won't get any focus. */
-#define NB_F_NAMES 1
-static const char *ignore_f_names[]={"bar"};
 ///---Cursor---///
 /* Check /usr/include/X11/cursorfont.h for more details */
 #define CURSOR_MOVING   52
@@ -128,7 +125,7 @@ static key keys[] = {
     {  MOD ,              XK_v,          nextworkspace,     {.i=0}},
     {  MOD ,              XK_c,          prevworkspace,     {.i=0}},
     // Iconify the window
-//   {  MOD ,              XK_i,          hide,              {.i=0}},
+//    {  MOD ,              XK_i,          hide,              {.i=0}},
     // Make the window unkillable
     {  MOD ,              XK_a,          unkillable,        {.i=0}},
     // Make the window appear always on top
