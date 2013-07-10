@@ -1786,7 +1786,7 @@ xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph)
         xcb_open_font (conn, cursor_font, strlen ("cursor"), "cursor");
     }
     xcb_cursor_t cursor = xcb_generate_id (conn);
-    xcb_create_glyph_cursor (conn, cursor, cursor_font, cursor_font,glyph, glyph+1,0, 0, 0, 0xffff, 0xffff, 0xffff);
+    xcb_create_glyph_cursor (conn, cursor, cursor_font, cursor_font,glyph, glyph+1,0x3232, 0x3232, 0x3232, 0xeeee, 0xeeee, 0xeeec);
     return cursor;
 }
 
