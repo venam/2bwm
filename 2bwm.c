@@ -992,8 +992,6 @@ void setfocus(struct client *client)// Set focus on window client.
     if (NULL == client) {
         focuswin = NULL;
         xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_PARENT,XCB_CURRENT_TIME);
-        xcb_window_t not_win = 0;
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&not_win);
         xcb_flush(conn);
         return;
     }
