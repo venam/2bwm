@@ -314,6 +314,10 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&ws);
     struct client *client;
     if (ws == curws) return;
+	if (NULL != focuswin && !focuswin->fixed) {
+		setunfocus();
+		focuswin = NULL;
+	}
     for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
     /* Go through list of current ws. Unmap everything that isn't fixed. */
         client = item->data;
@@ -322,7 +326,6 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
             xcb_unmap_window(conn, client->id);
         }
     }
-    curws = ws;
     for (struct item *item = wslist[ws]; item != NULL; item = item->next) {
     /* Go through list of new ws. Map everything that isn't fixed. */
         client = item->data;
@@ -330,6 +333,7 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
     }
     setfocus(NULL);
     xcb_flush(conn);
+	curws = ws;
 }
 
 void always_on_top()
@@ -991,7 +995,9 @@ void setfocus(struct client *client)// Set focus on window client.
      * make the poor user able to focus on windows anyway, even though this windowmanager might be buggy. */
     if (NULL == client) {
         focuswin = NULL;
-        xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_PARENT,XCB_CURRENT_TIME);
+        xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_POINTER_ROOT, XCB_CURRENT_TIME); 
+        //xcb_window_t not_win = 0;
+        //xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&not_win);
         xcb_flush(conn);
         return;
     }
