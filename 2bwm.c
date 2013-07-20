@@ -312,12 +312,12 @@ void addtoworkspace(struct client *client, uint32_t ws)
 void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
 {
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&ws);
-    struct client *client;
     if (ws == curws) return;
-	if (NULL != focuswin && !focuswin->fixed) {
-		setunfocus();
-		focuswin = NULL;
-	}
+    if (NULL != focuswin && !focuswin->fixed) {
+        setunfocus();
+        focuswin = NULL;
+    }
+    struct client *client;
     for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
     /* Go through list of current ws. Unmap everything that isn't fixed. */
         client = item->data;
@@ -331,9 +331,14 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
         client = item->data;
         if (!client->fixed) xcb_map_window(conn, client->id);
     }
-    setfocus(NULL);
+    curws = ws;
+    xcb_query_pointer_reply_t *pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, screen->root), 0);
+    if(NULL == pointer) setfocus(NULL);
+    else {
+        setfocus(findclient(&pointer->child));
+        free(pointer);
+    }
     xcb_flush(conn);
-	curws = ws;
 }
 
 void always_on_top()
@@ -962,9 +967,7 @@ void focusnext_helper(bool arg)
         /* Raise window if it's occluded, then warp pointer into it and set keyboard focus to it. */
         uint32_t values[] = { XCB_STACK_MODE_TOP_IF };
         xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_STACK_MODE,values);
-#ifndef  DONT_WARP_POINTER
         xcb_warp_pointer(conn, XCB_NONE, client->id,0,0,0,0,client->width/2, client->height/2);
-#endif
         setfocus(client);
     }
 }
@@ -1005,11 +1008,11 @@ void setfocus(struct client *client)// Set focus on window client.
     if (client->id == screen->root || client == focuswin) return;
     if (NULL != focuswin) setunfocus(); /* Unset last focus. */
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->id,XCB_CURRENT_TIME); /* Set new input focus. */
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&client->id);
     xcb_flush(conn);
     focuswin = client;  /* Remember the new window as the current focused window. */
-    setborders(client,true);
     grabbuttons(client);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&focuswin->id);
+    setborders(client,true);
 }
 
 void start(const Arg *arg)
@@ -1390,9 +1393,7 @@ void maxvert_hor(const Arg *arg)
                            | XCB_CONFIG_WINDOW_WIDTH, values);
         focuswin->hormaxed = true;
     }
-#ifndef  DONT_WARP_POINTER
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id,0,0,0,0,focuswin->width/2, focuswin->height/2);
-#endif
     xcb_flush(conn);
     if(focuswin->ignore_borders) conf.borderwidth = temp;
     else  setborders(focuswin,true);
@@ -1456,9 +1457,7 @@ void maxhalf(const Arg *arg)
     fitonscreen(focuswin);
     if (focuswin->ignore_borders) conf.borderwidth =  temp;
     else setborders(focuswin,true);
-#ifndef  DONT_WARP_POINTER
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id,0,0,0,0,focuswin->width/2, focuswin->height/2);
-#endif
 }
 
 #ifdef ICON
@@ -1828,14 +1827,10 @@ static void mousemotion(const Arg *arg)
     winw = focuswin->width;        winh = focuswin->height;
     raise_current_window();
     xcb_cursor_t cursor;
-#ifdef RESIZE_BORDER_ONLY
     struct client example = create_back_win();
-#endif
     if(arg->i == TWOBWM_MOVE) cursor = Create_Font_Cursor (conn, CURSOR_MOVING ); /* fleur */
     else  {                  cursor = Create_Font_Cursor (conn, CURSOR_RESIZING); /* sizing */
-#ifdef RESIZE_BORDER_ONLY
         xcb_map_window(conn,example.id);
-#endif
     }
     xcb_grab_pointer_reply_t *grab_reply = xcb_grab_pointer_reply(conn, xcb_grab_pointer(conn, 0, screen->root, BUTTONMASK|
         XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION,XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, cursor, XCB_CURRENT_TIME), NULL);
@@ -1857,11 +1852,7 @@ static void mousemotion(const Arg *arg)
             ev = (xcb_motion_notify_event_t*)e;
             if (arg->i == TWOBWM_MOVE) mousemove(winx +ev->root_x-mx, winy+ev->root_y-my);
             if (arg->i == TWOBWM_RESIZE) {
-#ifdef RESIZE_BORDER_ONLY
                 mouseresize(&example,winw +ev->root_x-mx, winh+ev->root_y-my);
-#else
-                mouseresize(focuswin,winw +ev->root_x-mx, winh+ev->root_y-my);
-#endif
             }
             xcb_flush(conn);
         break;
@@ -1883,13 +1874,12 @@ static void mousemotion(const Arg *arg)
     } while (!ungrab && focuswin!=NULL);
     xcb_free_cursor(conn,cursor);
     xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
-#ifdef RESIZE_BORDER_ONLY
     xcb_unmap_window(conn,example.id);
-#endif
 }
 
 void buttonpress(xcb_generic_event_t *ev)
 {
+    if(NULL == focuswin) return;
     xcb_button_press_event_t *e = (xcb_button_press_event_t *)ev;
     for (unsigned int i=0; i<LENGTH(buttons); i++)
         if (buttons[i].func && buttons[i].button == e->detail &&CLEANMASK(buttons[i].mask) == CLEANMASK(e->state)){
@@ -2056,9 +2046,6 @@ bool setup(int scrno)
         ewmh->_NET_WM_ICON_NAME,
         ewmh->_NET_WM_WINDOW_TYPE,
         ewmh->_NET_WM_WINDOW_TYPE_DOCK,
-
-
-
         ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR,
         ewmh->_NET_WM_PID
     };
