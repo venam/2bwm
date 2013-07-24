@@ -86,7 +86,7 @@ Shrink keeping aspect.
 .IP \(bu 2
 .B shift+ctrl+b/n
 Fold or Unfold horizontally
-.IP \b(bu 2
+.IP \(bu 2
 .B shift+ctrl+y/u
 Fold or Unfold vertically
 .IP \(bu 2
