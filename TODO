@@ -1,5 +1,12 @@
 -*- text -*-
 
+* Rewrite the readme file 
+	with more statistic, 
+	specifying all the features, 
+	adding new scrots,
+	link to other documentation,
+	why should someone care,etc..
+
 * Toggable sticky workspace per monitor
 
 * Extended Window Manager Hints (EWMH)

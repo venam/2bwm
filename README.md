@@ -48,8 +48,18 @@ raptor /usr/bin $ size awesome
     296570 1984    1832  300386   49562 awesome
 ```
 
+Now comparing Memory ressource usage. (in KB)  
+mcwm -- the wm 2bwm is based upon  
+dvtm -- a terminal multiplexer  
+
+```
+ ~ > ps -eo args,size,vsize,pcpu | sort -k 1 -r|grep -P "(^dvtm)|(^2bwm)|(^mcwm)"      <
+  mcwm                          300   2480  0.0
+  dvtm                         4744   8776  0.0
+  2bwm                          300   2544  0.0
+```
+
 Notice that all those WM are really small and that size doesn't really matter in the end.
-Still, I'll try to mess with it a little to make it smaller.
 
 New features:
 =======
