@@ -50,12 +50,12 @@ Now comparing Memory ressource usage. (in KB)
 mcwm -- the wm 2bwm is based upon  
 dvtm -- a terminal multiplexer  
 ```
- ~ > ps -eo args,size,vsize,pcpu | grep -P "(^dvtm)|(^2bwm)|(^mcwm)|(^dwm)|(^monsterwm)"      <
-  mcwm                          300   2480  0.0
-  dvtm                         4744   8776  0.0
-  2bwm                          300   2544  0.0
-  dwm                           300   5400  0.0
-  monsterwm                     304   3708  0.0
+ ~ > ps -eo args,size,vsize,rss,vsize | grep -P "(^mcwm)|(^dvtm)|(^2bwm)|(^monsterwm)|(^dwm)"
+ mcwm                          300   2480   668   2480
+ 2bwm                          300   2552   680   2552
+ dwm                           300   5400  1384   5400
+ monsterwm                     304   3708  1008   3708
+ dvtm                         5624   9656  6256   9656
 ```
 
 Notice that all those WM are really small and that size doesn't really matter in the end.
