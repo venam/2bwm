@@ -153,6 +153,9 @@ static void deletewin();
 static void unkillable();
 static void fix();
 static void check_name(struct client *client);
+
+/*static void mappingnotify(xcb_generic_event_t *ev);*/
+
 static void configurerequest(xcb_generic_event_t *ev);
 static void buttonpress(xcb_generic_event_t *ev);
 static void unmapnotify(xcb_generic_event_t *ev);
@@ -641,7 +644,15 @@ void grabkeys(void)
                 xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m], keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
 }
-
+/*
+void mappingnotify(xcb_generic_event_t *ev)
+{
+    xcb_mapping_notify_event_t *e = (xcb_mapping_notify_event_t *)ev;
+    if (e->request != XCB_MAPPING_MODIFIER && e->request != XCB_MAPPING_KEYBOARD)
+        return;
+    grabkeys();
+}
+*/
 bool setup_keyboard(void)
 {
     xcb_get_modifier_mapping_reply_t *reply = xcb_get_modifier_mapping_reply(conn, xcb_get_modifier_mapping_unchecked(conn), NULL);
@@ -1612,6 +1623,7 @@ void changescreen(const Arg *arg)
     fitonscreen(focuswin);
     movelim(focuswin);
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0, 0, 0);
+    setborders(focuswin,true);
     xcb_flush(conn);
 }
 
@@ -1875,11 +1887,11 @@ static void mousemotion(const Arg *arg)
     xcb_free_cursor(conn,cursor);
     xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
     xcb_unmap_window(conn,example.id);
+    xcb_flush(conn);
 }
 
 void buttonpress(xcb_generic_event_t *ev)
 {
-    if(NULL == focuswin) return;
     xcb_button_press_event_t *e = (xcb_button_press_event_t *)ev;
     for (unsigned int i=0; i<LENGTH(buttons); i++)
         if (buttons[i].func && buttons[i].button == e->detail &&CLEANMASK(buttons[i].mask) == CLEANMASK(e->state)){
@@ -2079,7 +2091,7 @@ bool setup(int scrno)
     events[XCB_ENTER_NOTIFY]        = enternotify;        events[XCB_KEY_PRESS]           = handle_keypress;
     events[XCB_MAP_REQUEST]         = newwin;             events[XCB_UNMAP_NOTIFY]        = unmapnotify;
     events[XCB_CONFIGURE_NOTIFY]    = confignotify;       events[XCB_CIRCULATE_REQUEST]   = circulaterequest;
-    events[XCB_BUTTON_PRESS]        = buttonpress;
+    events[XCB_BUTTON_PRESS]        = buttonpress;        /*events[XCB_MAPPING_NOTIFY]      = mappingnotify;*/
 #ifdef ICON
     events[XCB_CLIENT_MESSAGE]      = clientmessage;
 #endif
