@@ -60,8 +60,6 @@ dvtm -- a terminal multiplexer
 
 Notice that all those WM are really small and that size doesn't really matter in the end.
 
-Features:
-=======
 (Someone should write something about the features here)
 
 Screenshots:
