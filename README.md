@@ -1,5 +1,4 @@
-![alt text][logo2bwm]
-[logo2bwm]: https://raw.github.com/venam/2bwm/master/2bWM.png "2bWM"
+![2bwm](https://raw.github.com/venam/2bwm/master/2bWM.png)
 
 2bwm
 ==========
@@ -47,57 +46,32 @@ raptor /usr/bin $ size awesome
     text   data     bss     dec     hex filename
     296570 1984    1832  300386   49562 awesome
 ```
-
 Now comparing Memory ressource usage. (in KB)  
 mcwm -- the wm 2bwm is based upon  
 dvtm -- a terminal multiplexer  
-
 ```
- ~ > ps -eo args,size,vsize,pcpu | sort -k 1 -r|grep -P "(^dvtm)|(^2bwm)|(^mcwm)"      <
+ ~ > ps -eo args,size,vsize,pcpu | grep -P "(^dvtm)|(^2bwm)|(^mcwm)|(^dwm)|(^monsterwm)"      <
   mcwm                          300   2480  0.0
   dvtm                         4744   8776  0.0
   2bwm                          300   2544  0.0
+  dwm                           300   5400  0.0
+  monsterwm                     304   3708  0.0
 ```
 
 Notice that all those WM are really small and that size doesn't really matter in the end.
 
-New features:
+Features:
 =======
-- Center, put the window to the center of the screen with mod+g (patched -- now center well with 2 monitors)
-- chwfocus, focus a window when changing workspace
-- hexcolors, use hex colors, like #004455
-- maxoffsets, offset for fullscreen mode if using bar or bars
-- menu, a patch to bind mod+p (in my configs mod+w) to dmenu or another application (comes with a nice example for 9menu).
-- moveslow, move the windows slower better
-- sendtoworkspace, send  a window to another workspace. will unmap from current workspace.
-- Unkillable Window
-- Fast Resize and keep aspect
-- Patched the maxvert
-- Patched the numlock issue
-- Move the mouse with the keyboard (fast and slow)
-- max horizontally with mod+shift+m
-- max vertically and half horizontally - mod+shift+topright/mod+shift+topleft
-- more color states
-- double border can be enabled at compile time instead of the default 1 color border
-  You can also draw a little square in the left corner corresponding to the window status
-- Restart/Exit patch with mod+ctrl+r mod+ctrl+q
-    (or whatever you set for the USERKEY_RAISE and USERKEY_DELETE respectivelly)
-- You can now know the current workspace this way: xprop -root _NET_CURRENT_DESKTOP| sed -e 's/_NET_CURRENT_DESKTOP(CARDINAL) = //'
-- keep approximately the same position when sending window to next screen
-- Magnet borders
-- Resize and move with the mouse from anywhere
-- Resize border only (can be enabled at compile time)
-- Cursor change while moving/resizing
-- Efficiency updated
-- Events loop way more clean
-- Easier configs
+(Someone should write something about the features here)
 
 Screenshots:
 ============
-![alt text][logo]
-[logo]: http://venam.1.ai/screenshot.png  "2bWM"
-![alt text][logo3]
-[logo3]: http://fc05.deviantart.net/fs71/f/2013/098/d/2/_freebsd_and_mcwm_beast__by_ybeastie-d60w2xc.png "Beastie's 2bWM"
+![2bwm](http://venam.1.ai/2bwm_colors.png)
+![yrmt 2bwm](http://fc05.deviantart.net/fs71/f/2013/098/d/2/_freebsd_and_mcwm_beast__by_ybeastie-d60w2xc.png)
+
+TODO:
+=====
+Please read the TODO file.
 
 Authors:
 =======
