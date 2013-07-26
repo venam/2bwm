@@ -1,5 +1,7 @@
 -*- text -*-
 
+* check why after deleting the head of the of the list the focus backward doesn't loop completely
+
 * Rewrite the readme file 
 	with more statistic, 
 	specifying all the features, 
@@ -16,6 +18,7 @@
   I suggest listing least these in _NET_SUPPORTED (* marks
   implemented):
 
+     _NET_CLIENT_LIST
      _NET_WM_STATE, _NET_WM_STATE_STICKY,
      _NET_WM_STATE_MAXIMIZED_VERT, _NET_WM_STATE_HIDDEN,
      _NET_WM_STATE_FULLSCREEN

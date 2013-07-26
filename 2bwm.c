@@ -81,7 +81,7 @@ struct client {                     // Everything we know about a window.
     struct sizepos origsize;        // Original size if we're currently maxed.
     uint16_t max_width, max_height,min_width, min_height; // Hints from application.
     int32_t width_inc, height_inc,base_width, base_height;
-    bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders;
+    bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic;
     struct monitor *monitor;        // The physical output this window is on.
     struct item *winitem;           // Pointer to our place in global windows list.
     struct item *wsitem[WORKSPACES];// Pointer to our place in every workspace window list.
@@ -112,7 +112,7 @@ struct conf {
     int8_t outer_border;            // The size of the outer border
     uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
 } conf;
-xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols,atom_nb_workspace,atom_focus,wm_hidden;
+xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols,atom_nb_workspace,atom_focus,atom_client_list,wm_hidden;
 ///---Functions prototypes---///
 static void run(void);
 static bool setup(int screen);
@@ -153,9 +153,7 @@ static void deletewin();
 static void unkillable();
 static void fix();
 static void check_name(struct client *client);
-
-/*static void mappingnotify(xcb_generic_event_t *ev);*/
-
+static void mappingnotify(xcb_generic_event_t *ev);
 static void configurerequest(xcb_generic_event_t *ev);
 static void buttonpress(xcb_generic_event_t *ev);
 static void unmapnotify(xcb_generic_event_t *ev);
@@ -304,6 +302,7 @@ void check_name(struct client *client)
 
 void addtoworkspace(struct client *client, uint32_t ws)
 {                                   // Add a window, specified by client, to workspace ws.
+	if (client == NULL) return;
     struct item *item = additem(&wslist[ws]);
     if (NULL == item) return;
     client->wsitem[ws] = item; /* Remember our place in the workspace window list. */
@@ -324,15 +323,16 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
     for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
     /* Go through list of current ws. Unmap everything that isn't fixed. */
         client = item->data;
+        setborders(client,false);
         if (!client->fixed) {
-            setborders(client,false);
             xcb_unmap_window(conn, client->id);
         }
     }
     for (struct item *item = wslist[ws]; item != NULL; item = item->next) {
     /* Go through list of new ws. Map everything that isn't fixed. */
         client = item->data;
-        if (!client->fixed) xcb_map_window(conn, client->id);
+        xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
+        if (!client->fixed && !client->iconic) xcb_map_window(conn, client->id);
     }
     curws = ws;
     xcb_query_pointer_reply_t *pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, screen->root), 0);
@@ -523,6 +523,7 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
 
     if (NULL == client) return;
     addtoworkspace(client, curws); /* Add this window to the current workspace. */
+    xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id); 
     if (!client->usercoord) { /* If we don't have specific coord map it where the pointer is.*/
         int16_t pointx, pointy;
         if (!getpointer(&screen->root, &pointx, &pointy)) pointx = pointy = 0;
@@ -592,7 +593,7 @@ struct client *setupwin(xcb_window_t win)
     client->max_width     = screen->width_in_pixels;
     client->max_height    = screen->height_in_pixels;
     client->width_inc     = client->height_inc = 1;
-    client->usercoord     = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed= client->ignore_borders=false;
+    client->usercoord     = client->vertmaxed = client->hormaxed  = client->maxed = client->unkillable= client->fixed= client->ignore_borders= client->iconic= false;
     client->monitor       = NULL;
     client->winitem       = item;
 
@@ -644,15 +645,7 @@ void grabkeys(void)
                 xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m], keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
 }
-/*
-void mappingnotify(xcb_generic_event_t *ev)
-{
-    xcb_mapping_notify_event_t *e = (xcb_mapping_notify_event_t *)ev;
-    if (e->request != XCB_MAPPING_MODIFIER && e->request != XCB_MAPPING_KEYBOARD)
-        return;
-    grabkeys();
-}
-*/
+
 bool setup_keyboard(void)
 {
     xcb_get_modifier_mapping_reply_t *reply = xcb_get_modifier_mapping_reply(conn, xcb_get_modifier_mapping_unchecked(conn), NULL);
@@ -701,7 +694,6 @@ bool setupscreen(void)              // Walk through all existing windows and set
                 if (-1 != randrbase) client->monitor = findmonbycoord(client->x, client->y);
                 fitonscreen(client);    /* Fit window on physical screen. */
                 ws = getwmdesktop(children[i]);/* Check if this window has a workspace set already as a WM hint. */
-
                 if (get_unkil_state(children[i])) unkillablewindow(client);
                 if (ws == NET_WM_FIXED) {
                     addtoworkspace(client, curws); /* Add to current workspace. */
@@ -712,7 +704,10 @@ bool setupscreen(void)              // Walk through all existing windows and set
                         addtoworkspace(client, ws);
                         if (ws != curws) xcb_unmap_window(conn, client->id); /* If it's not our current workspace, hide it. */
                     }
-                    else addtoworkspace(client, curws);
+                    else {
+                        addtoworkspace(client, curws); 
+                        xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&children[i]); 
+                    }
             }
         }
         free(attr);
@@ -950,31 +945,81 @@ void movewindow(xcb_drawable_t win, const int16_t x, const int16_t y)
 void focusnext_helper(bool arg)
 {                                   // Change focus to next in window ring.
     struct client *client = NULL;
-
+    /* no windows on current workspace*/
     if (NULL == wslist[curws]) return;
     /* If we currently have no focus focus first in list. */
-    if (NULL == focuswin || NULL == focuswin->wsitem[curws]) client = wslist[curws]->data;
+    if (NULL == focuswin || NULL == focuswin->wsitem[curws]){
+        client  = wslist[curws]->data;
+        while (client->iconic==true) {
+			client = client->wsitem[curws]->next->data;
+            if (client->wsitem[curws]->next== NULL) break;
+		}
+    }
     else {
         if (arg) {
+			/* some problem happen here */
             if (NULL == focuswin->wsitem[curws]->prev) {
-                /* We were at the head of list. Focusing on last window in list unless we were already there. */
-                struct item *last = focuswin->wsitem[curws];
-                while (NULL != last && NULL!=last->next) last = last->next;
-                if (focuswin->wsitem[curws] != last->data) client = last->data;
+                /* We were at the head of list. Focusing on last window in list unless we were already there.
+				 *
+				 *  Win1     Win2    Win3   Win4   Win5
+				 *  nor      icon     nor    ico    ico
+				 *   h--->----*--->----*-----*----->T
+				 */ 
+				struct client *cur = wslist[curws]->data;
+				/* Go to the end of the list */
+				while( cur->wsitem[curws]->next!=NULL )
+					cur = cur->wsitem[curws]->next->data;
+				/* walk backward until we find a windows that isn't iconic */
+				while(cur->iconic==true)
+					cur = cur->wsitem[curws]->prev->data;
+                if (focuswin != cur) client = cur;
             }
             else
-                if(focuswin!=wslist[curws]->data) client = focuswin->wsitem[curws]->prev->data;
+                if(focuswin!=wslist[curws]->data) {
+					struct client *cur = focuswin->wsitem[curws]->prev->data;
+					while (cur->iconic == true && cur->wsitem[curws]->prev!=NULL)
+						cur = cur->wsitem[curws]->prev->data;
+					/* move to the head an didn't find a window to focus so move to the end starting from the focused win */
+					if(cur->iconic==true) {
+						struct client *cur = focuswin;
+						/* Go to the end of the list */
+						while( cur->wsitem[curws]->next!=NULL )
+							cur = cur->wsitem[curws]->next->data;					
+						while (cur->iconic == true)
+							cur = cur->wsitem[curws]->prev->data;
+					}
+					if (cur!=focuswin) client = cur;
+				}
         }
         else {
+                /* We were at the tail of list. Focusing on last window in list unless we were already there.
+				*
+				*  Win1     Win2    Win3   Win4   Win5
+				*  nor      icon     nor    ico    ico
+				*   h--->----*--->----*-----*----->T
+				*/ 
             if (NULL == focuswin->wsitem[curws]->next) {
                 /* We were at the end of list. Focusing on first window in list unless we were already there. */
-                if (focuswin->wsitem[curws] != wslist[curws]->data) client = wslist[curws]->data;
+				struct client *cur = wslist[curws]->data;
+				while(cur->iconic &&cur->wsitem[curws]->next!=NULL)
+					cur = cur->wsitem[curws]->next->data;
+                if (focuswin != cur && cur->iconic==false) client = cur;
             }
-            else client = focuswin->wsitem[curws]->next->data;
+            else {
+				struct client *cur = focuswin->wsitem[curws]->next->data;
+				while (cur->iconic==true && cur->wsitem[curws]->next!=NULL)
+					cur = cur->wsitem[curws]->next->data;
+				/* we reached the end of the list without a new win to focus, so reloop from the head */
+				if (cur->iconic==true) {
+					cur = wslist[curws]->data;
+					while(cur->iconic && cur->wsitem[curws]->next!=NULL)
+						cur = cur->wsitem[curws]->next->data;
+				}
+				if (focuswin!=cur &&cur->iconic==false) client = cur;
+			}
         }
     } /* if NULL focuswin */
-
-    if (NULL != client) {
+    if (NULL != client && false == client->iconic) {
         /* Raise window if it's occluded, then warp pointer into it and set keyboard focus to it. */
         uint32_t values[] = { XCB_STACK_MODE_TOP_IF };
         xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_STACK_MODE,values);
@@ -1010,14 +1055,16 @@ void setfocus(struct client *client)// Set focus on window client.
     if (NULL == client) {
         focuswin = NULL;
         xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_POINTER_ROOT, XCB_CURRENT_TIME); 
-        //xcb_window_t not_win = 0;
-        //xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&not_win);
+        xcb_window_t not_win = 0;
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&not_win);
         xcb_flush(conn);
         return;
-    }
+    }   
     /* Don't bother focusing on the root window or on the same window that already has focus. */
     if (client->id == screen->root || client == focuswin) return;
     if (NULL != focuswin) setunfocus(); /* Unset last focus. */
+    long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,wm_state, wm_state, 32, 2, data);
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->id,XCB_CURRENT_TIME); /* Set new input focus. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&client->id);
     xcb_flush(conn);
@@ -1477,6 +1524,7 @@ void hide()
     if (focuswin!=NULL) {
         long data[] = { XCB_ICCCM_WM_STATE_ICONIC, wm_hidden, XCB_NONE };
         /* Unmap window and declare iconic. Unmapping will generate an UnmapNotify event so we can forget about the window later. */
+        focuswin->iconic = true;
         xcb_unmap_window(conn, focuswin->id);
         xcb_change_property(conn, XCB_PROP_MODE_REPLACE, focuswin->id, wm_state, XCB_ATOM_ATOM, 32, 3, data); 
         xcb_flush(conn);
@@ -1905,11 +1953,20 @@ void clientmessage(xcb_generic_event_t *ev)
 {
     xcb_client_message_event_t *e= (xcb_client_message_event_t *)ev;
     if (e->type == wm_change_state && e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
-            long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
-            xcb_unmap_window(conn, e->window); /* Unmap window and declare iconic. */
-            xcb_change_property(conn, XCB_PROP_MODE_REPLACE, e->window,wm_state, wm_state, 32, 2, data);
-            xcb_flush(conn);
+        hide();
     }
+    else if(e->type == atom_focus) {
+        struct client *cl = findclient(& e->window);
+        setfocus(cl);
+        if (cl->iconic ==true) {
+            cl->iconic = false;
+            xcb_map_window(conn,cl->id);
+        }
+        xcb_flush(conn);
+    }
+    else if(e->type == atom_current_desktop)
+        changeworkspace_helper(e->data.data32[0]);
+        xcb_flush(conn);
 }
 #endif
 
@@ -1965,14 +2022,25 @@ void unmapnotify(xcb_generic_event_t *ev)
     * workspace while changing workspaces... If we do this,
     * we need to keep track of our own windows and ignore
     * UnmapNotify on them. */
+    xcb_delete_property(conn, screen->root, atom_client_list);
     for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
         client = item->data;
-        if (client->id == e->window) {
+        if (client->id == e->window && client->iconic==false) {
             if (focuswin == client) focuswin = NULL;
-            forgetclient(client);
-            break;
+            if (!client->iconic)
+                forgetclient(client);
         }
+        else 
+            xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
     }
+}
+
+void mappingnotify(xcb_generic_event_t *ev)
+{
+    xcb_mapping_notify_event_t *e = (xcb_mapping_notify_event_t *)ev;
+    if (e->request != XCB_MAPPING_MODIFIER && e->request != XCB_MAPPING_KEYBOARD) return;
+    xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
+    grabkeys();
 }
 
 void confignotify(xcb_generic_event_t *ev)
@@ -2054,6 +2122,8 @@ bool setup(int scrno)
         ewmh->_NET_ACTIVE_WINDOW,
         ewmh->_NET_WM_ICON,
         ewmh->_NET_WM_STATE,
+        ewmh->_NET_WM_NAME,
+        ewmh->_NET_SUPPORTING_WM_CHECK,
         ewmh->_NET_WM_STATE_HIDDEN,
         ewmh->_NET_WM_ICON_NAME,
         ewmh->_NET_WM_WINDOW_TYPE,
@@ -2075,6 +2145,7 @@ bool setup(int scrno)
     wm_delete_window     = getatom("WM_DELETE_WINDOW");    wm_change_state      = getatom("WM_CHANGE_STATE");
     wm_state             = getatom("_NET_WM_STATE");       wm_protocols         = getatom("WM_PROTOCOLS");
     atom_focus           = getatom("_NET_ACTIVE_WINDOW");  wm_hidden            = getatom("_NET_WM_STATE_HIDDEN");
+    atom_client_list     = getatom("_NET_CLIENT_LIST");
     randrbase = setuprandr();
     if (!setupscreen())    return false;
     if (!setup_keyboard()) return false;
@@ -2091,7 +2162,7 @@ bool setup(int scrno)
     events[XCB_ENTER_NOTIFY]        = enternotify;        events[XCB_KEY_PRESS]           = handle_keypress;
     events[XCB_MAP_REQUEST]         = newwin;             events[XCB_UNMAP_NOTIFY]        = unmapnotify;
     events[XCB_CONFIGURE_NOTIFY]    = confignotify;       events[XCB_CIRCULATE_REQUEST]   = circulaterequest;
-    events[XCB_BUTTON_PRESS]        = buttonpress;        /*events[XCB_MAPPING_NOTIFY]      = mappingnotify;*/
+    events[XCB_BUTTON_PRESS]        = buttonpress;        events[XCB_MAPPING_NOTIFY]      = mappingnotify;
 #ifdef ICON
     events[XCB_CLIENT_MESSAGE]      = clientmessage;
 #endif
