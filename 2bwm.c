@@ -1961,12 +1961,12 @@ void clientmessage(xcb_generic_event_t *ev)
     }
     else if(e->type == atom_focus) {
         struct client *cl = findclient(& e->window);
-        setfocus(cl);
         if (cl->iconic ==true) {
             cl->iconic = false;
             xcb_map_window(conn,cl->id);
         }
         xcb_flush(conn);
+		setfocus(cl);
     }
     else if(e->type == atom_current_desktop)
         changeworkspace_helper(e->data.data32[0]);
