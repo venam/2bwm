@@ -49,7 +49,10 @@ void delitem(struct item **mainlist, struct item *item)
     
     if (NULL == mainlist || NULL == *mainlist || NULL == item) return;
     /* First entry was removed. Remember the next one instead. */
-    if (item == *mainlist) *mainlist = ml->next;
+    if (item == *mainlist) {
+		*mainlist        = ml->next;
+		item->next->prev = NULL;
+	}
     else {
         item->prev->next = item->next;
         /* This is not the last item in the list. */
