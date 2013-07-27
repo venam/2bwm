@@ -418,7 +418,7 @@ uint32_t getcolor(const char *hex)  // Get the pixel values of a named colour co
 void forgetclient(struct client *client)
 {                                   // Forget everything about client client.
     if (NULL == client) return;
-//	if (client->id == top_win) top_win = 0;
+	if (client->id == top_win) top_win = 0;
     for (uint32_t ws = 0; ws < WORKSPACES; ws ++) /* Delete client from the workspace lists it belongs to.(can be on several) */
         if (NULL != client->wsitem[ws]) delfromworkspace(client, ws);
     freeitem(&winlist, NULL, client->winitem); /* Remove from global window list. */
@@ -2033,7 +2033,6 @@ void unmapnotify(xcb_generic_event_t *ev)
         client = item->data;
         if (client->id == e->window && client->iconic==false) {
             if (focuswin == client)       focuswin = NULL;
-//			if (focuswin->id == top_win)  top_win = 0 ;
             if (!client->iconic)          forgetclient(client);
         }
         else { 
@@ -2079,6 +2078,7 @@ void run(void)
             if(ev->response_type==randrbase + XCB_RANDR_SCREEN_CHANGE_NOTIFY) getrandr();
             if (events[ev->response_type & ~0x80]) events[ev->response_type & ~0x80](ev);
         free(ev);
+        if(top_win!=0) raisewindow(top_win);
         }
     }
 }
