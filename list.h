@@ -51,7 +51,8 @@ void delitem(struct item **mainlist, struct item *item)
     /* First entry was removed. Remember the next one instead. */
     if (item == *mainlist) {
 		*mainlist        = ml->next;
-		item->next->prev = NULL;
+		if (item->next!=NULL)
+			item->next->prev = NULL;
 	}
     else {
         item->prev->next = item->next;
