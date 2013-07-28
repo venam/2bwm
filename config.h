@@ -168,4 +168,6 @@ static Button buttons[] = {
     {  MOD|CONTROL,XCB_BUTTON_INDEX_3,     start,         {.com = menucmd}},
     {  MOD|SHIFT,  XCB_BUTTON_INDEX_1,     changeworkspace, {.i=0}},
     {  MOD|SHIFT,  XCB_BUTTON_INDEX_3,     changeworkspace, {.i=1}},
+    {  MOD|ALT,    XCB_BUTTON_INDEX_1,     changescreen,    {.i=1}},
+    {  MOD|ALT,    XCB_BUTTON_INDEX_3,     changescreen,    {.i=0}}
 };
