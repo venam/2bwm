@@ -102,7 +102,9 @@ xcb_screen_t     *screen;           // Our current screen.
 int randrbase;                      // Beginning of RANDR extension events.
 uint8_t curws = 0;                  // Current workspace.
 struct client *focuswin;            // Current focus window.
+#ifdef TOP_WIN
 xcb_drawable_t top_win=0;           // Window always on top.
+#endif
 struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
 struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
@@ -133,7 +135,9 @@ static void changescreen(const Arg *arg);
 static void grabkeys(void);
 static void twobwm_restart();
 static void twobwm_exit();
+#ifdef TOP_WIN
 static void always_on_top();
+#endif
 static bool setup_keyboard(void);
 static bool setupscreen(void);
 static int  setuprandr(void);
@@ -345,6 +349,7 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
     xcb_flush(conn);
 }
 
+#ifdef TOP_WIN
 void always_on_top()
 {
     if(focuswin!=NULL){
@@ -357,6 +362,8 @@ void always_on_top()
         setborders(focuswin,true);
     }
 }
+#endif 
+
 void changeworkspace(const Arg *arg){changeworkspace_helper(arg->i);}
 void nextworkspace(){curws==WORKSPACES-1?changeworkspace_helper(0):changeworkspace_helper(curws+1);}
 void prevworkspace(){curws>0?changeworkspace_helper(curws-1):changeworkspace_helper(WORKSPACES-1);}
@@ -418,7 +425,9 @@ uint32_t getcolor(const char *hex)  // Get the pixel values of a named colour co
 void forgetclient(struct client *client)
 {                                   // Forget everything about client client.
     if (NULL == client) return;
+#ifdef TOP_WIN
 	if (client->id == top_win) top_win = 0;
+#endif
     for (uint32_t ws = 0; ws < WORKSPACES; ws ++) /* Delete client from the workspace lists it belongs to.(can be on several) */
         if (NULL != client->wsitem[ws]) delfromworkspace(client, ws);
     freeitem(&winlist, NULL, client->winitem); /* Remove from global window list. */
@@ -1272,8 +1281,11 @@ void setborders(struct client *client,const bool isitfocused)
         values[0] = conf.borderwidth; /* Set border width. */
         xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);        
         uint16_t half = 0;
+#ifdef TOP_WIN
         if (top_win!=0 &&client->id ==top_win) half = -conf.outer_border;
-        else half = conf.outer_border;
+        else 
+#endif
+			half = conf.outer_border;
         xcb_rectangle_t rect_inner[] = {
             { client->width,0, conf.borderwidth-half,client->height+conf.borderwidth-half},
             { client->width+conf.borderwidth+half,0, conf.borderwidth-half,client->height+conf.borderwidth-half},
@@ -1636,7 +1648,9 @@ void deletewin()
     bool use_delete = false;
 
     if (NULL == focuswin || focuswin->unkillable==true) return;
+#ifdef TOP_WIN
     if (focuswin->id == top_win) top_win = 0;
+#endif
     /* Check if WM_DELETE is supported.  */
     xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id,wm_protocols);
 
@@ -1957,8 +1971,17 @@ void buttonpress(xcb_generic_event_t *ev)
 void clientmessage(xcb_generic_event_t *ev)
 {
     xcb_client_message_event_t *e= (xcb_client_message_event_t *)ev;
-    if (e->type == wm_change_state && e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
-        hide();
+    if (e->type == wm_change_state){
+        if (e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
+            struct client *cl = findclient(& e->window);
+            if (cl->iconic == false)
+                hide(); 
+            else { 
+                cl->iconic = false;
+                xcb_map_window (conn, cl->id);
+                setfocus(cl);
+            }
+        }
     }
     else if(e->type == atom_focus) {
         struct client *cl = findclient(& e->window);
@@ -1967,7 +1990,7 @@ void clientmessage(xcb_generic_event_t *ev)
             xcb_map_window(conn,cl->id);
         }
         xcb_flush(conn);
-		setfocus(cl);
+        setfocus(cl);
     }
     else if(e->type == atom_current_desktop)
         changeworkspace_helper(e->data.data32[0]);
@@ -2078,7 +2101,9 @@ void run(void)
             if(ev->response_type==randrbase + XCB_RANDR_SCREEN_CHANGE_NOTIFY) getrandr();
             if (events[ev->response_type & ~0x80]) events[ev->response_type & ~0x80](ev);
         free(ev);
+#ifdef TOP_WIN
         if(top_win!=0) raisewindow(top_win);
+#endif
         }
     }
 }

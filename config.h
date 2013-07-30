@@ -130,7 +130,7 @@ static key keys[] = {
     // Make the window unkillable
     {  MOD ,              XK_a,          unkillable,        {.i=0}},
     // Make the window appear always on top
-    {  MOD,               XK_t,          always_on_top,     {.i=0}},
+//    {  MOD,               XK_t,          always_on_top,     {.i=0}},
     // Make the window stay on all workspaces
     {  MOD ,              XK_f,          fix,               {.i=0}},
     // Move the cursor

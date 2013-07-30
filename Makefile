@@ -5,7 +5,7 @@ SRC=2bwm.c list.h hidden.c config.h
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST 2bwm.man $(SRC)
 
 CFLAGS+=-g -std=c99 -Wall -Os -s -Wextra -I/usr/local/include \
-     -DICON -DNCOMPTON 
+     -DICON -DNCOMPTON -DNTOP_WIN
 
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util -lxcb-ewmh
 
