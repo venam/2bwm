@@ -2004,8 +2004,9 @@ void destroynotify(xcb_generic_event_t *ev)
     /* If we had focus or our last focus in this window, forget about the focus.
      * We will get an EnterNotify if there's another window
      * under the pointer so we can set the focus proper later. */
-    if (NULL != focuswin)     if( focuswin->id == e->window) focuswin = NULL;
-    forgetwin(e->window); /* Find this window in list of clients and forget about it. */
+    if (NULL != focuswin && focuswin->id == e->window) focuswin = NULL;
+    struct client *cl = findclient( & e->window);
+    if (cl)    forgetwin(cl->id); /* Find this window in list of clients and forget about it. */
 }
 
 void enternotify(xcb_generic_event_t *ev)
@@ -2050,18 +2051,18 @@ void unmapnotify(xcb_generic_event_t *ev)
     * workspace while changing workspaces... If we do this,
     * we need to keep track of our own windows and ignore
     * UnmapNotify on them. */
-	xcb_delete_property(conn, screen->root, atom_client_list);
-	xcb_delete_property(conn, screen->root, atom_client_list_st);
+    xcb_delete_property(conn, screen->root, atom_client_list);
+    xcb_delete_property(conn, screen->root, atom_client_list_st);
     for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
         client = item->data;
         if (client->id == e->window && client->iconic==false) {
             if (focuswin == client)       focuswin = NULL;
-            if (!client->iconic)          forgetclient(client);
+            if (!client->iconic && e->event != screen->root)   forgetclient(client);
         }
         else { 
-			xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
-			xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id);
-		}
+            xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
+            xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id);
+        }
     }
 }
 
