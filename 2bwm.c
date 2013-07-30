@@ -1074,7 +1074,7 @@ void setfocus(struct client *client)// Set focus on window client.
         return;
     }   
     /* Don't bother focusing on the root window or on the same window that already has focus. */
-    if (client->id == screen->root || client == focuswin) return;
+    if (client->id == screen->root) return;
     if (NULL != focuswin) setunfocus(); /* Unset last focus. */
     long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,wm_state, wm_state, 32, 2, data);
@@ -1994,7 +1994,7 @@ void clientmessage(xcb_generic_event_t *ev)
     }
     else if(e->type == atom_current_desktop)
         changeworkspace_helper(e->data.data32[0]);
-        xcb_flush(conn);
+    xcb_flush(conn);
 }
 #endif
 
