@@ -1659,7 +1659,7 @@ void deletewin()
             if (protocols.atoms[i] == wm_delete_window) use_delete = true;
     xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
 
-	delfromworkspace(focuswin,curws);
+    delfromworkspace(focuswin,curws);
     if (use_delete) {
         xcb_client_message_event_t ev = { .response_type = XCB_CLIENT_MESSAGE,
             .format = 32,                  .sequence = 0,
@@ -2057,7 +2057,7 @@ void unmapnotify(xcb_generic_event_t *ev)
         client = item->data;
         if (client->id == e->window && client->iconic==false) {
             if (focuswin == client)       focuswin = NULL;
-            if (!client->iconic && e->event != screen->root)   forgetclient(client);
+            if (!client->iconic)   forgetclient(client);
         }
         else { 
             xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
