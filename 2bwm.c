@@ -435,12 +435,14 @@ void forgetclient(struct client *client)
 void forgetwin(xcb_window_t win)    // Forget everything about a client with client->id win.
 {
     struct client *client;
-    for (struct item *item = winlist; item != NULL; item = item->next) { /* Find this window in the global window list. */
-        client = item->data;
-        if (win == client->id) { /* Forget it and free allocated data, it might already be freed by handling an UnmapNotify. */
-            forgetclient(client);
-            return;
-        }
+	for (struct item *item = winlist; item != NULL; item = item->next) { /* Find this window in the global window list. */
+		if (item!=NULL) {
+			client = item->data;
+			if (win == client->id) { /* Forget it and free allocated data, it might already be freed by handling an UnmapNotify. */
+				forgetclient(client);
+				return;
+			}
+		}
     }
 }
 
@@ -2052,17 +2054,19 @@ void unmapnotify(xcb_generic_event_t *ev)
     * UnmapNotify on them. */
     xcb_delete_property(conn, screen->root, atom_client_list);
     xcb_delete_property(conn, screen->root, atom_client_list_st);
-    for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
-        client = item->data;
-        if (client->id == e->window && client->iconic==false) {
-            if (focuswin == client)       focuswin = NULL;
-            forgetclient(client);
-        }
-        else { 
-            xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
-            xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id);
-        }
-    }
+	for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
+		if (item!=NULL) {
+			client = item->data;
+			if (client->id == e->window && client->iconic==false) {
+				if (focuswin == client)       focuswin = NULL;
+				forgetclient(client);
+			}
+			else { 
+				xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
+				xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id);
+			}
+		}
+	}
 }
 
 void confignotify(xcb_generic_event_t *ev)
