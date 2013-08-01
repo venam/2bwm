@@ -1,7 +1,7 @@
 -*- text -*-
 
 * Check why sometimes the WM crashes when creating pop-ups or destroying/unmapping certain windows.
-	AKA: the pop-up bug
+	AKA: the pop-up bug -- related to the unmapnotofy foo
 
 * Rewrite the readme file 
 	with more statistic, 
