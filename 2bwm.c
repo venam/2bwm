@@ -157,7 +157,6 @@ static void deletewin();
 static void unkillable();
 static void fix();
 static void check_name(struct client *client);
-static void mappingnotify(xcb_generic_event_t *ev);
 static void configurerequest(xcb_generic_event_t *ev);
 static void buttonpress(xcb_generic_event_t *ev);
 static void unmapnotify(xcb_generic_event_t *ev);
@@ -2006,7 +2005,7 @@ void destroynotify(xcb_generic_event_t *ev)
      * under the pointer so we can set the focus proper later. */
     if (NULL != focuswin && focuswin->id == e->window) focuswin = NULL;
     struct client *cl = findclient( & e->window);
-    if (cl)    forgetwin(cl->id); /* Find this window in list of clients and forget about it. */
+    if (NULL != cl)    forgetwin(cl->id); /* Find this window in list of clients and forget about it. */
 }
 
 void enternotify(xcb_generic_event_t *ev)
@@ -2057,21 +2056,13 @@ void unmapnotify(xcb_generic_event_t *ev)
         client = item->data;
         if (client->id == e->window && client->iconic==false) {
             if (focuswin == client)       focuswin = NULL;
-            if (!client->iconic)   forgetclient(client);
+            forgetclient(client);
         }
         else { 
             xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
             xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id);
         }
     }
-}
-
-void mappingnotify(xcb_generic_event_t *ev)
-{
-    xcb_mapping_notify_event_t *e = (xcb_mapping_notify_event_t *)ev;
-    if (e->request != XCB_MAPPING_MODIFIER && e->request != XCB_MAPPING_KEYBOARD) return;
-    xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-    grabkeys();
 }
 
 void confignotify(xcb_generic_event_t *ev)
@@ -2195,7 +2186,7 @@ bool setup(int scrno)
     events[XCB_ENTER_NOTIFY]        = enternotify;        events[XCB_KEY_PRESS]           = handle_keypress;
     events[XCB_MAP_REQUEST]         = newwin;             events[XCB_UNMAP_NOTIFY]        = unmapnotify;
     events[XCB_CONFIGURE_NOTIFY]    = confignotify;       events[XCB_CIRCULATE_REQUEST]   = circulaterequest;
-    events[XCB_BUTTON_PRESS]        = buttonpress;        events[XCB_MAPPING_NOTIFY]      = mappingnotify;
+    events[XCB_BUTTON_PRESS]        = buttonpress; 
 #ifdef ICON
     events[XCB_CLIENT_MESSAGE]      = clientmessage;
 #endif
