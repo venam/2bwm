@@ -1,6 +1,6 @@
 -*- text -*-
 
-* check why after deleting the head of the of the list the focus backward doesn't loop completely
+* Check why sometimes the WM crashes when creating pop-ups or destroying/unmapping certain windows.
 
 * Rewrite the readme file 
 	with more statistic, 
