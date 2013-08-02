@@ -1599,8 +1599,8 @@ void teleport(const Arg *arg)
         focuswin->x += mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
         focuswin->y  = mon_y + mon_height - (focuswin->height + conf.borderwidth* 2);
         focuswin->y += mon_y;
-        focuswin->y  = focuswin->y /2;
-        focuswin->x  = focuswin->x /2;
+        focuswin->y  = focuswin->y /2-(offsets[3]);
+        focuswin->x  = focuswin->x /2-(offsets[2]);
         movewindow(focuswin->id, focuswin->x, focuswin->y);
 
         if (pointx > 0 - conf.borderwidth && pointx < focuswin->width + conf.borderwidth
