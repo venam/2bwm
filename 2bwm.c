@@ -1653,10 +1653,11 @@ void deletewin()
     /* Check if WM_DELETE is supported.  */
     xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id,wm_protocols);
 
-    if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1)
-        for (uint32_t i = 0; i < protocols.atoms_len; i++)
-            if (protocols.atoms[i] == wm_delete_window) use_delete = true;
-    xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
+	if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1) {
+		for (uint32_t i = 0; i < protocols.atoms_len; i++)
+			if (protocols.atoms[i] == wm_delete_window) use_delete = true;
+		xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
+	}
 
     delfromworkspace(focuswin,curws);
     if (use_delete) {

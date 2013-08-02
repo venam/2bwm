@@ -25,9 +25,15 @@
 
 * configs in a text file, dynamically updated
 
+* center vertically/horizontally (SHIFT+G/CTRL+G)
+
 * Handle new modes on physical outputs. What do we have to do?
 
-* A separate workspace list for every monitor.
+* A separate workspace list for every monitor. (CTRL+NUM)
+	* get the cursor position (on which monitor)
+	* unmap all window that are only on this monitor
+	* map window on the workspace NUM that are on this monitor
+	* problem with curws and remapping
 
 * static Makefile problem
 
