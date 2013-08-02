@@ -11,7 +11,7 @@ static const bool     resize_by_line = true;
 ///---Offsets---///
 /*0)offsetx          1)offsety
  *2)maxwidth         3)maxheight */
-static const uint8_t offsets[] = {0,0,0,0};
+static const uint8_t offsets[] = {0,0,0,20};
 ///---Colors---///
 /*0)focuscol         1)unfocuscol
  *2)fixedcol         3)unkilcol
@@ -95,7 +95,9 @@ static key keys[] = {
     {  MOD ,              XK_Home,       resizestep_aspect, {.i=0}},
     {  MOD ,              XK_End,        resizestep_aspect, {.i=1}},
     // Full screen window without borders
-    {  MOD ,              XK_x,          maximize,          {.i=0}},
+    {  MOD ,              XK_x,         maximize,          {.i=0}},
+    //Full screen window without borders overiding offsets
+    {  MOD |SHIFT ,       XK_x,          maximize,          {.i=1}},
     // Maximize vertically
     {  MOD ,              XK_m,          maxvert_hor,       {.i=1}},
     // Maximize horizontally
@@ -130,7 +132,7 @@ static key keys[] = {
     // Make the window unkillable
     {  MOD ,              XK_a,          unkillable,        {.i=0}},
     // Make the window appear always on top
-//    {  MOD,               XK_t,          always_on_top,     {.i=0}},
+    {  MOD,               XK_t,          always_on_top,     {.i=0}},
     // Make the window stay on all workspaces
     {  MOD ,              XK_f,          fix,               {.i=0}},
     // Move the cursor

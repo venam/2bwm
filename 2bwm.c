@@ -148,7 +148,7 @@ static void getrandr(void);
 static void raise_current_window(void);
 static void raiseorlower();
 static void setunfocus(void);
-static void maximize();
+static void maximize(const Arg *arg);
 #ifdef ICON
 static void hide();
 static void clientmessage(xcb_generic_event_t *ev);
@@ -1368,7 +1368,7 @@ void unmax(struct client *client)
     xcb_flush(conn);
 }
 
-void maximize()
+void maximize(const Arg *arg)
 {
     uint32_t values[4], mask = 0;
     int16_t mon_x, mon_y;
@@ -1403,8 +1403,14 @@ void maximize()
     values[0] = 0;  /* Remove borders. */
     mask = XCB_CONFIG_WINDOW_BORDER_WIDTH;
     xcb_configure_window(conn, focuswin->id, mask, values);
-    focuswin->x = mon_x+offsets[0];             focuswin->y = mon_y+offsets[1];
-    focuswin->width = mon_width-offsets[2];    focuswin->height = mon_height-offsets[3];
+	if (arg->i==0) {
+		focuswin->x = mon_x+offsets[0];             focuswin->y = mon_y+offsets[1];
+		focuswin->width = mon_width-offsets[2];    focuswin->height = mon_height-offsets[3];
+	}
+	else {
+		focuswin->x = mon_x;             focuswin->y = mon_y;
+		focuswin->width = mon_width;    focuswin->height = mon_height;
+	}
     values[0] = focuswin->x;                 values[1] = focuswin->y;
     values[2] = focuswin->width;             values[3] = focuswin->height;
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_X|XCB_CONFIG_WINDOW_Y
