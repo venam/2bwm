@@ -436,12 +436,10 @@ void forgetwin(xcb_window_t win)    // Forget everything about a client with cli
 {
     struct client *client;
 	for (struct item *item = winlist; item != NULL; item = item->next) { /* Find this window in the global window list. */
-		if (item!=NULL) {
-			client = item->data;
-			if (win == client->id) { /* Forget it and free allocated data, it might already be freed by handling an UnmapNotify. */
-				forgetclient(client);
-				return;
-			}
+		client = item->data;
+		if (win == client->id) { /* Forget it and free allocated data, it might already be freed by handling an UnmapNotify. */
+			forgetclient(client);
+			return;
 		}
     }
 }
@@ -2039,9 +2037,9 @@ void enternotify(xcb_generic_event_t *ev)
 void unmapnotify(xcb_generic_event_t *ev)
 {
     xcb_unmap_notify_event_t *e = (xcb_unmap_notify_event_t *)ev;
-    struct client *client;
+    struct client *client = NULL;
     /* Find the window in our *current* workspace list, then
-    * forget about it. If it gets mapped, we add it to our lists again then.
+    * forget about it.
     * Note that we might not know about the window we got the
     * UnmapNotify event for. It might be a window we just
     * unmapped on *another* workspace when changing
@@ -2049,23 +2047,20 @@ void unmapnotify(xcb_generic_event_t *ev)
     * override redirect set. This is not an error.
     * XXX We might need to look in the global window list,
     * after all. Consider if a window is unmapped on our last
-    * workspace while changing workspaces... If we do this,
+    * workspace while changing workspaces. If we do this,
     * we need to keep track of our own windows and ignore
     * UnmapNotify on them. */
-    xcb_delete_property(conn, screen->root, atom_client_list);
-    xcb_delete_property(conn, screen->root, atom_client_list_st);
+	client = findclient( & e->window);
+	if (NULL != client && client->wsitem[curws]!=NULL) {
+		if (focuswin!=NULL && client->id == focuswin->id)  focuswin = NULL;
+		if (client->iconic == false)     forgetclient(client);
+	}
+	xcb_delete_property(conn, screen->root, atom_client_list);
+	xcb_delete_property(conn, screen->root, atom_client_list_st);
 	for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
-		if (item!=NULL) {
-			client = item->data;
-			if (client->id == e->window && client->iconic==false) {
-				if (focuswin == client)       focuswin = NULL;
-				forgetclient(client);
-			}
-			else { 
-				xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
-				xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id);
-			}
-		}
+		client = item->data;
+		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
+		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id);
 	}
 }
 
