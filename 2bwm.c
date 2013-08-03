@@ -1609,8 +1609,8 @@ void teleport(const Arg *arg)
         focuswin->x  = focuswin->x /2-(offsets[2]);
         movewindow(focuswin->id, focuswin->x, focuswin->y);
 
-        if (pointx > 0 - conf.borderwidth && pointx < focuswin->width + conf.borderwidth
-        && pointy > 0 - conf.borderwidth && pointy < focuswin->height + conf.borderwidth)
+        if (pointx > 0 - conf.borderwidth-1 && pointx < focuswin->width + conf.borderwidth+1
+        && pointy > 0 - conf.borderwidth-1 && pointy < focuswin->height + conf.borderwidth+1)
             xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,pointx, pointy);
 
     }
