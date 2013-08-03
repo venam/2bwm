@@ -1980,13 +1980,15 @@ void clientmessage(xcb_generic_event_t *ev)
     if (e->type == wm_change_state){
         if (e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
             struct client *cl = findclient(& e->window);
-            if (cl->iconic == false)
-                hide(); 
-            else { 
-                cl->iconic = false;
-                xcb_map_window (conn, cl->id);
-                setfocus(cl);
-            }
+			if (NULL != cl) {
+				if (cl->iconic == false)
+					hide(); 
+				else { 
+					cl->iconic = false;
+					xcb_map_window (conn, cl->id);
+					setfocus(cl);
+				}
+			}
         }
     }
     else if(e->type == atom_focus) {
