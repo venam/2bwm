@@ -1525,7 +1525,7 @@ void maxhalf(const Arg *arg)
             focuswin->width =   mon_width - (offsets[2] + (conf.borderwidth * 2));
             focuswin->height = ((float)(mon_height)/2)- (offsets[3]+ (conf.borderwidth * 2));
             if (arg->i<-1) focuswin->y = mon_y+offsets[1];
-            else focuswin->y = mon_y - offsets[1] + mon_height -(focuswin->height + conf.borderwidth * 2);
+            else focuswin->y = mon_y - offsets[1] + mon_height-offsets[3] -(focuswin->height + conf.borderwidth * 2);
         }
     }
     values[0] = focuswin->width;        values[1] = focuswin->height;
