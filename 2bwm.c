@@ -1265,8 +1265,8 @@ void movestep(const Arg *arg)
     }
     movelim(focuswin);
     /* If the pointer was inside the window to begin with, move pointer back to where it was, relative to the window. */
-    if (start_x > 0 - conf.borderwidth && start_x < focuswin->width + conf.borderwidth && start_y > 0
-    - conf.borderwidth && start_y < focuswin->height + conf.borderwidth) {
+    if (start_x > 0 - conf.borderwidth-1 && start_x < focuswin->width + conf.borderwidth+1 && start_y > 0
+    - conf.borderwidth-1 && start_y < focuswin->height + conf.borderwidth+1) {
         xcb_warp_pointer(conn, XCB_NONE, focuswin->id,0,0,0,0,start_x, start_y);
         xcb_flush(conn);
     }
