@@ -36,15 +36,14 @@
 
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
-#define BUTTONMASK   XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE
-#define NET_WM_FIXED 0xffffffff     // Value in WM hint which means this window is fixed on all workspaces.
-#define TWOBWM_NOWS    0xfffffffe   // This means we didn't get any window hint at all.
-#define LENGTH(x)    (sizeof(x)/sizeof(*x))
+#define BUTTONMASK      XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE
+#define NET_WM_FIXED    0xffffffff  // Value in WM hint which means this window is fixed on all workspaces.
+#define TWOBWM_NOWS     0xfffffffe  // This means we didn't get any window hint at all.
+#define LENGTH(x)       (sizeof(x)/sizeof(*x))
 #define CLEANMASK(mask) (mask & ~(numlockmask|XCB_MOD_MASK_LOCK))
 #define CONTROL         XCB_MOD_MASK_CONTROL /* Control key */
 #define ALT             XCB_MOD_MASK_1       /* ALT key */
 #define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
-
 #define WORKSPACES 10
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---Types---///
@@ -114,7 +113,14 @@ struct conf {
     int8_t outer_border;            // The size of the outer border
     uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
 } conf;
-xcb_atom_t atom_desktop,atom_current_desktop,atom_unkillable,wm_delete_window,wm_change_state,wm_state,wm_protocols,atom_nb_workspace,atom_focus,atom_client_list,atom_client_list_st,wm_hidden;
+enum { atom_desktop, atom_current_desktop, atom_unkillable, wm_delete_window, wm_change_state, wm_state,
+	wm_protocols, atom_nb_workspace, atom_focus, atom_client_list, atom_client_list_st, wm_hidden, NB_ATOMS
+};
+const char *atomnames[NB_ATOMS][1] = { 
+	{"_NET_WM_DESKTOP"}, {"_NET_CURRENT_DESKTOP"}, {"_NET_UNKILLABLE"}, {"WM_DELETE_WINDOW"}, {"WM_CHANGE_STATE"}, {"_NET_WM_STATE"},
+	{"WM_PROTOCOLS"}, {"_NET_NUMBER_OF_DESKTOPS"}, {"_NET_ACTIVE_WINDOW"}, {"_NET_CLIENT_LIST"}, {"_NET_CLIENT_LIST_STACKING"}, {"_NET_WM_STATE_HIDDEN"}
+};
+xcb_atom_t ATOM[NB_ATOMS];
 ///---Functions prototypes---///
 static void run(void);
 static bool setup(int screen);
@@ -203,7 +209,7 @@ static bool getgeom(const xcb_drawable_t *win, int16_t *x, int16_t *y, uint16_t 
 static void configwin(xcb_window_t win, uint16_t mask,const struct winconf *wc);
 static void sigcatch(const int sig);
 static void ewmh_init(void);
-static xcb_atom_t getatom(char *atom_name);
+static xcb_atom_t getatom(const char *atom_name);
 #include "config.h"
 
 ///---Function bodies---///
@@ -249,7 +255,7 @@ int32_t getwmdesktop(xcb_drawable_t win)
                                     // visible on all workspaces or TWOBWM_NOWS if we didn't find any hints.
     xcb_get_property_reply_t *reply;
     uint32_t *wsp;
-    xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, atom_desktop,
+    xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_desktop],
         XCB_GET_PROPERTY_TYPE_ANY, 0, sizeof(int32_t));
     reply = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL == reply) return TWOBWM_NOWS;
@@ -265,7 +271,7 @@ int32_t getwmdesktop(xcb_drawable_t win)
 bool get_unkil_state(xcb_drawable_t win)
 {                                   // check if the window is unkillable, if yes return true
     uint8_t *wsp;
-    xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, atom_unkillable,XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(int8_t));
+    xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_unkillable],XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(int8_t));
     xcb_get_property_reply_t *reply  = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL == reply) return false;
     if (0 == xcb_get_property_value_length(reply)){
@@ -281,7 +287,6 @@ bool get_unkil_state(xcb_drawable_t win)
 void check_name(struct client *client)
 {
     if (NULL==client) return;
-    char *wm_name_window;
     xcb_atom_t atom_name = getatom(LOOK_INTO);
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, client->id, atom_name,XCB_GET_PROPERTY_TYPE_ANY, 0,60);
     xcb_get_property_reply_t *reply  = xcb_get_property_reply(conn, cookie, NULL);
@@ -290,7 +295,7 @@ void check_name(struct client *client)
         free(reply);
         return;
     }
-    wm_name_window = xcb_get_property_value(reply);
+    char *wm_name_window = xcb_get_property_value(reply);
     free(reply);
     for(int i=0;i<NB_NAMES;i++) {
         if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
@@ -311,31 +316,26 @@ void addtoworkspace(struct client *client, uint32_t ws)
     client->wsitem[ws] = item; /* Remember our place in the workspace window list. */
     item->data = client;
     if (!client->fixed)  /* Set window hint property so we can survive a crash. Like "fixed" */
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,atom_desktop, XCB_ATOM_CARDINAL, 32, 1,&ws);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,ATOM[atom_desktop], XCB_ATOM_CARDINAL, 32, 1,&ws);
 }
 
 void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
 {
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&ws);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, ATOM[atom_current_desktop], XCB_ATOM_CARDINAL, 32, 1,&ws);
     if (ws == curws) return;
-    if (NULL != focuswin && !focuswin->fixed) {
-        setunfocus();
-        focuswin = NULL;
-    }
     struct client *client;
     for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
     /* Go through list of current ws. Unmap everything that isn't fixed. */
         client = item->data;
         setborders(client,false);
-        if (!client->fixed) {
+        if (!client->fixed)
             xcb_unmap_window(conn, client->id);
-        }
     }
     for (struct item *item = wslist[ws]; item != NULL; item = item->next) {
     /* Go through list of new ws. Map everything that isn't fixed. */
         client = item->data;
-		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
-		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id);
+		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, ATOM[atom_client_list] , XCB_ATOM_WINDOW, 32, 1,&client->id);
+		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, ATOM[atom_client_list_st] , XCB_ATOM_WINDOW, 32, 1,&client->id);
         if (!client->fixed && !client->iconic) xcb_map_window(conn, client->id);
     }
     curws = ws;
@@ -372,7 +372,7 @@ void fixwindow(struct client *client)
     if (NULL == client) return;
     if (client->fixed) {
         client->fixed = false;
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,atom_desktop, XCB_ATOM_CARDINAL, 32, 1,&curws);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,ATOM[atom_desktop], XCB_ATOM_CARDINAL, 32, 1,&curws);
         /* Delete from all workspace lists except current. */
         for (uint32_t ws = 0; ws < WORKSPACES; ws ++)
             if (ws != curws) delfromworkspace(client, ws);
@@ -381,7 +381,7 @@ void fixwindow(struct client *client)
         raisewindow(client->id); /* Raise the window, if going to another desktop don't let the fixed window behind. */
         client->fixed = true;
         uint32_t ww = NET_WM_FIXED;
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,atom_desktop, XCB_ATOM_CARDINAL, 32, 1,&ww);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,ATOM[atom_desktop], XCB_ATOM_CARDINAL, 32, 1,&ww);
         for (uint32_t ws = 0; ws < WORKSPACES; ws ++) /* Add window to all workspace lists. */
             if (ws != curws) addtoworkspace(client, ws);
     }
@@ -394,12 +394,12 @@ void unkillablewindow(struct client *client)
     if (NULL == client) return;
     if (client->unkillable) {
         client->unkillable = false;
-        xcb_delete_property(conn, client->id, atom_unkillable);
+        xcb_delete_property(conn, client->id, ATOM[atom_unkillable]);
     }
     else {
         raisewindow(client->id);
         client->unkillable = true;
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id, atom_unkillable , XCB_ATOM_CARDINAL, 8, 1, &client->unkillable);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id, ATOM[atom_unkillable] , XCB_ATOM_CARDINAL, 8, 1, &client->unkillable);
     }
     setborders(client,true);
     xcb_flush(conn);
@@ -533,8 +533,8 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
 
     if (NULL == client) return;
     addtoworkspace(client, curws); /* Add this window to the current workspace. */
-	xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id); 
-	xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id); 
+	xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, ATOM[atom_client_list] , XCB_ATOM_WINDOW, 32, 1,&client->id); 
+	xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, ATOM[atom_client_list_st] , XCB_ATOM_WINDOW, 32, 1,&client->id); 
     if (!client->usercoord) { /* If we don't have specific coord map it where the pointer is.*/
         int16_t pointx, pointy;
         if (!getpointer(&screen->root, &pointx, &pointy)) pointx = pointy = 0;
@@ -553,7 +553,7 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
     setborders(client,true);
     xcb_map_window(conn, client->id);                     /* Show window on screen. */
     long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };/* Declare window normal. */
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,wm_state, wm_state, 32, 2, data);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,ATOM[wm_state], ATOM[wm_state], 32, 2, data);
     /* Move cursor into the middle of the window so we don't lose the pointer to another window. */
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,client->width / 2, client->height / 2);
     xcb_flush(conn);
@@ -717,8 +717,8 @@ bool setupscreen(void)              // Walk through all existing windows and set
                     }
                     else {
                         addtoworkspace(client, curws); 
-						xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&children[i]); 
-						xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&children[i]); 
+						xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, ATOM[atom_client_list] , XCB_ATOM_WINDOW, 32, 1,&children[i]); 
+						xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, ATOM[atom_client_list_st] , XCB_ATOM_WINDOW, 32, 1,&children[i]); 
                     }
             }
         }
@@ -1068,7 +1068,7 @@ void setfocus(struct client *client)// Set focus on window client.
         focuswin = NULL;
         xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_POINTER_ROOT, XCB_CURRENT_TIME); 
         xcb_window_t not_win = 0;
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&not_win);
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, ATOM[atom_focus] , XCB_ATOM_WINDOW, 32, 1,&not_win);
         xcb_flush(conn);
         return;
     }   
@@ -1076,9 +1076,9 @@ void setfocus(struct client *client)// Set focus on window client.
     if (client->id == screen->root) return;
     if (NULL != focuswin) setunfocus(); /* Unset last focus. */
     long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,wm_state, wm_state, 32, 2, data);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,ATOM[wm_state], ATOM[wm_state], 32, 2, data);
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->id,XCB_CURRENT_TIME); /* Set new input focus. */
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_focus , XCB_ATOM_WINDOW, 32, 1,&client->id);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, ATOM[atom_focus] , XCB_ATOM_WINDOW, 32, 1,&client->id);
     xcb_flush(conn);
     focuswin = client;  /* Remember the new window as the current focused window. */
     grabbuttons(client);
@@ -1543,11 +1543,11 @@ void maxhalf(const Arg *arg)
 void hide()
 {
     if (focuswin!=NULL) {
-        long data[] = { XCB_ICCCM_WM_STATE_ICONIC, wm_hidden, XCB_NONE };
+        long data[] = { XCB_ICCCM_WM_STATE_ICONIC, ATOM[wm_hidden], XCB_NONE };
         /* Unmap window and declare iconic. Unmapping will generate an UnmapNotify event so we can forget about the window later. */
         focuswin->iconic = true;
         xcb_unmap_window(conn, focuswin->id);
-        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, focuswin->id, wm_state, XCB_ATOM_ATOM, 32, 3, data); 
+        xcb_change_property(conn, XCB_PROP_MODE_REPLACE, focuswin->id, ATOM[wm_state], XCB_ATOM_ATOM, 32, 3, data); 
         xcb_flush(conn);
     }
 }
@@ -1657,11 +1657,11 @@ void deletewin()
     if (focuswin->id == top_win) top_win = 0;
 #endif
     /* Check if WM_DELETE is supported.  */
-    xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id,wm_protocols);
+    xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id,ATOM[wm_protocols]);
 
 	if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1) {
 		for (uint32_t i = 0; i < protocols.atoms_len; i++)
-			if (protocols.atoms[i] == wm_delete_window) use_delete = true;
+			if (protocols.atoms[i] == ATOM[wm_delete_window]) use_delete = true;
 		xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
 	}
 
@@ -1669,8 +1669,8 @@ void deletewin()
     if (use_delete) {
         xcb_client_message_event_t ev = { .response_type = XCB_CLIENT_MESSAGE,
             .format = 32,                  .sequence = 0,
-            .window = focuswin->id,        .type = wm_protocols,
-            .data.data32 = { wm_delete_window, XCB_CURRENT_TIME }
+            .window = focuswin->id,        .type = ATOM[wm_protocols],
+            .data.data32 = { ATOM[wm_delete_window], XCB_CURRENT_TIME }
         };
         xcb_send_event(conn, false, focuswin->id,XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
     }
@@ -1977,7 +1977,7 @@ void buttonpress(xcb_generic_event_t *ev)
 void clientmessage(xcb_generic_event_t *ev)
 {
     xcb_client_message_event_t *e= (xcb_client_message_event_t *)ev;
-    if (e->type == wm_change_state){
+    if (e->type == ATOM[wm_change_state]){
         if (e->format == 32 && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC) {
             struct client *cl = findclient(& e->window);
 			if (NULL != cl) {
@@ -1991,7 +1991,7 @@ void clientmessage(xcb_generic_event_t *ev)
 			}
         }
     }
-    else if(e->type == atom_focus) {
+    else if(e->type == ATOM[atom_focus]) {
         struct client *cl = findclient(& e->window);
 		if (NULL != cl) {
 			if (cl->iconic ==true) {
@@ -2002,7 +2002,7 @@ void clientmessage(xcb_generic_event_t *ev)
 			setfocus(cl);
 		}
     }
-    else if(e->type == atom_current_desktop)
+    else if(e->type == ATOM[atom_current_desktop])
         changeworkspace_helper(e->data.data32[0]);
     xcb_flush(conn);
 }
@@ -2066,12 +2066,12 @@ void unmapnotify(xcb_generic_event_t *ev)
 		if (focuswin!=NULL && client->id == focuswin->id)  focuswin = NULL;
 		if (client->iconic == false)     forgetclient(client);
 	}
-	xcb_delete_property(conn, screen->root, atom_client_list);
-	xcb_delete_property(conn, screen->root, atom_client_list_st);
+	xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
+	xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
 	for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
 		client = item->data;
-		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list , XCB_ATOM_WINDOW, 32, 1,&client->id);
-		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, atom_client_list_st , XCB_ATOM_WINDOW, 32, 1,&client->id);
+		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, ATOM[atom_client_list] , XCB_ATOM_WINDOW, 32, 1,&client->id);
+		xcb_change_property(conn, XCB_PROP_MODE_APPEND , screen->root, ATOM[atom_client_list_st] , XCB_ATOM_WINDOW, 32, 1,&client->id);
 	}
 }
 
@@ -2112,7 +2112,7 @@ void run(void)
 
 void sigcatch(const int sig){sigcode = sig;}
 
-xcb_atom_t getatom(char *atom_name) // Get a defined atom from the X server.
+xcb_atom_t getatom(const char *atom_name) // Get a defined atom from the X server.
 {
     xcb_intern_atom_reply_t *rep;
     xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0, strlen(atom_name), atom_name);
@@ -2174,12 +2174,8 @@ bool setup(int scrno)
     conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
     conf.outer_border_col= getcolor(colors[5]);             conf.fixed_unkil_col = getcolor(colors[4]);
     conf.empty_col       = getcolor(colors[6]);
-    atom_desktop         = getatom("_NET_WM_DESKTOP");     atom_current_desktop = getatom("_NET_CURRENT_DESKTOP");
-    atom_unkillable      = getatom("_NET_UNKILLABLE");     atom_nb_workspace    = getatom("_NET_NUMBER_OF_DESKTOPS");
-    wm_delete_window     = getatom("WM_DELETE_WINDOW");    wm_change_state      = getatom("WM_CHANGE_STATE");
-    wm_state             = getatom("_NET_WM_STATE");       wm_protocols         = getatom("WM_PROTOCOLS");
-    atom_focus           = getatom("_NET_ACTIVE_WINDOW");  wm_hidden            = getatom("_NET_WM_STATE_HIDDEN");
-    atom_client_list     = getatom("_NET_CLIENT_LIST");    atom_client_list_st  = getatom("_NET_CLIENT_LIST_STACKING");
+	for (unsigned int i=0; i<NB_ATOMS; i++)
+		ATOM[i] = getatom(atomnames[i][0]);
     randrbase = setuprandr();
     if (!setupscreen())    return false;
     if (!setup_keyboard()) return false;
@@ -2187,8 +2183,8 @@ bool setup(int scrno)
     xcb_generic_error_t *error = xcb_request_check(conn, xcb_change_window_attributes_checked(conn, screen->root, XCB_CW_EVENT_MASK, values));
     xcb_flush(conn);
     if (error) return false;
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_current_desktop, XCB_ATOM_CARDINAL, 32, 1,&curws);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, atom_nb_workspace   , XCB_ATOM_CARDINAL, 32, 1,&_WORKSPACES);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, ATOM[atom_current_desktop], XCB_ATOM_CARDINAL, 32, 1,&curws);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root, ATOM[atom_nb_workspace]   , XCB_ATOM_CARDINAL, 32, 1,&_WORKSPACES);
     grabkeys();
     /* set events */
     for (unsigned int i=0; i<XCB_NO_OPERATION; i++) events[i] = NULL;
