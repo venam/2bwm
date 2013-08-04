@@ -1,7 +1,7 @@
 -*- text -*-
 
 * Check why sometimes the WM crashes when creating pop-ups or destroying/unmapping certain windows.
-	AKA: the pop-up bug -- related to the unmapnotofy foo
+	AKA: the pop-up bug -- related to the unmapnotofy foo (might be solved)
 
 * Rewrite the readme file 
 	with more statistic, 
@@ -15,10 +15,6 @@
 * Extended Window Manager Hints (EWMH)
 
   - Use the new xcb-ewmh for the EWMH hints.
-
-  I suggest listing least these in _NET_SUPPORTED (* marks
-  implemented):
-
      _NET_WM_STATE, _NET_WM_STATE_STICKY,
      _NET_WM_STATE_MAXIMIZED_VERT, 
      _NET_WM_STATE_FULLSCREEN
@@ -34,8 +30,6 @@
 	* unmap all window that are only on this monitor
 	* map window on the workspace NUM that are on this monitor
 	* problem with curws and remapping
-
-* static Makefile problem
 
 * Check why the input focus doesn't work well with applications such as macopix
 

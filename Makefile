@@ -23,9 +23,6 @@ all: $(TARGETS)
 hidden: hidden.c
 	$(CC) $(CFLAGS) hidden.c $(LDFLAGS) -o $@
 
-2bwm-static: $(OBJS)
-	$(CC) $(OBJS) -static $(CFLAGS) $(LDFLAGS) -lXau -lpthread -o $@
-
 2bwm.o: 2bwm.c list.h config.h Makefile
 
 install: $(TARGETS)
