@@ -7,11 +7,13 @@
  *2)mouse slow       3)mouse fast     */
 static const uint16_t movements[] = {10,40,15,450};
 /* resize by line like in mcwm -- jjumbi */
-static const bool     resize_by_line = true;
+static const bool     resize_by_line          = true;
+/* the ratio used when resizing and keeping the aspect */
+static const float    resize_keep_aspect_ratio= 1.03;
 ///---Offsets---///
 /*0)offsetx          1)offsety
  *2)maxwidth         3)maxheight */
-static const uint8_t offsets[] = {0,0,0,20};
+static const uint8_t offsets[] = {0,0,0,0};
 ///---Colors---///
 /*0)focuscol         1)unfocuscol
  *2)fixedcol         3)unkilcol
