@@ -230,6 +230,27 @@ void saveorigsize(struct client *client)
 	client->origsize.width = client->width; client->origsize.height = client->height;
 }
 
+void updateclientlist(void)
+{
+	/* can only be called after the first window has been spawn */
+	xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn,xcb_query_tree(conn, screen->root), 0);
+	if (NULL == reply){
+		xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
+		xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
+		addtoclientlist(0);
+		return;
+	}
+	uint32_t len = xcb_query_tree_children_length(reply);
+	xcb_window_t *children = xcb_query_tree_children(reply);
+	xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
+	xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
+	struct client *cl;
+	for (uint32_t i = 0; i < len; i ++) {
+		cl = findclient(&children[i]);
+		if(NULL!=cl) addtoclientlist(cl->id);
+	}
+}
+
 xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen)
 {                                   // get screen of display
     xcb_screen_iterator_t iter;
@@ -349,7 +370,6 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
     for (struct item *item = wslist[ws]; item != NULL; item = item->next) {
     /* Go through list of new ws. Map everything that isn't fixed. */
         client = item->data;
-        addtoclientlist(client->id);
         if (!client->fixed && !client->iconic) xcb_map_window(conn, client->id);
     }
     curws = ws;
@@ -545,7 +565,6 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
     if (NULL == client) return;
 
     addtoworkspace(client, curws); /* Add this window to the current workspace. */
-    addtoclientlist(client->id);
     if (!client->usercoord) { /* If we don't have specific coord map it where the pointer is.*/
         if (!getpointer(&screen->root, &client->x, &client->y)) client->x = client->y = 0;
         movewindow(client->id, client->x, client->y);
@@ -562,7 +581,7 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
     long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };/* Declare window normal. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,ATOM[wm_state], ATOM[wm_state], 32, 2, data);
     centerpointer(e->window,client);
-    xcb_flush(conn);
+    updateclientlist();
 }
 
 struct client *setupwin(xcb_window_t win)
@@ -1411,7 +1430,7 @@ void deletewin()
     bool use_delete = false;
     /* Check if WM_DELETE is supported.  */
     xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id,ATOM[wm_protocols]);
-
+	if (focuswin->id == top_win) top_win = 0;
 	if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1)
 		for (uint32_t i = 0; i < protocols.atoms_len; i++)
 			if (protocols.atoms[i] == ATOM[wm_delete_window]) {
@@ -1425,10 +1444,7 @@ void deletewin()
 				break;
 			}
 		xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
-	if (focuswin->id == top_win) top_win = 0;
-    delfromworkspace(focuswin,curws);
     if (!use_delete) xcb_kill_client(conn, focuswin->id);
-    xcb_flush(conn);
 }
 
 void changescreen(const Arg *arg)
@@ -1712,6 +1728,7 @@ void destroynotify(xcb_generic_event_t *ev)
     if (NULL != focuswin && focuswin->id == e->window) focuswin = NULL;
     struct client *cl = findclient( & e->window);
     if (NULL != cl)    forgetwin(cl->id); /* Find this window in list of clients and forget about it. */
+    updateclientlist();
 }
 
 void enternotify(xcb_generic_event_t *ev)
@@ -1758,12 +1775,7 @@ void unmapnotify(xcb_generic_event_t *ev)
     if (NULL == client || client->wsitem[curws]==NULL) return;
     if (focuswin!=NULL && client->id == focuswin->id)  focuswin = NULL;
     if (client->iconic == false)     forgetclient(client);
-    xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
-    xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
-    for (struct item *item = wslist[curws]; item != NULL; item = item->next) {
-        client = item->data;
-        addtoclientlist(client->id);
-    }
+    updateclientlist();
 }
 
 void confignotify(xcb_generic_event_t *ev)
