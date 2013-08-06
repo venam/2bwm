@@ -1394,7 +1394,7 @@ void teleport(const Arg *arg)
     uint16_t mon_width, mon_height;
     getmonsize(&mon_x, &mon_y, &mon_width, &mon_height,focuswin);
     setignoreborder(&temp, focuswin,true);
-    focuswin->x = mon_x;  focuswin->y = mon_y;
+    focuswin->x = mon_x+offsets[0]+offsets[2];  focuswin->y = mon_y+offsets[1]+offsets[3];
 
     if (arg->i==0) {
         focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x;
