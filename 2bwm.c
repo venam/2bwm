@@ -216,7 +216,7 @@ void fix(){fixwindow(focuswin);}
 void unkillable(void){unkillablewindow(focuswin);}
 void delmonitor(struct monitor *mon){ free(mon->name);    freeitem(&monlist, NULL, mon->item);}
 void raise_current_window(void){raisewindow(focuswin->id);}
-void focusnext(const Arg *arg){ arg->i>0 ? focusnext_helper(true) : focusnext_helper(false);}
+void focusnext(const Arg *arg){ focusnext_helper(arg->i > 0);}
 void delfromworkspace(struct client *client, uint32_t ws){delitem(&wslist[ws], client->wsitem[ws]); client->wsitem[ws] = NULL; }
 void changeworkspace(const Arg *arg){ changeworkspace_helper(arg->i);}
 void nextworkspace(){curws==WORKSPACES-1?changeworkspace_helper(0):changeworkspace_helper(curws+1);}
