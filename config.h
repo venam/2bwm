@@ -13,7 +13,7 @@ static const float    resize_keep_aspect_ratio= 1.03;
 ///---Offsets---///
 /*0)offsetx          1)offsety
  *2)maxwidth         3)maxheight */
-static const uint8_t offsets[] = {0,0,0,0};
+static const uint8_t offsets[] = {0,0,0,17};
 ///---Colors---///
 /*0)focuscol         1)unfocuscol
  *2)fixedcol         3)unkilcol
@@ -85,6 +85,10 @@ static key keys[] = {
     // Teleport the window to an area of the screen.
     // Center:
     {  MOD ,              XK_g,          teleport,          {.i=0}},
+    // Center y:
+    {  MOD |SHIFT,        XK_g,          teleport,          {.i=3}},
+    // Center x:
+    {  MOD |CONTROL,      XK_g,          teleport,          {.i=-3}},
     // Top left:
     {  MOD ,              XK_y,          teleport,          {.i=2}},
     // Top right:

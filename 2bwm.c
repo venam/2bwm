@@ -1394,23 +1394,35 @@ void teleport(const Arg *arg)
     uint16_t mon_width, mon_height;
     getmonsize(&mon_x, &mon_y, &mon_width, &mon_height,focuswin);
     setignoreborder(&temp, focuswin,true);
-    focuswin->x = mon_x+offsets[0];  focuswin->y = mon_y;
+	uint16_t tmp_x = focuswin->x;  uint16_t tmp_y=  focuswin->y;
+   focuswin->x = mon_x+offsets[0]; focuswin->y = mon_y;
 
-    if (arg->i==0) {
+    if (arg->i==0) { /* center */
         focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x+offsets[0]+offsets[2];
         focuswin->y  += mon_height - (focuswin->height + conf.borderwidth* 2)+ mon_y+offsets[1]+offsets[3];
         focuswin->y  = focuswin->y /2-(offsets[3]);
         focuswin->x  = focuswin->x /2-(offsets[2]);
     }
     else {
-        if (arg->i>0) {
-            if (arg->i<2)
+        if (arg->i>0) { /* top-left */
+            if (arg->i<2) /* bottom-left */
                 focuswin->y += mon_height - (focuswin->height + conf.borderwidth* 2)-offsets[3]+offsets[1];
+            else if (arg->i>2) { /* center y */
+                focuswin->x  = tmp_x;
+                focuswin->y  +=mon_height - (focuswin->height + conf.borderwidth* 2)+ mon_y+offsets[1]+offsets[3];
+                focuswin->y  = focuswin->y /2-(offsets[3]);
+            }
         }
         else {
-            if (arg->i<-1)
-                focuswin->x += mon_width - (focuswin->width + conf.borderwidth * 2);
-            else {
+            if (arg->i<-1) /*top-right */
+                if (arg->i==-3) { /* center x */
+                    focuswin->y  = tmp_y;
+                    focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x+offsets[0]+offsets[2];
+                    focuswin->x  = focuswin->x /2-(offsets[2]);
+                }
+                else
+                    focuswin->x += mon_width - (focuswin->width + conf.borderwidth * 2);
+            else { /* bottom-right */
                 focuswin->x += mon_width - (focuswin->width + conf.borderwidth * 2);
                 focuswin->y += mon_height - (focuswin->height + conf.borderwidth* 2)-offsets[3]+offsets[1];
             }
