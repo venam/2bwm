@@ -13,18 +13,20 @@ static const float    resize_keep_aspect_ratio= 1.03;
 ///---Offsets---///
 /*0)offsetx          1)offsety
  *2)maxwidth         3)maxheight */
-static const uint8_t offsets[] = {0,0,0,17};
+static const uint8_t offsets[] = {0,0,0,0};
 ///---Colors---///
 /*0)focuscol         1)unfocuscol
  *2)fixedcol         3)unkilcol
  *4)fixedunkilcol    5)outerbordercol
  *6)emptycol         */
-static const char *colors[] = {"#323232","#191919","#4c5739","#682a2a","#604818","#121212","#222222"};
+static const char *colors[] = {"#323232","#191919","#4c5739","#682a2a","#604818","#151515","#222222"};
+/* if this is set to true the inner border and outer borders colors will be swapped */
+static const bool inverted_colors = false;
 ///---Borders---///
 /*0) Outer border size. If you put this negative it will be a square.
  *1) Full borderwidth    2) Magnet border size    
  *3) Resize border size  */
-static const uint8_t borders[] = {2,10,9,9};
+static const uint8_t borders[] = {2,5,9,9};
 /* Windows that won't have a border.*/
 #define NB_NAMES 1
 #define LOOK_INTO "_NET_WM_NAME"
