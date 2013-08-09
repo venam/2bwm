@@ -61,7 +61,7 @@ dvtm -- a terminal multiplexer
 Notice that all those WM are really small and that size doesn't really matter in the end.
 
 (Someone should write something about the features here)
-//Panel that works with 2bwm: fbpanel, tint2, xfce4-panel, lxpanel, hpanel
+//Panel that works with 2bwm: fbpanel, tint2, xfce4-panel, lxpanel, hpanel, cairo-dock
 tweaks you need for 2bwm on OpenBSD: add /usr/X11R6/include to search path, install gcc-4.7, use CC=egcc make
 
 Screenshots:
