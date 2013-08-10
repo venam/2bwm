@@ -272,7 +272,7 @@ void cleanup(const int code)        // Set keyboard focus to follow mouse pointe
     xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,XCB_CURRENT_TIME);
     xcb_ewmh_connection_wipe(ewmh);
 	xcb_flush(conn);
-    if (ewmh)   free(ewmh);
+    if (NULL!=ewmh)   free(ewmh);
     xcb_disconnect(conn);
     exit(code);
 }
@@ -301,7 +301,7 @@ int32_t getwmdesktop(xcb_drawable_t win)
         return TWOBWM_NOWS;
     }
     wsp = xcb_get_property_value(reply);
-    free(reply);
+    if(NULL!=reply)free(reply);
     return *wsp;
 }
 
@@ -316,7 +316,7 @@ bool get_unkil_state(xcb_drawable_t win)
         return false;
     }
     wsp = xcb_get_property_value(reply);
-    free(reply);
+    if(NULL!=reply)free(reply);
     if (*wsp == 1) return true;
     else           return false;
 }
@@ -330,7 +330,7 @@ void check_name(struct client *client)
         return;
     }
     char *wm_name_window = xcb_get_property_value(reply);
-    free(reply);
+    if(NULL!=reply) free(reply);
     for(int i=0;i<NB_NAMES;i++)
         if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
             client->ignore_borders = true;
@@ -729,10 +729,10 @@ bool setupscreen(void)              // Walk through all existing windows and set
                     }
             }
         }
-        free(attr);
+        if(NULL!= attr) free(attr);
     }
     changeworkspace_helper(0);
-    free(reply);
+    if(NULL!=reply) free(reply);
     return true;
 }
 
@@ -822,7 +822,7 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
                 delmonitor(mon); /* It's not active anymore. Forget about it. */
             }
         }
-        free(output);
+        if(NULL!=output) free(output);
     } /* for */
 }
 
@@ -1671,7 +1671,7 @@ static void mousemotion(const Arg *arg)
     xcb_generic_event_t        *e = NULL;
     bool ungrab                   = false;
     do {
-        if (e) free(e);
+        if (NULL!=e) free(e);
         while(!(e = xcb_wait_for_event(conn))) xcb_flush(conn);
 
         switch (e->response_type & ~0x80) {
