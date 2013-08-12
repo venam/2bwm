@@ -1452,7 +1452,7 @@ void deletewin()
     /* Check if WM_DELETE is supported.  */
     xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id,ATOM[wm_protocols]);
 	if (focuswin->id == top_win) top_win = 0;
-	if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1)
+	if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1){
 		for (uint32_t i = 0; i < protocols.atoms_len; i++)
 			if (protocols.atoms[i] == ATOM[wm_delete_window]) {
 				xcb_client_message_event_t ev = { .response_type = XCB_CLIENT_MESSAGE,
@@ -1465,6 +1465,7 @@ void deletewin()
 				break;
 			}
 		xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
+	}
     if (!use_delete) xcb_kill_client(conn, focuswin->id);
 }
 
