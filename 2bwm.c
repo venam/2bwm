@@ -708,17 +708,17 @@ bool setupscreen(void)              // Walk through all existing windows and set
         if (!attr->override_redirect && attr->map_state == XCB_MAP_STATE_VIEWABLE) {
             client = setupwin(children[i]);
             if (NULL != client) {
-                setborders(client,false);
                 /* Find the physical output this window will be on if RANDR is active. */
                 if (-1 != randrbase) client->monitor = findmonbycoord(client->x, client->y);
                 fitonscreen(client);    /* Fit window on physical screen. */
+                setborders(client,false);
                 ws = getwmdesktop(children[i]);/* Check if this window has a workspace set already as a WM hint. */
                 if (get_unkil_state(children[i])) unkillablewindow(client);
                 if (ws == NET_WM_FIXED) {
                     addtoworkspace(client, curws); /* Add to current workspace. */
                     fixwindow(client);             /* Add to all other workspaces. */
                 }
-                else
+                else {
                     if (TWOBWM_NOWS != ws && ws < WORKSPACES) {
                         addtoworkspace(client, ws);
                         if (ws != curws) xcb_unmap_window(conn, client->id); /* If it's not our current workspace, hide it. */
@@ -727,6 +727,7 @@ bool setupscreen(void)              // Walk through all existing windows and set
                         addtoworkspace(client, curws); 
                         addtoclientlist(children[i]);
                     }
+                }
             }
         }
         if(NULL!= attr) free(attr);
