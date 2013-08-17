@@ -2,7 +2,7 @@ VERSION=2013-3
 #CC=clang
 DIST=2bwm-$(VERSION)
 SRC=2bwm.c list.h hidden.c config.h
-DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST 2bwm.man $(SRC)
+DISTFILES=Makefile README.md TODO 2bwm.man $(SRC)
 
 CFLAGS+=-g -std=c99 -Wall -Os -s -Wextra -I/usr/local/include \
      -DNCOMPTON
