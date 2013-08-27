@@ -885,7 +885,7 @@ struct monitor *addmonitor(xcb_randr_output_t id, char *name,const int16_t x, co
 
 void raisewindow(xcb_drawable_t win)// Raise window win to top of stack.
 {
-    uint32_t values[] = { XCB_STACK_MODE_TOP_IF };
+    uint32_t values[] = { XCB_STACK_MODE_ABOVE };
     if (screen->root == win || 0 == win) return;
     xcb_configure_window(conn, win,XCB_CONFIG_WINDOW_STACK_MODE,values);
     xcb_flush(conn);
@@ -1656,6 +1656,7 @@ static void mousemotion(const Arg *arg)
     raise_current_window();
     xcb_cursor_t cursor;
     struct client example;
+    raise_current_window();
 
     if(arg->i == TWOBWM_MOVE) cursor = Create_Font_Cursor (conn, CURSOR_MOVING ); /* fleur */
     else  {                   
