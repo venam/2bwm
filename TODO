@@ -1,8 +1,5 @@
 -*- text -*-
 
-* Check why sometimes the WM crashes when creating pop-ups or destroying/unmapping certain windows.
-	AKA: the pop-up bug -- related to the unmapnotofy foo (might be solved)
-
 * Rewrite the readme file 
 	with more statistic, 
 	specifying all the features, 
@@ -20,8 +17,6 @@
      _NET_WM_STATE_FULLSCREEN
 
 * configs in a text file, dynamically updated
-
-* center vertically/horizontally (SHIFT+G/CTRL+G)
 
 * Handle new modes on physical outputs. What do we have to do?
 
