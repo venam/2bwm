@@ -72,7 +72,7 @@ tweaks you need for 2bwm on OpenBSD: add /usr/X11R6/include to search path, inst
 Screenshots:
 ============
 ![2bwm](http://venam.1.ai/2bwm_colors.png)
-![yrmt 2bwm](http://fc05.deviantart.net/fs71/f/2013/098/d/2/_freebsd_and_mcwm_beast__by_ybeastie-d60w2xc.png)
+![yrmt 2bwm](http://fc00.deviantart.net/fs70/f/2013/236/8/0/agust_warm_setup_by_ybeastie-d6jaqyb.png)
 
 TODO:
 =====
