@@ -209,6 +209,7 @@ static xcb_atom_t getatom(const char *atom_name);
 static void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *mon_height,const struct client *client);
 static void setignoreborder(int16_t *temp,struct client *client, bool set_unset);
 static void movepointerback(const int16_t startx, const int16_t starty, const struct client *client);
+static void snapwindow(struct client *client);
 #include "config.h"
 
 ///---Function bodies---///
@@ -1124,10 +1125,40 @@ void resizestep_aspect(const Arg *arg)
     setborders(focuswin,true);
 }
 
+static void snapwindow(struct client *client)
+{                                  // Try to snap to other windows and monitor border
+    struct item *item;
+    struct client *win;
+    int16_t mon_x, mon_y;
+    uint16_t mon_width, mon_height;
+    getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
+    for (item = wslist[curws]; item != NULL; item = item->next) {
+        win = item->data;
+        if (client == win) continue;
+
+        if (abs((win->x +win->width) - client->x) < borders[2])
+            if (client->y + client->height > win->y && client->y < win->y + win->height)
+                client->x = (win->x + win->width) + (2 * conf.borderwidth);
+
+        if (abs((win->y +win->height) - client->y) < borders[2])
+            if (client->x + client->width >win->x && client->x < win->x + win->width)
+                client->y = (win->y + win->height) + (2 * conf.borderwidth);
+
+        if (abs((client->x + client->width) - win->x) < borders[2])
+            if (client->y + client->height > win->y && client->y < win->y + win->height)
+                client->x = (win->x - client->width) - (2 * conf.borderwidth);
+
+        if (abs((client->y + client->height) - win->y) < borders[2])
+            if (client->x + client->width >win->x && client->x < win->x + win->width)
+                client->y = (win->y - client->height) - (2 * conf.borderwidth);
+    }
+}
+
 void mousemove(const int16_t rel_x, const int16_t rel_y)
 {                                   // Move window win as a result of pointer motion to coordinates rel_x,rel_y.
     if(focuswin==NULL||NULL == focuswin->wsitem[curws])return;
     focuswin->x = rel_x;        focuswin->y = rel_y;
+    if (borders[2] >0 ) snapwindow(focuswin);
     movelim(focuswin);
 }
 
