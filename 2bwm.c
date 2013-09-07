@@ -272,7 +272,7 @@ void cleanup(const int code)        // Set keyboard focus to follow mouse pointe
                                     // should all be in the X server's Save Set and should be mapped automagically.
     xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,XCB_CURRENT_TIME);
     xcb_ewmh_connection_wipe(ewmh);
-	xcb_flush(conn);
+    xcb_flush(conn);
     if (NULL!=ewmh)   free(ewmh);
     xcb_disconnect(conn);
     exit(code);
@@ -310,7 +310,7 @@ bool get_unkil_state(xcb_drawable_t win)
 {                                   // check if the window is unkillable, if yes return true
     uint8_t *wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_unkillable],
-			XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(int8_t));
+        XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(int8_t));
     xcb_get_property_reply_t *reply  = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL== reply || 0 == xcb_get_property_value_length(reply)){
         if(NULL!=reply ) free(reply);
@@ -343,7 +343,7 @@ void check_name(struct client *client)
 
 void addtoworkspace(struct client *client, uint32_t ws)
 {                                   // Add a window, specified by client, to workspace ws.
-	if (client == NULL) return;
+    if (client == NULL) return;
     struct item *item = additem(&wslist[ws]);
     if (NULL == item) return;
     client->wsitem[ws] = item; /* Remember our place in the workspace window list. */
@@ -369,7 +369,6 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
         if (!client->fixed) xcb_unmap_window(conn, client->id);
     }
     for (struct item *item = wslist[ws]; item != NULL; item = item->next) {
-    /* Go through list of new ws. Map everything that isn't fixed. */
         client = item->data;
         if (!client->fixed && !client->iconic) xcb_map_window(conn, client->id);
     }
@@ -475,13 +474,12 @@ void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *m
 		*mon_x      = *mon_y = 0;
 		*mon_width  = screen->width_in_pixels;
 		*mon_height = screen->height_in_pixels;
+		return;
 	}
-	else {
-		*mon_x      = client->monitor->x;
-		*mon_y      = client->monitor->y;
-		*mon_width  = client->monitor->width;
-		*mon_height = client->monitor->height;
-	}
+	*mon_x      = client->monitor->x;
+	*mon_y      = client->monitor->y;
+	*mon_width  = client->monitor->width;
+	*mon_height = client->monitor->height;
 }
 
 void setignoreborder(int16_t *temp,struct client *client, bool set_unset)
@@ -831,8 +829,6 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
 void arrbymon(struct monitor *monitor)
 {
     struct client *client;
-    /* Go through all windows on this monitor. If they don't fit on
-     * the new screen, move them around and resize them as necessary. */
     for (struct item *item= winlist; item != NULL; item = item->next) {
         client = item->data;
         if (client->monitor == monitor) fitonscreen(client);
@@ -1134,23 +1130,23 @@ static void snapwindow(struct client *client)
     getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
     for (item = wslist[curws]; item != NULL; item = item->next) {
         win = item->data;
-        if (client == win) continue;
+        if (client != win) {
+			if (abs((win->x +win->width) - client->x) < borders[2])
+				if (client->y + client->height > win->y && client->y < win->y + win->height)
+					client->x = (win->x + win->width) + (2 * conf.borderwidth);
 
-        if (abs((win->x +win->width) - client->x) < borders[2])
-            if (client->y + client->height > win->y && client->y < win->y + win->height)
-                client->x = (win->x + win->width) + (2 * conf.borderwidth);
+			if (abs((win->y +win->height) - client->y) < borders[2])
+				if (client->x + client->width >win->x && client->x < win->x + win->width)
+					client->y = (win->y + win->height) + (2 * conf.borderwidth);
 
-        if (abs((win->y +win->height) - client->y) < borders[2])
-            if (client->x + client->width >win->x && client->x < win->x + win->width)
-                client->y = (win->y + win->height) + (2 * conf.borderwidth);
+			if (abs((client->x + client->width) - win->x) < borders[2])
+				if (client->y + client->height > win->y && client->y < win->y + win->height)
+					client->x = (win->x - client->width) - (2 * conf.borderwidth);
 
-        if (abs((client->x + client->width) - win->x) < borders[2])
-            if (client->y + client->height > win->y && client->y < win->y + win->height)
-                client->x = (win->x - client->width) - (2 * conf.borderwidth);
-
-        if (abs((client->y + client->height) - win->y) < borders[2])
-            if (client->x + client->width >win->x && client->x < win->x + win->width)
-                client->y = (win->y - client->height) - (2 * conf.borderwidth);
+			if (abs((client->y + client->height) - win->y) < borders[2])
+				if (client->x + client->width >win->x && client->x < win->x + win->width)
+					client->y = (win->y - client->height) - (2 * conf.borderwidth);
+		}
     }
 }
 
@@ -1435,8 +1431,8 @@ void teleport(const Arg *arg)
     uint16_t mon_width, mon_height;
     getmonsize(&mon_x, &mon_y, &mon_width, &mon_height,focuswin);
     setignoreborder(&temp, focuswin,true);
-	uint16_t tmp_x = focuswin->x;  uint16_t tmp_y=  focuswin->y;
-   focuswin->x = mon_x+offsets[0]; focuswin->y = mon_y;
+    uint16_t tmp_x = focuswin->x;  uint16_t tmp_y=  focuswin->y;
+    focuswin->x = mon_x+offsets[0]; focuswin->y = mon_y;
 
     if (arg->i==0) { /* center */
         focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x+offsets[0]+offsets[2];
@@ -1483,21 +1479,21 @@ void deletewin()
     bool use_delete = false;
     /* Check if WM_DELETE is supported.  */
     xcb_get_property_cookie_t cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id,ATOM[wm_protocols]);
-	if (focuswin->id == top_win) top_win = 0;
-	if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1){
-		for (uint32_t i = 0; i < protocols.atoms_len; i++)
-			if (protocols.atoms[i] == ATOM[wm_delete_window]) {
-				xcb_client_message_event_t ev = { .response_type = XCB_CLIENT_MESSAGE,
-					.format = 32,                  .sequence = 0,
-					.window = focuswin->id,        .type = ATOM[wm_protocols],
-					.data.data32 = { ATOM[wm_delete_window], XCB_CURRENT_TIME }
-				};
-				xcb_send_event(conn, false, focuswin->id,XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
-				use_delete = true;
-				break;
-			}
-		xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
-	}
+    if (focuswin->id == top_win) top_win = 0;
+    if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1){
+        for (uint32_t i = 0; i < protocols.atoms_len; i++)
+            if (protocols.atoms[i] == ATOM[wm_delete_window]) {
+                xcb_client_message_event_t ev = { .response_type = XCB_CLIENT_MESSAGE,
+                    .format = 32,                  .sequence = 0,
+                    .window = focuswin->id,        .type = ATOM[wm_protocols],
+                    .data.data32 = { ATOM[wm_delete_window], XCB_CURRENT_TIME }
+                };
+                xcb_send_event(conn, false, focuswin->id,XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
+                use_delete = true;
+                break;
+            }
+        xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
+    }
     if (!use_delete) xcb_kill_client(conn, focuswin->id);
 }
 
@@ -1597,10 +1593,9 @@ void configwin(xcb_window_t win, uint16_t mask,const struct winconf *wc)
         i ++;
         values[i] = wc->stackmode;
     }
-    if (-1 != i) {
-        xcb_configure_window(conn, win, mask, values);
-        xcb_flush(conn);
-    }
+    if (-1 == i) return;
+    xcb_configure_window(conn, win, mask, values);
+    xcb_flush(conn);
 }
 
 void configurerequest(xcb_generic_event_t *ev)
@@ -1644,10 +1639,8 @@ void configurerequest(xcb_generic_event_t *ev)
 xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph)
 {
     static xcb_font_t cursor_font;
-    if (!cursor_font) {
-        cursor_font = xcb_generate_id (conn);
-        xcb_open_font (conn, cursor_font, strlen ("cursor"), "cursor");
-    }
+    cursor_font        = xcb_generate_id (conn);
+    xcb_open_font (conn, cursor_font, strlen ("cursor"), "cursor");
     xcb_cursor_t cursor = xcb_generate_id (conn);
     xcb_create_glyph_cursor (conn, cursor, cursor_font, cursor_font,glyph, glyph+1,0x3232, 0x3232, 0x3232, 0xeeee, 0xeeee, 0xeeec);
     return cursor;
@@ -1680,11 +1673,9 @@ static void mousemotion(const Arg *arg)
 {
     xcb_query_pointer_reply_t *pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, screen->root), 0);
     if (!pointer||focuswin->maxed) return;
-    int16_t mx, my,winx, winy,winw, winh;
-    mx   = pointer->root_x;        my   = pointer->root_y;
-    winx = focuswin->x;            winy = focuswin->y;
-    winw = focuswin->width;        winh = focuswin->height;
-    raise_current_window();
+    int16_t mx   = pointer->root_x;       int16_t my   = pointer->root_y;
+    int16_t winx = focuswin->x;           int16_t winy = focuswin->y;
+    int16_t winw = focuswin->width;       int16_t winh = focuswin->height;
     xcb_cursor_t cursor;
     struct client example;
     raise_current_window();
@@ -1751,24 +1742,18 @@ void buttonpress(xcb_generic_event_t *ev)
 void clientmessage(xcb_generic_event_t *ev)
 {
     xcb_client_message_event_t *e= (xcb_client_message_event_t *)ev;
-    if (e->type==ATOM[wm_change_state] && e->format==32 && e->data.data32[0]==XCB_ICCCM_WM_STATE_ICONIC) {
-		struct client *cl = findclient(& e->window);
-		if (NULL == cl) return;
-		if (cl->iconic == false) hide(); 
-		else { 
-			cl->iconic = false;
-			xcb_map_window (conn, cl->id);
-			setfocus(cl);
-		}
-    }
-    else if(e->type == ATOM[atom_focus]) {
-        struct client *cl = findclient(& e->window);
-		if (NULL == cl) return;
-		if (cl->iconic ==true) {
-			cl->iconic = false;
-			xcb_map_window(conn,cl->id);
-		}
-		setfocus(cl);
+    if ( (e->type==ATOM[wm_change_state] && e->format==32 && e->data.data32[0]==XCB_ICCCM_WM_STATE_ICONIC)
+        || e->type == ATOM[atom_focus]) {
+        struct client *cl = findclient( &e->window);
+        if (NULL == cl) return;
+        if ( false == cl->iconic ) {
+            if (e->type == ATOM[atom_focus] ) setfocus(cl);
+            else hide();
+            return;
+        }
+        cl->iconic = false;
+        xcb_map_window(conn, cl->id);
+        setfocus(cl);
     }
     else if(e->type == ATOM[atom_current_desktop])
         changeworkspace_helper(e->data.data32[0]);
@@ -1777,9 +1762,6 @@ void clientmessage(xcb_generic_event_t *ev)
 void destroynotify(xcb_generic_event_t *ev)
 {
     xcb_destroy_notify_event_t *e = (xcb_destroy_notify_event_t *) ev;
-    /* If we had focus or our last focus in this window, forget about the focus.
-     * We will get an EnterNotify if there's another window
-     * under the pointer so we can set the focus proper later. */
     if (NULL != focuswin && focuswin->id == e->window) focuswin = NULL;
     struct client *cl = findclient( & e->window);
     if (NULL != cl)    forgetwin(cl->id); /* Find this window in list of clients and forget about it. */
@@ -1814,18 +1796,14 @@ void unmapnotify(xcb_generic_event_t *ev)
 {
     xcb_unmap_notify_event_t *e = (xcb_unmap_notify_event_t *)ev;
     struct client *client = NULL;
-    /* Find the window in our *current* workspace list, then
-    * forget about it.
-    * Note that we might not know about the window we got the
-    * UnmapNotify event for. It might be a window we just
-    * unmapped on *another* workspace when changing
-    * workspaces, for instance, or it might be a window with
-    * override redirect set. This is not an error.
-    * XXX We might need to look in the global window list,
-    * after all. Consider if a window is unmapped on our last
-    * workspace while changing workspaces. If we do this,
-    * we need to keep track of our own windows and ignore
-    * UnmapNotify on them. */
+    /* Find the window in our *current* workspace list, then forget about it.
+    * Note that we might not know about the window we got the UnmapNotify event for. 
+    * It might be a window we just unmapped on *another* workspace when changing
+    * workspaces, for instance, or it might be a window with override redirect set. 
+    * This is not an error.
+    * XXX We might need to look in the global window list, after all. 
+    * Consider if a window is unmapped on our last workspace while changing workspaces. 
+    * If we do this, we need to keep track of our own windows and ignore UnmapNotify on them.*/
     client = findclient( & e->window);
     if (NULL == client || client->wsitem[curws]==NULL) return;
     if (focuswin!=NULL && client->id == focuswin->id)  focuswin = NULL;
@@ -1895,6 +1873,7 @@ void ewmh_init(void)
 bool setup(int scrno)
 {
     screen = xcb_screen_of_display(conn, scrno);
+    if (!screen) return false;
     ewmh_init();
     xcb_ewmh_set_wm_name(ewmh, screen->root, 4, "2bwm");
     xcb_atom_t net_atoms[] = {
@@ -1909,7 +1888,6 @@ bool setup(int scrno)
     };
     xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
 
-    if (!screen) return false;
     conf.borderwidth     = borders[1];                      conf.outer_border    = borders[0];
     conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
     conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
