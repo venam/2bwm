@@ -58,6 +58,7 @@ dvtm -- a terminal multiplexer
  bspwm                         300   2796   720
  dwm                           300   5400  1384
  monsterwm                     304   3708  1008
+ ctwm                          708   7112  2360
  openbox                      1952  16412  736
  dvtm                         5624   9656  6256
  fbpanel                      3460 135928 14012
