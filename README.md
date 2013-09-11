@@ -54,6 +54,7 @@ dvtm -- a terminal multiplexer
  ~ > ps -eo args,size,vsize,rss | grep -P "(^mcwm|^2bwm|^bspwm|^dwm|^monsterwm|^openbox|^dvtm|^fbpanel|^cwm|^ctwm|^herbs)"
  mcwm                          300   2480   668
  2bwm                          300   2536   680
+ 9wm                           296   3816  1160
  cwm                           584   7044  3308
  bspwm                         300   2796   720
  dwm                           300   5400  1384
