@@ -81,7 +81,39 @@ Screenshots:
 
 TODO:
 =====
-Please read the TODO file.
+* Rewrite the readme file
+	with more statistic, 
+	specifying all the features, 
+	adding new scrots,
+	link to other documentation,
+	why should someone care,etc..
+
+* Toggable sticky workspace per monitor
+
+* Extended Window Manager Hints (EWMH)
+
+  - Use the new xcb-ewmh for the EWMH hints.
+     _NET_WM_STATE, _NET_WM_STATE_STICKY,
+     _NET_WM_STATE_MAXIMIZED_VERT, 
+     _NET_WM_STATE_FULLSCREEN
+
+* configs in a text file, dynamically updated
+
+* Handle new modes on physical outputs. What do we have to do?
+
+* A separate workspace list for every monitor. (CTRL+NUM)
+	* get the cursor position (on which monitor)
+	* unmap all window that are only on this monitor
+	* map window on the workspace NUM that are on this monitor
+	* problem with curws and remapping
+	* curws could be associated with the focuswin instead
+
+* Check why the input focus doesn't work well with applications such as macopix
+
+* Code cleaning
+  - Use bitfields instead of extra lists for workspaces?
+
+
 
 Authors:
 =======
