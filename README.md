@@ -97,7 +97,7 @@ TODO:
      _NET_WM_STATE_MAXIMIZED_VERT, 
      _NET_WM_STATE_FULLSCREEN
 
-* configs in a text file, dynamically updated
+* configs in a text file, parsed, and updated at restart
 
 * Handle new modes on physical outputs. What do we have to do?
 
