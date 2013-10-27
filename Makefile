@@ -10,7 +10,9 @@ CFLAGS+=-g -std=c99 -Wall -Os -s -Wextra -I/usr/local/include \
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util -lxcb-ewmh
 
 RM=/bin/rm
+
 PREFIX=/usr/local
+MANPREFIX=$(PREFIX)/man
 
 TARGETS=2bwm hidden
 OBJS=2bwm.o
@@ -26,17 +28,19 @@ hidden: hidden.c
 2bwm.o: 2bwm.c list.h config.h Makefile
 
 install: $(TARGETS)
-	install -m 755 2bwm $(PREFIX)/bin
-	install -m 644 2bwm.man $(PREFIX)/man/man1/2bwm.1
-	install -m 755 hidden $(PREFIX)/bin
-	install -m 644 hidden.man $(PREFIX)/man/man1/hidden.1
+	test -d $(DESTDIR)$(PREFIX)/bin || mkdir -p $(DESTDIR)$(PREFIX)/bin
+	install -m 755 2bwm $(DESTDIR)$(PREFIX)/bin
+	install -m 755 hidden $(DESTDIR)$(PREFIX)/bin
+	test -d $(DESTDIR)$(MANPREFIX)/man1 || mkdir -p $(DESTDIR)$(MANPREFIX)/man1
+	install -m 644 2bwm.man $(DESTDIR)$(MANPREFIX)/man1/2bwm.1
+	install -m 644 hidden.man $(DESTDIR)$(MANPREFIX)/man1/hidden.1
 
 uninstall: deinstall
 deinstall:
-	$(RM) $(PREFIX)/bin/2bwm
-	$(RM) $(PREFIX)/man/man1/2bwm.1
-	$(RM) $(PREFIX)/bin/hidden
-	$(RM) $(PREFIX)/man/man1/hidden.1
+	$(RM) $(DESTDIR)$(PREFIX)/bin/2bwm
+	$(RM) $(DESTDIR)$(MANPREFIX)/man1/2bwm.1
+	$(RM) $(DESTDIR)$(PREFIX)/bin/hidden
+	$(RM) $(DESTDIR)$(MANPREFIX)/man1/hidden.1
 
 $(DIST).tar.bz2:
 	mkdir $(DIST)
