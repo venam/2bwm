@@ -4,14 +4,14 @@ DIST=2bwm-$(VERSION)
 SRC=2bwm.c list.h  config.h
 DISTFILES=Makefile README.md TODO 2bwm.man $(SRC)
 
-CFLAGS+=-g -std=c99 -Wall -Os -Wextra -I/opt/X11/include \
-     -DNCOMPTON
+CFLAGS+=-g -std=c99 -Wall -Os -Wextra -I/usr/pkg/include \
+     -DNCOMPTON -Wint-conversion
 
-LDFLAGS+=-L/opt/X11/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util -lxcb-ewmh
+LDFLAGS+=-L/usr/pkg/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util -lxcb-ewmh
 
 RM=/bin/rm
 
-PREFIX=/opt/X11
+PREFIX=/usr/pkg
 MANPREFIX=$(PREFIX)/man
 
 TARGETS=2bwm 

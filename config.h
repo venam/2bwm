@@ -37,7 +37,7 @@ static const char *mmenucmd[] = { "8menu", NULL };
 static const char *pausecmd[] = { "ncmpcpp", "toggle", NULL };
 static const char *nextcmd[] = { "ncmpcpp", "next", NULL };
 static const char *prevcmd[] = { "ncmpcpp", "prev", NULL };
-static const char *twobwm_path = "/opt/X11/bin/2bwm";
+static const char *twobwm_path = "/usr/pkg/bin/2bwm";
 
 ///---Shortcuts---///
 #define DESKTOPCHANGE(K,N) \
@@ -141,9 +141,9 @@ static key keys[] = {
     {  MOD ,              XK_y,          start,             {.com = menucmd}},
     {  MOD ,              XK_p,          start,             {.com = dmenucmd}},
     {  MOD ,              XK_g,          start,             {.com = mmenucmd}},
-    {  NULL ,        XK_F8,     start,             {.com = pausecmd}},
-    {  NULL ,        XK_F9,          start,             {.com = nextcmd}},
-    {  NULL ,        XK_F7,          start,             {.com = prevcmd}},
+    {  MOD ,        XK_F8,     start,             {.com = pausecmd}},
+    {  MOD ,        XK_F9,          start,             {.com = nextcmd}},
+    {  MOD ,        XK_F7,          start,             {.com = prevcmd}},
 		
     // Exit or restart twobwm
     {  MOD |CONTROL,      XK_q,          twobwm_exit,         {.i=0}},
