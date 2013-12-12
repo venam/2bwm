@@ -1,8 +1,8 @@
-2bwm
+twobwm
 ==========
 A fast floating WM, with the particularity of having 2 borders, written over the XCB library and derived from mcwm written by Michael Cardell.<br>
-In 2bWM everything is accessible from the keyboard but a pointing device can be used for move, resize and raise/lower.<br>
-WARNING: This WM and this repository are experimental, 2bwm is only meant for advance users. <br>
+In twobwm everything is accessible from the keyboard but a pointing device can be used for move, resize and raise/lower.<br>
+WARNING: This WM and this repository are experimental, twobwm is only meant for advance users. <br>
 
 Features:
 =========
@@ -10,12 +10,12 @@ You can check what mcwm already had here: <br>
 http://www.hack.org/mc/hacks/mcwm/features.html<br>
 http://www.hack.org/mc/hacks/mcwm/<br>
 
-When talking in size proportion, 2bwm binary is 28KB, when dwm bin is 33KB, dvtm 37KB, and i3 343KB.
+When talking in size proportion, twobwm binary is 28KB, when dwm bin is 33KB, dvtm 37KB, and i3 343KB.
 
 ```
-raptor $ size /usr/local/bin/2bwm
+raptor $ size /usr/local/bin/twobwm
     text   data    bss    dec    hex   filename
-    24851  1904    664  27419   6b1b   /usr/local/bin/2bwm
+    24851  1904    664  27419   6b1b   /usr/local/bin/twobwm
 raptor $ size /usr/bin/i3
     text    data    bss    dec    hex   filename
     284247  10020   5704 299971  493c3  /usr/bin/i3
@@ -45,13 +45,13 @@ raptor /usr/bin $ size awesome
     296570 1984    1832  300386   49562 awesome
 ```
 Now comparing Memory ressource usage. (in KB)  
-mcwm -- the wm 2bwm is based upon  
+mcwm -- the wm twobwm is based upon  
 dvtm -- a terminal multiplexer  
 ```
 
- ~ > ps -eo args,size,vsize,rss | grep -P "(^mcwm|^2bwm|^bspwm|^dwm|^monsterwm|^openbox|^dvtm|^fbpanel|^cwm|^ctwm|^herbs)"
+ ~ > ps -eo args,size,vsize,rss | grep -P "(^mcwm|^twobwm|^bspwm|^dwm|^monsterwm|^openbox|^dvtm|^fbpanel|^cwm|^ctwm|^herbs)"
  mcwm                          300   2480   668
- 2bwm                          300   2536   680
+ twobwm                          300   2536   680
  9wm                           296   3816  1160
  cwm                           584   7044  3308
  bspwm                         300   2796   720
@@ -68,14 +68,14 @@ dvtm -- a terminal multiplexer
 Notice that all those WM are really small and that size doesn't really matter in the end.
 
 (Someone should write something about the features here)
-//Panel that works with 2bwm: fbpanel, tint2, xfce4-panel, lxpanel, hpanel, cairo-dock
-tweaks you need for 2bwm on OpenBSD: add /usr/X11R6/include to search path, install gcc-4.7, use CC=egcc make
+//Panel that works with twobwm: fbpanel, tint2, xfce4-panel, lxpanel, hpanel, cairo-dock
+tweaks you need for twobwm on OpenBSD: add /usr/X11R6/include to search path, install gcc-4.7, use CC=egcc make
 Added snapping from the latest mcwm push.
 
 Screenshots:
 ============
-![2bwm](http://venam.1.ai/2bwm_colors.png)
-![yrmt 2bwm](http://fc00.deviantart.net/fs70/f/2013/236/8/0/agust_warm_setup_by_ybeastie-d6jaqyb.png)
+![twobwm](http://venam.1.ai/twobwm_colors.png)
+![yrmt twobwm](http://fc00.deviantart.net/fs70/f/2013/236/8/0/agust_warm_setup_by_ybeastie-d6jaqyb.png)
 
 TODO:
 =====
