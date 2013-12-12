@@ -1,14 +1,14 @@
-.TH 2bwm 1 "Apr 24, 2013" "" ""
+.TH twobwm 1 "Apr 24, 2013" "" ""
 .SH NAME
-2bwm \- A two borders fast floating window manager for X11.
+twobwm \- A two borders fast floating window manager for X11.
 
 .SH DESCRIPTION
-.B 2bwm\fP is a fast floating, keyboard driven, window manager for the X Window System with the particularity of having 2 borders.
+.B twobwm\fP is a fast floating, keyboard driven, window manager for the X Window System with the particularity of having 2 borders.
 
 .SH USE
 Nota bene: It is highly recommended to check the config.h file at least once.
 
-With the the default configuration, use 2bwm like this.
+With the the default configuration, use twobwm like this.
 .PP
 MOUSEMODKEY + mouse buttons (On a Window) :
 .RS
@@ -61,7 +61,7 @@ resize up.
 start the menu (my_menu.sh)
 .IP \(bu 2
 .B ctr+q ctrl+r
-quit or restart 2bwm
+quit or restart twobwm
 .IP \(bu 2
 .B shift+L
 resize right.
@@ -180,7 +180,7 @@ If you set up a bar don't forget to add the space at the bottom or at the top
 Also, if you want to know the current workspace you can use `xprop -root _NET_CURRENT_DESKTOP| sed -e 's/_NET_CURRENT_DESKTOP(CARDINAL) = //'`
 
 .SH ENVIRONMENT
-.B 2bwm\fP obeys the $DISPLAY variable.
+.B twobwm\fP obeys the $DISPLAY variable.
 
 .SH STARTING
 Warning you should not put "Urxvt.depth: 32" in your .Xressources if you are using urxvt, it will disable the borders.
@@ -206,7 +206,7 @@ xsetroot \-cursor_name plus \-fg white \-bg black
 xrdb \-load ~/.Xresources
 
 # Start window manager in the background. If it dies, X still lives.
-2bwm &
+twobwm &
 
 # Start a terminal in the foreground. If this dies, X dies.
 exec urxvt
@@ -215,13 +215,13 @@ exec urxvt
 .sp
 .SH SCRIPTS
 
-You may want to define a menu program for use with 2bwm (see
+You may want to define a menu program for use with twobwm (see
 config.h). In the source distribution you can find an example as
 my_menu.sh (the default menu program in config.h) in the scripts
 directory.
 .PP
 Inspired by Christian's work MC wrote a small program, hidden(1), which
-is included with 2bwm. You can use hidden(1) with the -c option
+is included with twobwm. You can use hidden(1) with the -c option
 together with 9menu. See my_menu.sh for an example.
 .PP
 You might also be interested in the following shell function that
