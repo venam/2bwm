@@ -74,7 +74,7 @@ Added snapping from the latest mcwm push.
 
 Screenshots:
 ============
-![twobwm](http://venam.1.ai/twobwm_colors.png)
+![twobwm](http://venam.1.ai/2bwm_colors.png)
 ![yrmt twobwm](http://fc00.deviantart.net/fs70/f/2013/236/8/0/agust_warm_setup_by_ybeastie-d6jaqyb.png)
 
 TODO:

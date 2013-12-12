@@ -25,7 +25,6 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
-
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define BUTTONMASK      XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE
@@ -2007,6 +2006,7 @@ void twobwm_restart()
     xcb_ewmh_connection_wipe(ewmh);
     if (ewmh)   free(ewmh);
     xcb_disconnect(conn);
+    //this causes crashes on osx
     //xcb_flush(conn);
     execvp(TWOBWM_PATH, NULL);
 }
