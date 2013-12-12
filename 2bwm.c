@@ -2010,9 +2010,7 @@ void twobwm_restart()
     if (ewmh)   free(ewmh);
     xcb_disconnect(conn);
     //xcb_flush(conn);
-    //char* argv[2] = {"",NULL};
-    //execvp(TWOBWM_PATH, argv);
-    execvp("2bwm", NULL);
+    execvp(TWOBWM_PATH, NULL);
 }
 
 int main()
