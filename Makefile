@@ -5,7 +5,7 @@ SRC=2bwm.c list.h  config.h
 DISTFILES=Makefile README.md TODO 2bwm.man $(SRC)
 
 CFLAGS+=-g -std=c99 -Wall -Os -Wextra -I/usr/pkg/include \
-     -DNCOMPTON -Wint-conversion
+     -DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" -Wint-conversion
 
 LDFLAGS+=-L/usr/pkg/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util -lxcb-ewmh
 
@@ -13,6 +13,8 @@ RM=/bin/rm
 
 PREFIX=/usr/pkg
 MANPREFIX=$(PREFIX)/man
+TWOBWM_PATH=${PREFIX}/bin/2bwm
+
 
 TARGETS=2bwm 
 OBJS=2bwm.o

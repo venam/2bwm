@@ -37,7 +37,6 @@ static const char *mmenucmd[] = { "8menu", NULL };
 static const char *pausecmd[] = { "ncmpcpp", "toggle", NULL };
 static const char *nextcmd[] = { "ncmpcpp", "next", NULL };
 static const char *prevcmd[] = { "ncmpcpp", "prev", NULL };
-static const char *twobwm_path = "/usr/pkg/bin/2bwm";
 
 ///---Shortcuts---///
 #define DESKTOPCHANGE(K,N) \

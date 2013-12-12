@@ -1922,7 +1922,7 @@ void twobwm_restart()
     xcb_disconnect(conn);
     //xcb_flush(conn);
     char* argv[2] = {"",NULL};
-    execvp(twobwm_path, argv);
+    execvp(TWOBWM_PATH, argv);
 }
 
 int main()
