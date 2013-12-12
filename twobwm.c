@@ -1,4 +1,4 @@
-/* 2bwm, a fast floating WM  with the particularity of having 2 borders written
+/* twobwm, a fast floating WM  with the particularity of having 2 borders written
  * over the XCB library and derived from mcwm written by Michael Cardell.
  * Heavily modified version of http://www.hack.org/mc/hacks/mcwm/
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at the domain hack.org.
@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
@@ -203,31 +202,12 @@ static void sigcatch(const int sig);
 static void ewmh_init(void);
 static xcb_atom_t getatom(const char *atom_name);
 static void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *mon_height,const struct client *client);
-static void setignoreborder(int16_t *temp,struct client *client, bool set_unset);
+static void noborder(int16_t *temp,struct client *client, bool set_unset);
 static void movepointerback(const int16_t startx, const int16_t starty, const struct client *client);
 static void snapwindow(struct client *client);
 #include "config.h"
 
 ///---Function bodies---///
-void movetohead(struct item **mainlist, struct item *item)
-{                                   // Move element in item to the head of list mainlist.
-    if (NULL == item || NULL == mainlist || NULL == *mainlist) return;
-    /* item is NULL or we're already at head. Do nothing. */
-    if (*mainlist == item) return;
-    /* Braid together the list where we are now. */
-    if (NULL != item->prev) item->prev->next = item->next;
-
-    if (NULL != item->next) item->next->prev = item->prev;
-    /* Now we'at head, so no one before us. */
-    item->prev = NULL;
-    /* Old head is our next. */
-    item->next = *mainlist;
-    /* Old head needs to know about us. */
-    item->next->prev = item;
-    /* Remember the new head. */
-    *mainlist = item;
-}
-
 struct item *additem(struct item **mainlist)
 {                                   // Create space for a new item and add it to the head of mainlist.
     // Returns item or NULL if out of memory.
@@ -276,28 +256,6 @@ void freeitem(struct item **list, int *stored,struct item *item)
     delitem(list, item);
 
     if (NULL != stored) (*stored) --;
-}
-
-
-void delallitems(struct item **list, int *stored)
-{                                   // Delete all elements in list and free memory resources. 
-    struct item *item;
-    struct item *next;
-
-    for (item = *list; item != NULL; item = next){
-        next = item->next;
-        free(item->data);
-        delitem(list, item);
-    }
-
-    if (NULL != stored) (*stored) = 0;
-}
-
-void listitems(struct item *mainlist)
-{
-    struct item *item;
-    int i;
-    for (item = mainlist, i = 1; item != NULL; item = item->next, i ++) printf("item #%d (stored at %p).\n", i, (void *)item);
 }
 void fix(){fixwindow(focuswin);}
 void unkillable(void){unkillablewindow(focuswin);}
@@ -568,7 +526,7 @@ void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *m
     *mon_height = client->monitor->height;
 }
 
-void setignoreborder(int16_t *temp,struct client *client, bool set_unset)
+void noborder(int16_t *temp,struct client *client, bool set_unset)
 {
     if (client->ignore_borders) {
         if (set_unset) {
@@ -611,7 +569,7 @@ void fitonscreen(struct client *client)
         client->width = client->min_width;
         willresize = true;
     }
-    setignoreborder(&temp, client, true);
+    noborder(&temp, client, true);
     /* If the window is larger than our screen, just place it in the corner and resize. */
     if (client->width + conf.borderwidth * 2 > mon_width) {
         client->x = mon_x;
@@ -636,7 +594,7 @@ void fitonscreen(struct client *client)
 
     if (willmove)   movewindow(client->id, client->x, client->y);
     if (willresize) resize(client->id, client->width, client->height);
-    setignoreborder( &temp, client, false);
+    noborder( &temp, client, false);
 }
 
 
@@ -862,7 +820,6 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
         output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL);
 
         if (output == NULL) continue;
-        asprintf(&name, "%.*s",xcb_randr_get_output_info_name_length(output),xcb_randr_get_output_info_name(output));
 
         if (XCB_NONE != output->crtc) {
             icookie = xcb_randr_get_crtc_info(conn, output->crtc, timestamp);
@@ -987,7 +944,7 @@ void movelim(struct client *client) //Keep the window inside the screen
     int16_t mon_y, mon_x,temp=0;
     uint16_t mon_height, mon_width;
     getmonsize(&mon_x, &mon_y, &mon_width, &mon_height, client);
-    setignoreborder(&temp, client,true);
+    noborder(&temp, client,true);
     /* Is it outside the physical monitor or close to the side? */
     if (client->y-conf.borderwidth < mon_y)     client->y = mon_y;
     else if (client->y < borders[2] + mon_y) client->y = mon_y;
@@ -1001,7 +958,7 @@ void movelim(struct client *client) //Keep the window inside the screen
     if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
         client->y = (mon_y + mon_height - conf.borderwidth * 2) - client->height;
     movewindow(client->id, client->x, client->y);
-    setignoreborder(&temp, client,false);
+    noborder(&temp, client,false);
 }
 
 void movewindow(xcb_drawable_t win, const int16_t x, const int16_t y)
@@ -1136,7 +1093,7 @@ void resizelim(struct client *client)
     int16_t mon_x, mon_y,temp=0;
     uint16_t mon_width, mon_height;
     getmonsize( &mon_x, &mon_y, &mon_width, &mon_height, client);
-    setignoreborder(&temp, client,true);
+    noborder(&temp, client,true);
     /* Is it smaller than it wants to  be? */
     if (0 != client->min_height && client->height < client->min_height)
         client->height = client->min_height;
@@ -1147,7 +1104,7 @@ void resizelim(struct client *client)
     if (client->y + client->height + conf.borderwidth * 2 > mon_y + mon_height)
         client->height = mon_height - ((client->y - mon_y) + conf.borderwidth*2);
     resize(client->id, client->width, client->height);
-    setignoreborder(&temp, client,false);
+    noborder(&temp, client,false);
 }
 
 void moveresize(xcb_drawable_t win, const uint16_t x, const uint16_t y,const uint16_t width, const uint16_t height)
@@ -1408,7 +1365,7 @@ void maxvert_hor(const Arg *arg)
     uint16_t mon_height, mon_width;
     getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
     saveorigsize(focuswin);
-    setignoreborder(&temp, focuswin,true);
+    noborder(&temp, focuswin,true);
 
     if (arg->i>0) {
         focuswin->y = mon_y+offsets[1];
@@ -1428,7 +1385,7 @@ void maxvert_hor(const Arg *arg)
                 | XCB_CONFIG_WINDOW_WIDTH, values);
         focuswin->hormaxed = true;
     }
-    setignoreborder(&temp, focuswin,false);
+    noborder(&temp, focuswin,false);
     raise_current_window();
     centerpointer(focuswin->id,focuswin);
     setborders(focuswin,true);
@@ -1441,7 +1398,7 @@ void maxhalf(const Arg *arg)
     int16_t mon_x, mon_y,temp=0;
     uint16_t mon_width, mon_height;
     getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
-    setignoreborder(&temp, focuswin,true);
+    noborder(&temp, focuswin,true);
     if (arg->i>0) {
         if (arg->i>2) { /* in folding mode */
             if (arg->i>3) focuswin->height = focuswin->height/2 - (conf.borderwidth);
@@ -1472,7 +1429,7 @@ void maxhalf(const Arg *arg)
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT, values);
     movewindow(focuswin->id, focuswin->x, focuswin->y);
     focuswin->verthor = true;
-    setignoreborder(&temp, focuswin,false);
+    noborder(&temp, focuswin,false);
     raise_current_window();
     setborders(focuswin,true);
     fitonscreen(focuswin);
@@ -1516,7 +1473,7 @@ void teleport(const Arg *arg)
     if (!getpointer(&focuswin->id, &pointx, &pointy)) return;
     uint16_t mon_width, mon_height;
     getmonsize(&mon_x, &mon_y, &mon_width, &mon_height,focuswin);
-    setignoreborder(&temp, focuswin,true);
+    noborder(&temp, focuswin,true);
     uint16_t tmp_x = focuswin->x;  uint16_t tmp_y=  focuswin->y;
     focuswin->x = mon_x+offsets[0]; focuswin->y = mon_y;
 
@@ -1553,7 +1510,7 @@ void teleport(const Arg *arg)
     }
     movewindow(focuswin->id, focuswin->x, focuswin->y);
     movepointerback(pointx,pointy,focuswin);
-    setignoreborder(&temp, focuswin,false);
+    noborder(&temp, focuswin,false);
     raise_current_window();
     xcb_flush(conn);
 }
@@ -1951,7 +1908,6 @@ void grabbuttons(struct client *c)  // set the given client to listen to button 
 
 void ewmh_init(void)
 {
-    if (!(ewmh = calloc(1, sizeof(xcb_ewmh_connection_t))))    printf("Fail\n");
     xcb_intern_atom_cookie_t *cookie = xcb_ewmh_init_atoms(conn, ewmh);
     xcb_ewmh_init_atoms_replies(ewmh, cookie, (void *)0);
 }
@@ -1961,7 +1917,7 @@ bool setup(int scrno)
     screen = xcb_screen_of_display(conn, scrno);
     if (!screen) return false;
     ewmh_init();
-    xcb_ewmh_set_wm_name(ewmh, screen->root, 4, "2bwm");
+    xcb_ewmh_set_wm_name(ewmh, screen->root, 4, "twobwm");
     xcb_atom_t net_atoms[] = {
         ewmh->_NET_SUPPORTED,             ewmh->_NET_WM_DESKTOP,
         ewmh->_NET_NUMBER_OF_DESKTOPS,    ewmh->_NET_CURRENT_DESKTOP,
