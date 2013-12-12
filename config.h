@@ -114,12 +114,12 @@ static key keys[] = {
     // Raise or lower a window
     {  MOD ,              XK_h,          raiseorlower,      {.i=0}},
 
-		// Next/Previous workpace
+    // Next/Previous workpace
     {  MOD ,              XK_v,          nextworkspace,     {.i=0}},
     {  MOD ,              XK_c,          prevworkspace,     {.i=0}},
 
     // Iconify the window
-   //{  MOD ,              XK_l,          hide,              {.i=0}},
+    //{  MOD ,              XK_l,          hide,              {.i=0}},
     // Make the window unkillable
     {  MOD ,              XK_u,          unkillable,        {.i=0}},
     // Make the window stay on all workpace
@@ -144,17 +144,17 @@ static key keys[] = {
     {  MOD ,        XK_F8,     start,             {.com = pausecmd}},
     {  MOD ,        XK_F9,          start,             {.com = nextcmd}},
     {  MOD ,        XK_F7,          start,             {.com = prevcmd}},
-		
+
     // Exit or restart twobwm
     {  MOD |CONTROL,      XK_q,          twobwm_exit,         {.i=0}},
     {  MOD |CONTROL,      XK_r,          twobwm_restart,      {.i=0}},
 
     // Change current workspace
-       DESKTOPCHANGE(     XK_1,                             0)
-       DESKTOPCHANGE(     XK_2,                             1)
-       DESKTOPCHANGE(     XK_3,                             2)
-       DESKTOPCHANGE(     XK_4,                             3)
-       DESKTOPCHANGE(     XK_5,                             4)};
+    DESKTOPCHANGE(     XK_1,                             0)
+        DESKTOPCHANGE(     XK_2,                             1)
+        DESKTOPCHANGE(     XK_3,                             2)
+        DESKTOPCHANGE(     XK_4,                             3)
+        DESKTOPCHANGE(     XK_5,                             4)};
 static Button buttons[] = {
     {  MOD ,        XCB_BUTTON_INDEX_1,     mousemotion,   {.i = TWOBWM_MOVE}},
     {  MOD ,        XCB_BUTTON_INDEX_3,     mousemotion,   {.i = TWOBWM_RESIZE}},

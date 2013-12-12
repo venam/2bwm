@@ -27,9 +27,9 @@ void movetohead(struct item **mainlist, struct item *item)
 
 struct item *additem(struct item **mainlist)
 {                                   // Create space for a new item and add it to the head of mainlist.
-                                    // Returns item or NULL if out of memory.
+    // Returns item or NULL if out of memory.
     struct item *item;
-    
+
     if (NULL == (item = (struct item *) malloc(sizeof (struct item)))) return NULL;
     /* First in the list. */
     if (NULL == *mainlist) item->prev = item->next = NULL;
@@ -46,14 +46,14 @@ struct item *additem(struct item **mainlist)
 void delitem(struct item **mainlist, struct item *item)
 {
     struct item *ml = *mainlist;
-    
+
     if (NULL == mainlist || NULL == *mainlist || NULL == item) return;
     /* First entry was removed. Remember the next one instead. */
     if (item == *mainlist) {
-		*mainlist        = ml->next;
-		if (item->next!=NULL)
-			item->next->prev = NULL;
-	}
+        *mainlist        = ml->next;
+        if (item->next!=NULL)
+            item->next->prev = NULL;
+    }
     else {
         item->prev->next = item->next;
         /* This is not the last item in the list. */
@@ -65,7 +65,7 @@ void delitem(struct item **mainlist, struct item *item)
 void freeitem(struct item **list, int *stored,struct item *item)
 {
     if (NULL == list || NULL == *list || NULL == item) return;
-    
+
     if (NULL != item->data) {
         free(item->data);
         item->data = NULL;
@@ -80,7 +80,7 @@ void delallitems(struct item **list, int *stored)
 {                                   // Delete all elements in list and free memory resources. 
     struct item *item;
     struct item *next;
-    
+
     for (item = *list; item != NULL; item = next){
         next = item->next;
         free(item->data);
