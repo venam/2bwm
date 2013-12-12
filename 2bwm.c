@@ -20,13 +20,11 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <signal.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
-//#include "list.h"
 
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
