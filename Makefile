@@ -7,21 +7,21 @@ LDFLAGS+=-L/usr/pkg/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util -
 
 PREFIX=/usr/pkg
 MANPREFIX=$(PREFIX)/man
-TWOBWM_PATH=${PREFIX}/bin/2bwm
+TWOBWM_PATH=${PREFIX}/bin/twobwm
 
-2bwm: 
-	$(CC) $(CFLAGS) $(LDFLAGS) 2bwm.c -o 2bwm
+twobwm: 
+	$(CC) $(CFLAGS) $(LDFLAGS) twobwm.c -o 2bwm
 
 install:
 	test -d $(DESTDIR)$(PREFIX)/bin || mkdir -p $(DESTDIR)$(PREFIX)/bin
-	install -m 755 2bwm $(DESTDIR)$(PREFIX)/bin
+	install -m 755 twobwm $(DESTDIR)$(PREFIX)/bin
 	test -d $(DESTDIR)$(MANPREFIX)/man1 || mkdir -p $(DESTDIR)$(MANPREFIX)/man1
-	install -m 644 2bwm.man $(DESTDIR)$(MANPREFIX)/man1/2bwm.1
+	install -m 644 twobwm.man $(DESTDIR)$(MANPREFIX)/man1/2bwm.1
 
 uninstall: deinstall
 deinstall:
-	$(RM) $(DESTDIR)$(PREFIX)/bin/2bwm
-	$(RM) $(DESTDIR)$(MANPREFIX)/man1/2bwm.1
+	$(RM) $(DESTDIR)$(PREFIX)/bin/twobwm
+	$(RM) $(DESTDIR)$(MANPREFIX)/man1/twobwm.1
 
 clean:
-	rm 2bwm
+	rm twobwm

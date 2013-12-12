@@ -117,7 +117,7 @@ static key keys[] = {
     {  MOD ,              XK_v,          nextworkspace,     {.i=0}},
     {  MOD ,              XK_c,          prevworkspace,     {.i=0}},
 
-    // Iconify the window
+    // Iconify the window - see the hidden program
     //{  MOD ,              XK_l,          hide,              {.i=0}},
     // Make the window unkillable
     {  MOD ,              XK_u,          unkillable,        {.i=0}},
