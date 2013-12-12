@@ -1920,7 +1920,7 @@ void twobwm_restart()
     xcb_ewmh_connection_wipe(ewmh);
     if (ewmh)   free(ewmh);
     xcb_disconnect(conn);
-    xcb_flush(conn);
+    //xcb_flush(conn);
     char* argv[2] = {"",NULL};
     execvp(twobwm_path, argv);
 }
