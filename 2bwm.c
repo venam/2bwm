@@ -15,24 +15,18 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/select.h>
-#include <xcb/xcb.h>
+#include <signal.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
-#include "list.h"
-#include <signal.h>
+//#include "list.h"
 
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
@@ -47,6 +41,11 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define WORKSPACES 10
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---Types---///
+struct item {
+    void *data;
+    struct item *prev;
+    struct item *next;
+};
 struct monitor {
     xcb_randr_output_t id;
     char *name;
@@ -213,6 +212,96 @@ static void snapwindow(struct client *client);
 #include "config.h"
 
 ///---Function bodies---///
+void movetohead(struct item **mainlist, struct item *item)
+{                                   // Move element in item to the head of list mainlist.
+    if (NULL == item || NULL == mainlist || NULL == *mainlist) return;
+    /* item is NULL or we're already at head. Do nothing. */
+    if (*mainlist == item) return;
+    /* Braid together the list where we are now. */
+    if (NULL != item->prev) item->prev->next = item->next;
+
+    if (NULL != item->next) item->next->prev = item->prev;
+    /* Now we'at head, so no one before us. */
+    item->prev = NULL;
+    /* Old head is our next. */
+    item->next = *mainlist;
+    /* Old head needs to know about us. */
+    item->next->prev = item;
+    /* Remember the new head. */
+    *mainlist = item;
+}
+
+struct item *additem(struct item **mainlist)
+{                                   // Create space for a new item and add it to the head of mainlist.
+    // Returns item or NULL if out of memory.
+    struct item *item;
+
+    if (NULL == (item = (struct item *) malloc(sizeof (struct item)))) return NULL;
+    /* First in the list. */
+    if (NULL == *mainlist) item->prev = item->next = NULL;
+    else {
+        /* Add to beginning of list. */
+        item->next = *mainlist;
+        item->next->prev = item;
+        item->prev = NULL;
+    }
+    *mainlist = item;   
+    return item;
+}
+
+void delitem(struct item **mainlist, struct item *item)
+{
+    struct item *ml = *mainlist;
+
+    if (NULL == mainlist || NULL == *mainlist || NULL == item) return;
+    /* First entry was removed. Remember the next one instead. */
+    if (item == *mainlist) {
+        *mainlist        = ml->next;
+        if (item->next!=NULL)
+            item->next->prev = NULL;
+    }
+    else {
+        item->prev->next = item->next;
+        /* This is not the last item in the list. */
+        if (NULL != item->next) item->next->prev = item->prev;
+    }
+    free(item);
+}
+
+void freeitem(struct item **list, int *stored,struct item *item)
+{
+    if (NULL == list || NULL == *list || NULL == item) return;
+
+    if (NULL != item->data) {
+        free(item->data);
+        item->data = NULL;
+    }
+    delitem(list, item);
+
+    if (NULL != stored) (*stored) --;
+}
+
+
+void delallitems(struct item **list, int *stored)
+{                                   // Delete all elements in list and free memory resources. 
+    struct item *item;
+    struct item *next;
+
+    for (item = *list; item != NULL; item = next){
+        next = item->next;
+        free(item->data);
+        delitem(list, item);
+    }
+
+    if (NULL != stored) (*stored) = 0;
+}
+
+void listitems(struct item *mainlist)
+{
+    struct item *item;
+    int i;
+    for (item = mainlist, i = 1; item != NULL; item = item->next, i ++) printf("item #%d (stored at %p).\n", i, (void *)item);
+}
 void fix(){fixwindow(focuswin);}
 void unkillable(void){unkillablewindow(focuswin);}
 void delmonitor(struct monitor *mon){ free(mon->name);    freeitem(&monlist, NULL, mon->item);}
@@ -1921,8 +2010,9 @@ void twobwm_restart()
     if (ewmh)   free(ewmh);
     xcb_disconnect(conn);
     //xcb_flush(conn);
-    char* argv[2] = {"",NULL};
-    execvp(TWOBWM_PATH, argv);
+    //char* argv[2] = {"",NULL};
+    //execvp(TWOBWM_PATH, argv);
+    execvp("2bwm", NULL);
 }
 
 int main()
