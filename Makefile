@@ -10,8 +10,8 @@ PREFIX=/usr/pkg
 MANPREFIX=$(PREFIX)/man
 TWOBWM_PATH=${PREFIX}/bin/twobwm
 
-twobwm: 
-	$(CC) $(CFLAGS) $(LDFLAGS) twobwm.c -o twobwm
+all: 
+	@$(CC) $(CFLAGS) $(LDFLAGS) twobwm.c -o twobwm
 
 install:
 	test -d $(DESTDIR)$(PREFIX)/bin || mkdir -p $(DESTDIR)$(PREFIX)/bin

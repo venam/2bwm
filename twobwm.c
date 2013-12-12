@@ -1908,8 +1908,11 @@ void grabbuttons(struct client *c)  // set the given client to listen to button 
 
 void ewmh_init(void)
 {
-    xcb_intern_atom_cookie_t *cookie = xcb_ewmh_init_atoms(conn, ewmh);
-    xcb_ewmh_init_atoms_replies(ewmh, cookie, (void *)0);
+    ewmh = calloc(1, sizeof(xcb_ewmh_connection_t));
+    xcb_intern_atom_cookie_t *cookie;
+    xcb_generic_error_t *err;
+    cookie = xcb_ewmh_init_atoms(conn, ewmh);
+    if (!xcb_ewmh_init_atoms_replies(ewmh, cookie, &err)) printf("failed to init ewmh");
 }
 
 bool setup(int scrno)
