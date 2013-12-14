@@ -14,13 +14,13 @@ static const uint8_t offsets[] = {0,0,0,0};
  *2)fixedcol         3)unkilcol
  *4)fixedunkilcol    5)outerbordercol
  *6)emptycol         */
-static const char *colors[] = {"#35586c","#333333","#7a8c5c",
-                               "#ff6666","#cc9933","#0d131a","#000000"};
+//static const char *colors[] = {"#35586c","#333333","#7a8c5c",
+ //                              "#ff6666","#cc9933","#0d131a","#000000"};
 ///---Borders---///
 /*0) Outer border size. If you put this negative it will be a square. 
  *1) Full borderwidth
  *2) Magnet border size     */
-static const uint8_t borders[] = {0,5,5,5};
+//static const uint8_t borders[] = {0,5,5,5};
 static const bool inverted_colors = false;
 #define NB_NAMES 1 
 #define LOOK_INTO  "_NET_WM_NAME"

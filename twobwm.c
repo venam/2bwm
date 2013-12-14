@@ -100,6 +100,9 @@ xcb_drawable_t top_win=0;           // Window always on top.
 struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
 struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+///---user config variables.---///
+uint8_t  borders[4];
+uint32_t colors[7];
 ///---Global configuration.---///
 struct conf {
     int8_t borderwidth;             // Do we draw borders for non-focused window? If so, how large?
@@ -173,7 +176,7 @@ static void grabbuttons(struct client *c);
 static void delfromworkspace(struct client *client, uint32_t ws);
 static void unkillablewindow(struct client *client);
 static void fixwindow(struct client *client);
-static uint32_t getcolor(const char *hex);
+static uint32_t getcolor(uint32_t hex);
 static void forgetclient(struct client *client);
 static void forgetwin(xcb_window_t win);
 static void fitonscreen(struct client *client);
@@ -205,6 +208,7 @@ static void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint
 static void noborder(int16_t *temp,struct client *client, bool set_unset);
 static void movepointerback(const int16_t startx, const int16_t starty, const struct client *client);
 static void snapwindow(struct client *client);
+static void readrc();
 #include "config.h"
 
 ///---Function bodies---///
@@ -484,7 +488,7 @@ void sendtoworkspace(const Arg *arg)
     xcb_flush(conn);
 }
 
-uint32_t getcolor(const char *hex)  // Get the pixel values of a named colour colstr.
+uint32_t getcolor(uint32_t hex)  // Get the pixel values of a named colour colstr.
 {                                   // Returns pixel values.
     char strgroups[3][3] = {{hex[1], hex[2], '\0'},{hex[3], hex[4], '\0'},{hex[5], hex[6], '\0'}};
     uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),(strtol(strgroups[1], NULL, 16)),(strtol(strgroups[2], NULL, 16))};
@@ -1933,6 +1937,7 @@ bool setup(int scrno)
     };
     xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
 
+    readrc();
     conf.borderwidth     = borders[1];                      conf.outer_border    = borders[0];
     conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
     conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
@@ -1965,8 +1970,6 @@ void twobwm_restart()
     xcb_ewmh_connection_wipe(ewmh);
     if (ewmh)   free(ewmh);
     xcb_disconnect(conn);
-    //this causes crashes on osx
-    //xcb_flush(conn);
     execvp(TWOBWM_PATH, NULL);
 }
 

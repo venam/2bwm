@@ -11,7 +11,7 @@ MANPREFIX=$(PREFIX)/man
 TWOBWM_PATH=${PREFIX}/bin/twobwm
 
 all: 
-	@$(CC) $(CFLAGS) $(LDFLAGS) twobwm.c -o twobwm
+	$(CC) $(CFLAGS) $(LDFLAGS) twobwm.c -o twobwm
 
 install:
 	test -d $(DESTDIR)$(PREFIX)/bin || mkdir -p $(DESTDIR)$(PREFIX)/bin
