@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <xcb/xcb.h>
 
 long val;
+uint8_t mod;
 uint8_t borders[4];
 uint8_t offsets[4];
 uint16_t movements[4];
@@ -89,9 +91,21 @@ void readrc() {
                         } else movements[i-15] = (uint8_t)val;
                     }
                 }
+            } else if(strnstr(buffer, "modkey", 6)) {
+                const char *modtype = buffer + sizeof("modkey");
+                if(!strncmp(modtype, "mod1", 4)) {
+                    mod = XCB_MOD_MASK_1;
+                } else if (!strncmp(modtype, "mod2", 4)) {
+                    mod = XCB_MOD_MASK_2;
+                } else if (!strncmp(modtype, "mod3", 4)) {
+                    mod = XCB_MOD_MASK_3;
+                } else if (!strncmp(modtype, "mod4", 4)) {
+                    mod = XCB_MOD_MASK_4;
+                }
             }
-        } 
+        }
     } /* while end */
+    fclose(rcfile);
 }
 
 
@@ -113,4 +127,6 @@ int main()
     for(int i=0;i<4;i++) {
         printf("%d\n", movements[i]);
     }
+    printf("==================\n");
+    printf("mod key: %d\n", mod);
 }

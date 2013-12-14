@@ -4,6 +4,13 @@
 #
 ######
 
+## mod key 
+# alt = mod1
+# winkey = mod4
+# osx cmd = mod2
+# See xmodmap.
+modkey mod4
+
 ## Border width
 width outerborder 2
 width normalborder 5
