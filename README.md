@@ -1,5 +1,6 @@
 ### twobwm for osx in the works
 
+## This twobwm version includes a few fixes and config file support.
 
 
 twobwm
