@@ -9,7 +9,7 @@
 # winkey = mod4
 # osx cmd = mod2
 # See xmodmap.
-modkey mod4
+modkey mod2
 
 ## Border width
 width outerborder 2
@@ -25,6 +25,7 @@ color unkilborder #ff6666
 color fixedunkilborder #cc9933
 color outerborder #0d131a
 color empty #000000
+#color invert true
 
 ## offsets
 offset x 12

@@ -101,8 +101,13 @@ struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
 struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
 ///---user config variables.---///
+uint8_t  mod;
 uint8_t  borders[4];
+uint8_t  offsets[4];
+uint16_t movements[4];
 uint32_t colors[7];
+bool     inverted_colors;
+bool     resize_by_line;
 ///---Global configuration.---///
 struct conf {
     int8_t borderwidth;             // Do we draw borders for non-focused window? If so, how large?
@@ -116,6 +121,7 @@ const char *atomnames[NB_ATOMS][1] = {
     {"_NET_WM_DESKTOP"}, {"_NET_CURRENT_DESKTOP"}, {"_NET_UNKILLABLE"}, {"WM_DELETE_WINDOW"}, {"WM_CHANGE_STATE"}, {"_NET_WM_STATE"},
     {"WM_PROTOCOLS"}, {"_NET_NUMBER_OF_DESKTOPS"}, {"_NET_ACTIVE_WINDOW"}, {"_NET_CLIENT_LIST"}, {"_NET_CLIENT_LIST_STACKING"}, {"_NET_WM_STATE_HIDDEN"}
 };
+
 xcb_atom_t ATOM[NB_ATOMS];
 ///---Functions prototypes---///
 static void run(void);
@@ -176,7 +182,7 @@ static void grabbuttons(struct client *c);
 static void delfromworkspace(struct client *client, uint32_t ws);
 static void unkillablewindow(struct client *client);
 static void fixwindow(struct client *client);
-static uint32_t getcolor(uint32_t hex);
+static uint32_t getcolor(uint32_t *hex);
 static void forgetclient(struct client *client);
 static void forgetwin(xcb_window_t win);
 static void fitonscreen(struct client *client);
@@ -210,6 +216,79 @@ static void movepointerback(const int16_t startx, const int16_t starty, const st
 static void snapwindow(struct client *client);
 static void readrc();
 #include "config.h"
+#define DESKTOPCHANGE(K,N) \
+{  mod ,              K,             changeworkspace,   {.i = N}}, \
+{  mod |SHIFT,        K,             sendtoworkspace,   {.i = N}},
+key keys[] = {
+    {  mod ,              XK_k,          focusnext,         {.i = 0}},
+    {  mod |SHIFT,        XK_k,          focusnext,         {.i = 1}},
+    {  mod ,              XK_x,          deletewin,         {.i=0}},        
+    {  mod |SHIFT,        XK_n,/*h*/     resizestep,        {.i=0}},
+    {  mod |SHIFT,        XK_e,/*j*/     resizestep,        {.i=1}},
+    {  mod |SHIFT,        XK_i,/*k*/     resizestep,        {.i=2}},
+    {  mod |SHIFT,        XK_o,/*l*/     resizestep,        {.i=3}},
+    {  mod |SHIFT|CONTROL,XK_n,          resizestep,        {.i=4}},
+    {  mod |SHIFT|CONTROL,XK_e,          resizestep,        {.i=5}},
+    {  mod |SHIFT|CONTROL,XK_i,          resizestep,        {.i=6}},
+    {  mod |SHIFT|CONTROL,XK_o,          resizestep,        {.i=7}},
+    {  mod ,              XK_n,          movestep,          {.i=0}},
+    {  mod ,              XK_e,          movestep,          {.i=1}},
+    {  mod ,              XK_i,          movestep,          {.i=2}},
+    {  mod ,              XK_o,          movestep,          {.i=3}},
+    {  mod |CONTROL,      XK_n,          movestep,          {.i=4}},
+    {  mod |CONTROL,      XK_e,          movestep,          {.i=5}},
+    {  mod |CONTROL,      XK_i,          movestep,          {.i=6}},
+    {  mod |CONTROL,      XK_o,          movestep,          {.i=7}},
+    {  mod ,              XK_d,          teleport,          {.i = 0}},
+    {  mod ,              XK_a,          teleport,          {.i = 2}},
+    {  mod ,              XK_t,          teleport,          {.i = -2}},
+    {  mod ,              XK_r,          teleport,          {.i = 1}},
+    {  mod ,              XK_s,          teleport,          {.i = -1}},
+    {  mod ,              XK_w,          resizestep_aspect,{.i=0}},
+    {  mod ,              XK_q,          resizestep_aspect,{.i=1}},
+    {  mod ,              XK_m,          maximize,          {.i=0}},
+    {  mod |CONTROL,      XK_m,          maxvert_hor,       {.i=1}},
+    {  mod |SHIFT,        XK_m,          maxvert_hor,       {.i=0}},
+    {  mod |SHIFT,        XK_a,          maxhalf,           {.i=2}},
+    {  mod |SHIFT,        XK_t,          maxhalf,           {.i=1}},
+    {  mod |SHIFT,        XK_r,          maxhalf,           {.i=-1}},
+    {  mod |SHIFT,        XK_s,          maxhalf,           {.i=-2}},
+    {  mod ,              XK_comma,      changescreen,      {.i=1}},
+    {  mod ,              XK_period,     changescreen,      {.i=0}},
+    {  mod ,              XK_h,          raiseorlower,      {.i=0}},
+    {  mod ,              XK_v,          nextworkspace,     {.i=0}},
+    {  mod ,              XK_c,          prevworkspace,     {.i=0}},
+    {  mod ,              XK_l,          hide,              {.i=0}},
+    {  mod ,              XK_u,          unkillable,        {.i=0}},
+    {  mod ,              XK_f,          fix,               {.i=0}},
+    {  mod ,              XK_Up,         cursor_move,       {.i=4}},
+    {  mod ,              XK_Down,       cursor_move,       {.i=5}},
+    {  mod ,              XK_Right,      cursor_move,       {.i=6}},
+    {  mod ,              XK_Left,       cursor_move,       {.i=7}},
+    {  mod |SHIFT,        XK_Up,         cursor_move,       {.i=0}},
+    {  mod |SHIFT,        XK_Down,       cursor_move,       {.i=1}},
+    {  mod |SHIFT,        XK_Right,      cursor_move,       {.i=2}},
+    {  mod |SHIFT,        XK_Left,       cursor_move,       {.i=3}},
+    {  mod,               XK_j,          always_on_top,     {.i=0}},
+    {  mod ,              XK_Return,     start,             {.com = terminal}},
+    {  mod ,              XK_y,          start,             {.com = menucmd}},
+    {  mod ,              XK_p,          start,             {.com = dmenucmd}},
+    {  mod ,              XK_g,          start,             {.com = mmenucmd}},
+    {  mod ,              XK_F8,         start,             {.com = pausecmd}},
+    {  mod ,              XK_F9,         start,             {.com = nextcmd}},
+    {  mod ,              XK_F7,         start,             {.com = prevcmd}},
+    {  mod |CONTROL,      XK_q,          twobwm_exit,       {.i=0}},
+    {  mod |CONTROL,      XK_r,          twobwm_restart,    {.i=0}},
+    DESKTOPCHANGE(        XK_1,                             0)
+    DESKTOPCHANGE(        XK_2,                             1)
+    DESKTOPCHANGE(        XK_3,                             2)
+    DESKTOPCHANGE(        XK_4,                             3)
+    DESKTOPCHANGE(        XK_5,                             4)};
+Button buttons[] = {
+    {  mod ,        XCB_BUTTON_INDEX_1,  mousemotion,       {.i = TWOBWM_MOVE}},
+    {  mod ,        XCB_BUTTON_INDEX_3,  mousemotion,       {.i = TWOBWM_RESIZE}},
+    {  mod |CONTROL,XCB_BUTTON_INDEX_3,  start,             {.com = menucmd}},
+};
 
 ///---Function bodies---///
 struct item *additem(struct item **mainlist)
@@ -373,14 +452,14 @@ bool get_unkil_state(xcb_drawable_t win)
 void check_name(struct client *client)
 {
     if (NULL==client) return;
-    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, xcb_get_property(conn, false, client->id, getatom(LOOK_INTO) ,XCB_GET_PROPERTY_TYPE_ANY, 0,60), NULL);
+    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, xcb_get_property(conn, false, client->id, getatom("_NET_WM_NAME") ,XCB_GET_PROPERTY_TYPE_ANY, 0,60), NULL);
     if (NULL==reply ||0 == xcb_get_property_value_length(reply)){
         if (NULL!=reply) free(reply);
         return;
     }
     char *wm_name_window = xcb_get_property_value(reply);
     if(NULL!=reply) free(reply);
-    for(int i=0;i<NB_NAMES;i++)
+    for(int i=0;i<sizeof(ignore_names)/sizeof(typeof(*ignore_names));i++)
         if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
             client->ignore_borders = true;
             uint32_t values[1]     = {0};
@@ -488,10 +567,14 @@ void sendtoworkspace(const Arg *arg)
     xcb_flush(conn);
 }
 
-uint32_t getcolor(uint32_t hex)  // Get the pixel values of a named colour colstr.
+uint32_t getcolor(uint32_t *hex)  // Get the pixel values of a named colour colstr.
 {                                   // Returns pixel values.
-    char strgroups[3][3] = {{hex[1], hex[2], '\0'},{hex[3], hex[4], '\0'},{hex[5], hex[6], '\0'}};
-    uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),(strtol(strgroups[1], NULL, 16)),(strtol(strgroups[2], NULL, 16))};
+    char strgroups[3][3] = {{hex[0], hex[1], '\0'},
+                            {hex[2], hex[3], '\0'},
+                            {hex[4], hex[5], '\0'}};
+    uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),
+                         (strtol(strgroups[1], NULL, 16)),
+                         (strtol(strgroups[2], NULL, 16))};
     return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];
 }
 
@@ -1937,6 +2020,14 @@ bool setup(int scrno)
     };
     xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
 
+    /* Set default config variables */
+    mod = XCB_MOD_MASK_4;
+    movements[0] = 10; movements[1] = 40; movements[2] = 14, movements[3] = 400;
+    offsets[0] = 0; offsets[1] = 0; offsets[2] = 0; offsets[3] = 0;
+    borders[0] = 0; borders[2] = 5; borders[2] = 5; borders[3] = 5;
+
+    inverted_colors = false;
+    resize_by_line = false;
     readrc();
     conf.borderwidth     = borders[1];                      conf.outer_border    = borders[0];
     conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);

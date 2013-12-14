@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <xcb/xcb.h>
 
 long val;
@@ -10,6 +11,8 @@ uint8_t borders[4];
 uint8_t offsets[4];
 uint16_t movements[4];
 uint32_t colors[7];
+bool resize_by_line;
+bool inverted_colors;
 static const struct { 
     const char *name;
     size_t size;
@@ -69,6 +72,12 @@ void readrc() {
                         } else colors[i-4] = (uint32_t)val;
                     }
                 } 
+                if(!strncmp(colortype, "invert", strlen("invert"))) {
+                    const char *inverttype = colortype + sizeof("invert");
+                    if(!strncmp(inverttype, "true", strlen("true"))) {
+                        inverted_colors = true;
+                    } else inverted_colors = false;
+                }
             } else if(strnstr(buffer, "offset", 7)) {
                 const char *offsettype = buffer + sizeof("offset");
                 for (i=11; i<15; i++) { 
@@ -119,6 +128,7 @@ int main()
     for(int i=0;i<7;i++) {
         printf("%.6x\n", colors[i]);
     }
+    if (inverted_colors) printf("invert colors enabled\n");
     printf("==================\n");
     for(int i=0;i<4;i++) {
         printf("%d\n", offsets[i]);
@@ -129,4 +139,5 @@ int main()
     }
     printf("==================\n");
     printf("mod key: %d\n", mod);
+
 }
