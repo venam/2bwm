@@ -5,6 +5,8 @@
 
 long val;
 uint8_t borders[4];
+uint8_t offsets[4];
+uint16_t movements[4];
 uint32_t colors[7];
 static const struct { 
     const char *name;
@@ -21,6 +23,10 @@ static const struct {
     { "fixedunkilborder", sizeof("fixedunkilborder") },
     { "outerborder", sizeof("outerborder") },
     { "empty", sizeof("empty") },
+    { "x", sizeof("x") },
+    { "y", sizeof("y") },
+    { "height", sizeof("height") },
+    { "width", sizeof("width") },
 };
 
 void readrc() {
@@ -35,30 +41,42 @@ void readrc() {
     } else { 
         while(fgets(buffer,sizeof buffer,rcfile) != NULL) {
             if(buffer[0] == '#') continue;
-            if(strnstr(buffer, "width", 5) != NULL) {
+            if(strnstr(buffer, "width", 5)) {
                 const char *bordertype = buffer + sizeof("width");
                 for(i=0; i<4; i++) {
                     if(!strncmp(bordertype, config[i].name, config[i].size - 1)) {
                         val = strtol(bordertype + config[i].size, NULL, 10);
-                        if (errno != 0) printf("config error: wrong border values\n");
-                        else borders[i] = (uint8_t)val;
+                        if (errno != 0) {
+                            printf("config error: wrong border values\n");
+                            exit(EXIT_FAILURE);
+                        } else borders[i] = (uint8_t)val;
                     }
                 }
             } else if(strnstr(buffer, "color", 5)) {
                 const char *colortype = buffer + sizeof("color");
-                for (i=4; i<sizeof(config)/sizeof(typeof(*config)); i++) {
+                for (i=4; i<11; i++) {
                     if(!strncmp(colortype, config[i].name, config[i].size - 1)) {
                         val = strtol(colortype + config[i].size + 1, NULL, 16);
                         if((errno != 0) || (val & ~0xffffffL)) {
                             printf("config error: wrong color value nr.%d\n",i-4);
                             exit(EXIT_FAILURE);
-                        }
-                        else colors[i-4] = (uint32_t)val;
+                        } else colors[i-4] = (uint32_t)val;
+                    }
+                } 
+            } else if(strnstr(buffer, "offset", 7)) {
+                const char *offsettype = buffer + sizeof("offset");
+                for (i=11; i<15; i++) { 
+                    if (!strncmp(offsettype, config[i].name, config[i].size - 1)) {
+                        val = strtol(offsettype + config[i].size, NULL, 10);
+                        if(errno != 0) {
+                            printf("config error: wrong offset value nr.%d\n",i-11);
+                            exit(EXIT_FAILURE);
+                        } else offsets[i-11] = (uint8_t)val;
                     }
                 }
             }
-        }
-    }
+        } 
+    } /* while end */
 }
 
 
@@ -72,4 +90,9 @@ int main()
     for(int i=0;i<7;i++) {
         printf("%.6x\n", colors[i]);
     }
+    printf("==================\n");
+    for(int i=0;i<4;i++) {
+        printf("%d\n", offsets[i]);
+    }
+
 }
