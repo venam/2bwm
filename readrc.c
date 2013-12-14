@@ -27,6 +27,10 @@ static const struct {
     { "y", sizeof("y") },
     { "height", sizeof("height") },
     { "width", sizeof("width") },
+    { "slow", sizeof("slow") },
+    { "fast", sizeof("fast") },
+    { "mouseslow", sizeof("mouseslow") },
+    { "mousefast", sizeof("mousefast") },
 };
 
 void readrc() {
@@ -74,6 +78,17 @@ void readrc() {
                         } else offsets[i-11] = (uint8_t)val;
                     }
                 }
+            } else if(strnstr(buffer, "speed", 5)) {
+                const char *speedtype = buffer + sizeof("speed");
+                for (i=15; i<19; i++) { 
+                    if (!strncmp(speedtype, config[i].name, config[i].size - 1)) {
+                        val = strtol(speedtype + config[i].size, NULL, 10);
+                        if(errno != 0) {
+                            printf("config error: wrong speed value nr.%d\n",i-15);
+                            exit(EXIT_FAILURE);
+                        } else movements[i-15] = (uint8_t)val;
+                    }
+                }
             }
         } 
     } /* while end */
@@ -94,5 +109,8 @@ int main()
     for(int i=0;i<4;i++) {
         printf("%d\n", offsets[i]);
     }
-
+    printf("==================\n");
+    for(int i=0;i<4;i++) {
+        printf("%d\n", movements[i]);
+    }
 }
