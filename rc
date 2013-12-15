@@ -38,3 +38,6 @@ speed slow 10
 speed fast 40
 speed mouseslow 15
 speed mousefast 400
+
+## other
+resizebyline true

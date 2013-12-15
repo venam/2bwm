@@ -111,6 +111,11 @@ void readrc() {
                 } else if (!strncmp(modtype, "mod4", 4)) {
                     mod = XCB_MOD_MASK_4;
                 }
+            } else if(strnstr(buffer, "resizebyline", strlen("resizebyline"))) {
+                const char *resizebylinetype = buffer + sizeof("resizebyline");
+                if(!strncmp(resizebylinetype, "true", strlen("true"))) {
+                    resize_by_line = true;
+                } else resize_by_line = false;
             }
         }
     } /* while end */
@@ -139,5 +144,6 @@ int main()
     }
     printf("==================\n");
     printf("mod key: %d\n", mod);
+    if (resize_by_line) printf("resize by line enabled\n");
 
 }

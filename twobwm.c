@@ -182,7 +182,7 @@ static void grabbuttons(struct client *c);
 static void delfromworkspace(struct client *client, uint32_t ws);
 static void unkillablewindow(struct client *client);
 static void fixwindow(struct client *client);
-static uint32_t getcolor(uint32_t *hex);
+static uint32_t getcolor(uint32_t hex);
 static void forgetclient(struct client *client);
 static void forgetwin(xcb_window_t win);
 static void fitonscreen(struct client *client);
@@ -567,15 +567,19 @@ void sendtoworkspace(const Arg *arg)
     xcb_flush(conn);
 }
 
-uint32_t getcolor(uint32_t *hex)  // Get the pixel values of a named colour colstr.
+uint32_t getcolor(uint32_t hex)  // Get the pixel values of a named colour colstr.
 {                                   // Returns pixel values.
-    char strgroups[3][3] = {{hex[0], hex[1], '\0'},
+    /*char strgroups[3][3] = {{hex[0], hex[1], '\0'},
                             {hex[2], hex[3], '\0'},
                             {hex[4], hex[5], '\0'}};
     uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),
                          (strtol(strgroups[1], NULL, 16)),
                          (strtol(strgroups[2], NULL, 16))};
-    return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];
+    return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];*/
+    uint8_t r = (hex & 0xff);
+    uint8_t g = (hex & 0xff00);
+    uint8_t b = (hex & 0xff0000);
+    return (0xFF << 24) | ( r | g >> 8 | b >> 16);
 }
 
 void forgetclient(struct client *client)
