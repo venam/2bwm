@@ -50,7 +50,7 @@ void readrc() {
     } else { 
         while(fgets(buffer,sizeof buffer,rcfile) != NULL) {
             if(buffer[0] == '#') continue;
-            if(strnstr(buffer, "width", 5)) {
+            if(strnstr(buffer, "width", strlen("width"))) {
                 const char *bordertype = buffer + sizeof("width");
                 for(i=0; i<4; i++) {
                     if(!strncmp(bordertype, config[i].name, config[i].size - 1)) {
@@ -61,7 +61,7 @@ void readrc() {
                         } else borders[i] = (uint8_t)val;
                     }
                 }
-            } else if(strnstr(buffer, "color", 5)) {
+            } else if(strnstr(buffer, "color", strlen("color"))) {
                 const char *colortype = buffer + sizeof("color");
                 for (i=4; i<11; i++) {
                     if(!strncmp(colortype, config[i].name, config[i].size - 1)) {
@@ -78,7 +78,7 @@ void readrc() {
                         inverted_colors = true;
                     } else inverted_colors = false;
                 }
-            } else if(strnstr(buffer, "offset", 7)) {
+            } else if(strnstr(buffer, "offset", strlen("offset"))) {
                 const char *offsettype = buffer + sizeof("offset");
                 for (i=11; i<15; i++) { 
                     if (!strncmp(offsettype, config[i].name, config[i].size - 1)) {
@@ -89,7 +89,7 @@ void readrc() {
                         } else offsets[i-11] = (uint8_t)val;
                     }
                 }
-            } else if(strnstr(buffer, "speed", 5)) {
+            } else if(strnstr(buffer, "speed", strlen("speed"))) {
                 const char *speedtype = buffer + sizeof("speed");
                 for (i=15; i<19; i++) { 
                     if (!strncmp(speedtype, config[i].name, config[i].size - 1)) {
@@ -100,15 +100,15 @@ void readrc() {
                         } else movements[i-15] = (uint8_t)val;
                     }
                 }
-            } else if(strnstr(buffer, "modkey", 6)) {
+            } else if(strnstr(buffer, "modkey", strlen("modkey"))) {
                 const char *modtype = buffer + sizeof("modkey");
-                if(!strncmp(modtype, "mod1", 4)) {
+                if(!strncmp(modtype, "mod1", strlen("mod1"))) {
                     mod = XCB_MOD_MASK_1;
-                } else if (!strncmp(modtype, "mod2", 4)) {
+                } else if (!strncmp(modtype, "mod2", strlen("mod2"))) {
                     mod = XCB_MOD_MASK_2;
-                } else if (!strncmp(modtype, "mod3", 4)) {
+                } else if (!strncmp(modtype, "mod3", strlen("mod3"))) {
                     mod = XCB_MOD_MASK_3;
-                } else if (!strncmp(modtype, "mod4", 4)) {
+                } else if (!strncmp(modtype, "mod4", strlen("mod4"))) {
                     mod = XCB_MOD_MASK_4;
                 }
             } else if(strnstr(buffer, "resizebyline", strlen("resizebyline"))) {
