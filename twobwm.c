@@ -36,6 +36,14 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
 #define WORKSPACES 10
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
+///---user config variables.---///
+uint8_t  mod;
+uint8_t  borders[4]
+uint8_t  offsets[4];
+uint16_t movements[4];
+uint32_t colors[7];
+bool     inverted_colors;
+bool     resize_by_line;
 ///---Types---///
 struct item {
     void *data;
@@ -59,11 +67,6 @@ typedef struct {
     void (*func)(const Arg *);
     const Arg arg;
 } key;
-typedef struct {
-    unsigned int mask, button;
-    void (*func)(const Arg *);
-    const Arg arg;
-} Button;
 struct sizepos {
     int16_t x, y,width,height;
 };
@@ -100,14 +103,6 @@ xcb_drawable_t top_win=0;           // Window always on top.
 struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
 struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
-///---user config variables.---///
-uint8_t  mod;
-uint8_t  borders[4];
-uint8_t  offsets[4];
-uint16_t movements[4];
-uint32_t colors[7];
-bool     inverted_colors;
-bool     resize_by_line;
 ///---Global configuration.---///
 struct conf {
     int8_t borderwidth;             // Do we draw borders for non-focused window? If so, how large?
@@ -216,12 +211,26 @@ static void movepointerback(const int16_t startx, const int16_t starty, const st
 static void snapwindow(struct client *client);
 static void readrc();
 #include "config.h"
+static const struct {
+    unsigned int mask, button;
+    void (*func)(const Arg *);
+    const Arg arg;
+} buttons[] = {
+    {  mod ,        XCB_BUTTON_INDEX_1,  mousemotion,       {.i = TWOBWM_MOVE}},
+    {  mod ,        XCB_BUTTON_INDEX_3,  mousemotion,       {.i = TWOBWM_RESIZE}},
+    {  mod |CONTROL,XCB_BUTTON_INDEX_3,  start,             {.com = menucmd}},
+};
 #define DESKTOPCHANGE(K,N) \
 {  mod ,              K,             changeworkspace,   {.i = N}}, \
 {  mod |SHIFT,        K,             sendtoworkspace,   {.i = N}},
-key keys[] = {
-    {  mod ,              XK_k,          focusnext,         {.i = 0}},
-    {  mod |SHIFT,        XK_k,          focusnext,         {.i = 1}},
+static const struct {
+    unsigned int mod;
+    xcb_keysym_t keysym;
+    void (*func)(const Arg *);
+    const Arg arg;
+} keys[] = {
+    {  mod ,              XK_k,          focusnext,         {.i=0}},
+    {  mod |SHIFT,        XK_k,          focusnext,         {.i=1}},
     {  mod ,              XK_x,          deletewin,         {.i=0}},        
     {  mod |SHIFT,        XK_n,/*h*/     resizestep,        {.i=0}},
     {  mod |SHIFT,        XK_e,/*j*/     resizestep,        {.i=1}},
@@ -239,11 +248,11 @@ key keys[] = {
     {  mod |CONTROL,      XK_e,          movestep,          {.i=5}},
     {  mod |CONTROL,      XK_i,          movestep,          {.i=6}},
     {  mod |CONTROL,      XK_o,          movestep,          {.i=7}},
-    {  mod ,              XK_d,          teleport,          {.i = 0}},
-    {  mod ,              XK_a,          teleport,          {.i = 2}},
-    {  mod ,              XK_t,          teleport,          {.i = -2}},
-    {  mod ,              XK_r,          teleport,          {.i = 1}},
-    {  mod ,              XK_s,          teleport,          {.i = -1}},
+    {  mod ,              XK_d,          teleport,          {.i=0}},
+    {  mod ,              XK_a,          teleport,          {.i=2}},
+    {  mod ,              XK_t,          teleport,          {.i=-2}},
+    {  mod ,              XK_r,          teleport,          {.i=1}},
+    {  mod ,              XK_s,          teleport,          {.i=-1}},
     {  mod ,              XK_w,          resizestep_aspect,{.i=0}},
     {  mod ,              XK_q,          resizestep_aspect,{.i=1}},
     {  mod ,              XK_m,          maximize,          {.i=0}},
@@ -283,11 +292,7 @@ key keys[] = {
     DESKTOPCHANGE(        XK_2,                             1)
     DESKTOPCHANGE(        XK_3,                             2)
     DESKTOPCHANGE(        XK_4,                             3)
-    DESKTOPCHANGE(        XK_5,                             4)};
-Button buttons[] = {
-    {  mod ,        XCB_BUTTON_INDEX_1,  mousemotion,       {.i = TWOBWM_MOVE}},
-    {  mod ,        XCB_BUTTON_INDEX_3,  mousemotion,       {.i = TWOBWM_RESIZE}},
-    {  mod |CONTROL,XCB_BUTTON_INDEX_3,  start,             {.com = menucmd}},
+    DESKTOPCHANGE(        XK_5,                             4)
 };
 
 ///---Function bodies---///

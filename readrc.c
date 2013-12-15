@@ -134,6 +134,7 @@ int main()
         printf("%.6x\n", colors[i]);
     }
     if (inverted_colors) printf("invert colors enabled\n");
+    else printf("invert colors disabled\n");
     printf("==================\n");
     for(int i=0;i<4;i++) {
         printf("%d\n", offsets[i]);
