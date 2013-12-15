@@ -2,7 +2,7 @@
  * over the XCB library and derived from mcwm written by Michael Cardell.
  * Heavily modified version of http://www.hack.org/mc/hacks/mcwm/
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at the domain hack.org.
- * Copyright (c) 2013 Patrick Louis and Youri Mouton, patrick or beastie at the domain unixhub.net.
+ * Copyright (c) 2013 Patrick Louis and Youri Mouton, patrick or yrmt at the domain unixhub.net.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -38,7 +38,7 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---user config variables.---///
 uint8_t  mod;
-uint8_t  borders[4]
+uint8_t  borders[4];
 uint8_t  offsets[4];
 uint16_t movements[4];
 uint32_t colors[7];
@@ -61,12 +61,6 @@ typedef union {
     const char** com;
     const int8_t i;
 } Arg;
-typedef struct {
-    unsigned int mod;
-    xcb_keysym_t keysym;
-    void (*func)(const Arg *);
-    const Arg arg;
-} key;
 struct sizepos {
     int16_t x, y,width,height;
 };
@@ -211,7 +205,7 @@ static void movepointerback(const int16_t startx, const int16_t starty, const st
 static void snapwindow(struct client *client);
 static void readrc();
 #include "config.h"
-static const struct {
+struct {
     unsigned int mask, button;
     void (*func)(const Arg *);
     const Arg arg;
@@ -223,7 +217,7 @@ static const struct {
 #define DESKTOPCHANGE(K,N) \
 {  mod ,              K,             changeworkspace,   {.i = N}}, \
 {  mod |SHIFT,        K,             sendtoworkspace,   {.i = N}},
-static const struct {
+struct {
     unsigned int mod;
     xcb_keysym_t keysym;
     void (*func)(const Arg *);
@@ -464,7 +458,7 @@ void check_name(struct client *client)
     }
     char *wm_name_window = xcb_get_property_value(reply);
     if(NULL!=reply) free(reply);
-    for(int i=0;i<sizeof(ignore_names)/sizeof(typeof(*ignore_names));i++)
+    for(int i=0;i<sizeof(ignore_names)/sizeof(__typeof__(*ignore_names));i++)
         if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
             client->ignore_borders = true;
             uint32_t values[1]     = {0};
