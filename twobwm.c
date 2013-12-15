@@ -37,7 +37,8 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define WORKSPACES 10
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---user config variables.---///
-uint8_t  mod;
+//uint8_t  mod;
+#define mod XCB_MOD_MASK_4
 uint8_t  borders[4];
 uint8_t  offsets[4];
 uint16_t movements[4];
@@ -62,7 +63,7 @@ typedef union {
     const int8_t i;
 } Arg;
 typedef struct {
-    unsigned int mod;
+    uint8_t mod;
     xcb_keysym_t keysym;
     void (*func)(const Arg *);
     const Arg arg;
@@ -1952,7 +1953,7 @@ bool setup(int scrno)
     xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
 
     /* Set default config variables */
-    mod = XCB_MOD_MASK_4;
+    //mod = XCB_MOD_MASK_4;
     movements[0] = 10; movements[1] = 40; movements[2] = 14, movements[3] = 400;
     offsets[0] = 0; offsets[1] = 0; offsets[2] = 0; offsets[3] = 0;
     borders[0] = 0; borders[2] = 5; borders[2] = 5; borders[3] = 5;

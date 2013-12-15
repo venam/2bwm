@@ -122,29 +122,29 @@ void readrc() {
     fclose(rcfile);
 }
 
-
-int main()
-{
-    readrc();
-    for(int i=0;i<4;i++) {
-        printf("%d\n", borders[i]);
-    }
-    printf("==================\n");
-    for(int i=0;i<7;i++) {
-        printf("%.6x\n", colors[i]);
-    }
-    if (inverted_colors) printf("invert colors enabled\n");
-    else printf("invert colors disabled\n");
-    printf("==================\n");
-    for(int i=0;i<4;i++) {
-        printf("%d\n", offsets[i]);
-    }
-    printf("==================\n");
-    for(int i=0;i<4;i++) {
-        printf("%d\n", movements[i]);
-    }
-    printf("==================\n");
-    printf("mod key: %d\n", mod);
-    if (resize_by_line) printf("resize by line enabled\n");
-
-}
+//
+//int main()
+//{
+//    readrc();
+//    for(int i=0;i<4;i++) {
+//        printf("%d\n", borders[i]);
+//    }
+//    printf("==================\n");
+//    for(int i=0;i<7;i++) {
+//        printf("%.6x\n", colors[i]);
+//    }
+//    if (inverted_colors) printf("invert colors enabled\n");
+//    else printf("invert colors disabled\n");
+//    printf("==================\n");
+//    for(int i=0;i<4;i++) {
+//        printf("%d\n", offsets[i]);
+//    }
+//    printf("==================\n");
+//    for(int i=0;i<4;i++) {
+//        printf("%d\n", movements[i]);
+//    }
+//    printf("==================\n");
+//    printf("mod key: %d\n", mod);
+//    if (resize_by_line) printf("resize by line enabled\n");
+//
+//}
