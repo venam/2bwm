@@ -1,6 +1,6 @@
 CC=clang
 
-CFLAGS+=-I/usr/pkg/include \
+CFLAGS+=-std=c99 -I/usr/pkg/include \
         -DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
 
 LDFLAGS+=-L/usr/pkg/lib -lxcb -lxcb-randr -lxcb-keysyms \
