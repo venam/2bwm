@@ -50,7 +50,7 @@ void readrc() {
     } else { 
         while(fgets(buffer,sizeof buffer,rcfile) != NULL) {
             if(buffer[0] == '#') continue;
-            if(strnstr(buffer, "width", strlen("width"))) {
+            if(strnstr(buffer, "width", sizeof("width") - 1)) {
                 const char *bordertype = buffer + sizeof("width");
                 for(i=0; i<4; i++) {
                     if(!strncmp(bordertype, config[i].name, config[i].size - 1)) {
@@ -61,7 +61,7 @@ void readrc() {
                         } else borders[i] = (uint8_t)val;
                     }
                 }
-            } else if(strnstr(buffer, "color", strlen("color"))) {
+            } else if(strnstr(buffer, "color", sizeof("color") - 1)) {
                 const char *colortype = buffer + sizeof("color");
                 for (i=4; i<11; i++) {
                     if(!strncmp(colortype, config[i].name, config[i].size - 1)) {
@@ -72,13 +72,13 @@ void readrc() {
                         } else colors[i-4] = (uint32_t)val;
                     }
                 } 
-                if(!strncmp(colortype, "invert", strlen("invert"))) {
+                if(!strncmp(colortype, "invert", sizeof("invert") - 1)) {
                     const char *inverttype = colortype + sizeof("invert");
-                    if(!strncmp(inverttype, "true", strlen("true"))) {
+                    if(!strncmp(inverttype, "true", sizeof("true") - 1)) {
                         inverted_colors = true;
                     } else inverted_colors = false;
                 }
-            } else if(strnstr(buffer, "offset", strlen("offset"))) {
+            } else if(strnstr(buffer, "offset", sizeof("offset") - 1)) {
                 const char *offsettype = buffer + sizeof("offset");
                 for (i=11; i<15; i++) { 
                     if (!strncmp(offsettype, config[i].name, config[i].size - 1)) {
@@ -89,7 +89,7 @@ void readrc() {
                         } else offsets[i-11] = (uint8_t)val;
                     }
                 }
-            } else if(strnstr(buffer, "speed", strlen("speed"))) {
+            } else if(strnstr(buffer, "speed", sizeof("speed") - 1)) {
                 const char *speedtype = buffer + sizeof("speed");
                 for (i=15; i<19; i++) { 
                     if (!strncmp(speedtype, config[i].name, config[i].size - 1)) {
@@ -100,20 +100,20 @@ void readrc() {
                         } else movements[i-15] = (uint8_t)val;
                     }
                 }
-            } else if(strnstr(buffer, "modkey", strlen("modkey"))) {
+            } else if(strnstr(buffer, "modkey", sizeof("modkey") - 1)) {
                 const char *modtype = buffer + sizeof("modkey");
-                if(!strncmp(modtype, "mod1", strlen("mod1"))) {
+                if(!strncmp(modtype, "mod1", sizeof("mod1") - 1)) {
                     mod = XCB_MOD_MASK_1;
-                } else if (!strncmp(modtype, "mod2", strlen("mod2"))) {
+                } else if (!strncmp(modtype, "mod2", sizeof("mod2") - 1)) {
                     mod = XCB_MOD_MASK_2;
-                } else if (!strncmp(modtype, "mod3", strlen("mod3"))) {
+                } else if (!strncmp(modtype, "mod3", sizeof("mod3") - 1)) {
                     mod = XCB_MOD_MASK_3;
-                } else if (!strncmp(modtype, "mod4", strlen("mod4"))) {
+                } else if (!strncmp(modtype, "mod4", sizeof("mod4") - 1)) {
                     mod = XCB_MOD_MASK_4;
                 }
-            } else if(strnstr(buffer, "resizebyline", strlen("resizebyline"))) {
+            } else if(strnstr(buffer, "resizebyline", sizeof("resizebyline") - 1)) {
                 const char *resizebylinetype = buffer + sizeof("resizebyline");
-                if(!strncmp(resizebylinetype, "true", strlen("true"))) {
+                if(!strncmp(resizebylinetype, "true", sizeof("true") - 1)) {
                     resize_by_line = true;
                 } else resize_by_line = false;
             }
@@ -122,29 +122,29 @@ void readrc() {
     fclose(rcfile);
 }
 
-//
-//int main()
-//{
-//    readrc();
-//    for(int i=0;i<4;i++) {
-//        printf("%d\n", borders[i]);
-//    }
-//    printf("==================\n");
-//    for(int i=0;i<7;i++) {
-//        printf("%.6x\n", colors[i]);
-//    }
-//    if (inverted_colors) printf("invert colors enabled\n");
-//    else printf("invert colors disabled\n");
-//    printf("==================\n");
-//    for(int i=0;i<4;i++) {
-//        printf("%d\n", offsets[i]);
-//    }
-//    printf("==================\n");
-//    for(int i=0;i<4;i++) {
-//        printf("%d\n", movements[i]);
-//    }
-//    printf("==================\n");
-//    printf("mod key: %d\n", mod);
-//    if (resize_by_line) printf("resize by line enabled\n");
-//
-//}
+
+int main()
+{
+    readrc();
+    for(int i=0;i<4;i++) {
+        printf("%d\n", borders[i]);
+    }
+    printf("==================\n");
+    for(int i=0;i<7;i++) {
+        printf("%.6x\n", colors[i]);
+    }
+    if (inverted_colors) printf("invert colors enabled\n");
+    else printf("invert colors disabled\n");
+    printf("==================\n");
+    for(int i=0;i<4;i++) {
+        printf("%d\n", offsets[i]);
+    }
+    printf("==================\n");
+    for(int i=0;i<4;i++) {
+        printf("%d\n", movements[i]);
+    }
+    printf("==================\n");
+    printf("mod key: %d\n", mod);
+    if (resize_by_line) printf("resize by line enabled\n");
+
+}
