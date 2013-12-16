@@ -14,7 +14,6 @@ uint32_t colors[7];
 bool resize_by_line;
 bool inverted_colors;
 float resize_keep_aspect_ratio;
-float val1;
 static const struct { 
     const char *name;
     size_t size;
@@ -120,11 +119,11 @@ void readrc() {
                 } else resize_by_line = false;
             } else if(strnstr(buffer, "aspect_ratio", sizeof("aspect_ratio") - 1)) {
                 const char *aspectratiotype = buffer + sizeof("aspect_ratio");
-                val1 = strtof(aspectratiotype, NULL);
+                resize_keep_aspect_ratio = strtof(aspectratiotype, NULL);
                 if(errno != 0) {
                     printf("config error: wrong aspect ratio value.\n");
                     exit(EXIT_FAILURE);
-                } else resize_keep_aspect_ratio = val1;
+                }
             }
         } 
     } /* while end */
