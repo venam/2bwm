@@ -513,7 +513,7 @@ void sendtoworkspace(const Arg *arg)
 
 uint32_t getcolor(uint32_t hex) 
 {
-    return hex | 0xff000000
+    return hex | 0xff000000;
 }
 
 void forgetclient(struct client *client)
@@ -724,13 +724,15 @@ xcb_keycode_t* xcb_get_keycodes(xcb_keysym_t keysym)
 void grabkeys(void)
 {                                   // the wm should listen to key presses
     xcb_keycode_t *keycode;
-    unsigned int modifiers[] = { 0, XCB_MOD_MASK_LOCK, numlockmask, numlockmask|XCB_MOD_MASK_LOCK };
+    unsigned int modifiers[] = { 0, XCB_MOD_MASK_LOCK, numlockmask, numlockmask
+        |XCB_MOD_MASK_LOCK };
     xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
     for (unsigned int i=0; i<LENGTH(keys); i++) {
         keycode = xcb_get_keycodes(keys[i].keysym);
         for (unsigned int k=0; keycode[k] != XCB_NO_SYMBOL; k++)
             for (unsigned int m=0; m<LENGTH(modifiers); m++)
-                xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m], keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+                xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m],
+                        keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
 }
 

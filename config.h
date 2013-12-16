@@ -6,15 +6,12 @@ static const char *ignore_names[] = {"xload" };
 
 static const float resize_keep_aspect_ratio=1.03;
 
-static const char *menucmd[]  = { "open", "-a", "Finder", NULL };
-static const char *terminal[] = { "urxvt", NULL };
-static const char *dmenucmd[] = { "dnemu", NULL };
-static const char *mmenucmd[] = { "8menu", NULL };
-static const char *pausecmd[] = { "ncmpcpp", "toggle", NULL };
-static const char *nextcmd[]  = { "ncmpcpp", "next", NULL };
-static const char *prevcmd[]  = { "ncmpcpp", "prev", NULL };
-
-
+struct key {
+    unsigned int            mod;
+    KeySym                  keysym;
+    enum keyfuncid          funcid;
+    char                    *spawn_name;
+};
 enum keyfuncid {
     KF_FOCUSNEXT,
     KF_FOCUSPREV,
@@ -34,7 +31,7 @@ enum keyfuncid {
     KF_MOVESTEP_LEFT_SLOW,
     KF_MOVESTEP_DOWN_SLOW,
     KF_MOVESTEP_UP_SLOW,
-    KF_MOVESTEP_RIGHT_SLOW
+    KF_MOVESTEP_RIGHT_SLOW,
     KF_TELEPORT_TOP_LEFT,
     KF_TELEPORT_TOP_RIGHT,
     KF_TELEPORT_BOTTOM_LEFT,
@@ -96,7 +93,7 @@ enum keyfuncid {
 #define MODKEY_CONTROL       MODKEY | CONTROL
 #define MODKEY_ALT           MODKEY | ALT
 struct keyfunc {
-    char names;
+    char names[256];
     void (*func)(const Arg *);
     const Arg arg;
 } keyfuncs[KF_INVALID-1] = {
@@ -181,11 +178,11 @@ struct button{
     void (*func)(const Arg *);
     const Arg arg;
 } buttons[] = {
-    { mod  ,        XCB_BUTTON_INDEX_1,  mousemotion,       {.i = TWOBWM_MOVE}},
-    { mod  ,        XCB_BUTTON_INDEX_3,  mousemotion,       {.i = TWOBWM_RESIZE}},
-    { mod  ,        XCB_BUTTON_INDEX_3,  start,             {.com = menucmd}},
+    { mod,        XCB_BUTTON_INDEX_1,  mousemotion,       {.i = TWOBWM_MOVE}},
+    { mod,        XCB_BUTTON_INDEX_3,  mousemotion,       {.i = TWOBWM_RESIZE}},
+    { mod,        XCB_BUTTON_INDEX_3,  start,             {.com = menucmd}},
 };
-void 
+    void 
 setup_keys(void)
 {
     setkeybinding(MODKEY,              XK_k,       KF_FOCUSNEXT, NULL); 
