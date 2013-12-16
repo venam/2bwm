@@ -1967,6 +1967,13 @@ bool setup(int scrno)
     offsets[0] = 0; offsets[1] = 0; offsets[2] = 0; offsets[3] = 0;
     borders[0] = 0; borders[2] = 5; borders[2] = 5; borders[3] = 5;
     resize_keep_aspect_ratio = 1.03;
+    colors[0] = 35586c;
+    colors[1] = 333333;
+    colors[2] = 8a8c5c;
+    colors[3] = ff6666;
+    colors[4] = cc9933;
+    colors[5] = 0d131a;
+    colors[6] = 000000;
 
     inverted_colors = false;
     resize_by_line = false;

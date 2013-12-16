@@ -1,5 +1,3 @@
-//static const char *colors[] = {"#35586c","#333333","#7a8c5c",
-//                              "#ff6666","#cc9933","#0d131a","#000000"};
 static const char *ignore_names[] = {"xload" };
 #define CURSOR_MOVING 52
 #define CURSOR_RESIZING 120
