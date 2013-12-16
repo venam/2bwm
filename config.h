@@ -4,8 +4,6 @@ static const char *ignore_names[] = {"xload" };
 #define CURSOR_MOVING 52
 #define CURSOR_RESIZING 120
 
-static const float resize_keep_aspect_ratio=1.03;
-
 struct key {
     unsigned int            mod;
     KeySym                  keysym;

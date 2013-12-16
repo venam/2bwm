@@ -46,6 +46,7 @@ uint16_t movements[4];
 uint32_t colors[7];
 bool     inverted_colors;
 bool     resize_by_line;
+float    resize_keep_aspect_ratio;
 ///---Types---///
 struct item {
     void *data;
@@ -1965,6 +1966,7 @@ bool setup(int scrno)
     movements[0] = 10; movements[1] = 40; movements[2] = 14, movements[3] = 400;
     offsets[0] = 0; offsets[1] = 0; offsets[2] = 0; offsets[3] = 0;
     borders[0] = 0; borders[2] = 5; borders[2] = 5; borders[3] = 5;
+    resize_keep_aspect_ratio = 1.03;
 
     inverted_colors = false;
     resize_by_line = false;

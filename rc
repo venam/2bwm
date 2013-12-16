@@ -41,3 +41,4 @@ speed mousefast 400
 
 ## other
 resizebyline true
+aspect_ratio 1.03

@@ -13,6 +13,8 @@ uint16_t movements[4];
 uint32_t colors[7];
 bool resize_by_line;
 bool inverted_colors;
+float resize_keep_aspect_ratio;
+float val1;
 static const struct { 
     const char *name;
     size_t size;
@@ -116,8 +118,15 @@ void readrc() {
                 if(!strncmp(resizebylinetype, "true", sizeof("true") - 1)) {
                     resize_by_line = true;
                 } else resize_by_line = false;
+            } else if(strnstr(buffer, "aspect_ratio", sizeof("aspect_ratio") - 1)) {
+                const char *aspectratiotype = buffer + sizeof("aspect_ratio");
+                val1 = strtof(aspectratiotype, NULL);
+                if(errno != 0) {
+                    printf("config error: wrong aspect ratio value.\n");
+                    exit(EXIT_FAILURE);
+                } else resize_keep_aspect_ratio = val1;
             }
-        }
+        } 
     } /* while end */
     fclose(rcfile);
 }
@@ -146,5 +155,7 @@ int main()
     printf("==================\n");
     printf("mod key: %d\n", mod);
     if (resize_by_line) printf("resize by line enabled\n");
+    printf("==================\n");
+    printf("aspect_ratio: %.2f\n", resize_keep_aspect_ratio);
 
 }
