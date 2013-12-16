@@ -35,10 +35,11 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define ALT             XCB_MOD_MASK_1       /* ALT key */
 #define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
 #define WORKSPACES 10
+#define MODKEY XCB_MOD_MASK_4 /* default mod key */
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---user config variables.---///
-//uint8_t  mod;
-#define mod XCB_MOD_MASK_4
+uint8_t  mod_key = MODKEY;
+uint8_t  mod;
 uint8_t  borders[4];
 uint8_t  offsets[4];
 uint16_t movements[4];
@@ -62,17 +63,13 @@ typedef union {
     const char** com;
     const int8_t i;
 } Arg;
-typedef struct {
+struct key {
     uint8_t mod;
     xcb_keysym_t keysym;
     void (*func)(const Arg *);
     const Arg arg;
-} key;
-typedef struct {
-    unsigned int mask, button;
-    void (*func)(const Arg *);
-    const Arg arg;
-} Button;
+};
+
 struct sizepos {
     int16_t x, y,width,height;
 };
@@ -216,6 +213,7 @@ static void noborder(int16_t *temp,struct client *client, bool set_unset);
 static void movepointerback(const int16_t startx, const int16_t starty, const struct client *client);
 static void snapwindow(struct client *client);
 static void readrc();
+static void update_modkey(uint8_t mod);
 #include "config.h"
 
 ///---Function bodies---///
@@ -305,6 +303,24 @@ void updateclientlist(void)
         cl = findclient(&children[i]);
         if(NULL!=cl) addtoclientlist(cl->id);
     }
+}
+void
+update_modkey(uint8_t mod)
+{
+    int                        i;
+    struct Key                *kp;
+    
+    mod_key = mod;
+    if (kp->mod & XCB_MOD_MASK_SHIFT)
+        kp->mod = mod | XCB_MOD_MASK_SHIFT;
+    else
+        kp->mod = mod;
+    
+    for (i = 0; i < LENGTH(buttons); i++)
+        if (buttons[i].mask & XCB_MOD_MASK_SHIFT)
+            buttons[i].mask = mod | XCB_MOD_MASK_SHIFT;
+        else
+            buttons[i].mask = mod;
 }
 
 xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen)
@@ -495,19 +511,9 @@ void sendtoworkspace(const Arg *arg)
     xcb_flush(conn);
 }
 
-uint32_t getcolor(uint32_t hex)  // Get the pixel values of a named colour colstr.
-{                                   // Returns pixel values.
-    /*char strgroups[3][3] = {{hex[0], hex[1], '\0'},
-                            {hex[2], hex[3], '\0'},
-                            {hex[4], hex[5], '\0'}};
-    uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),
-                         (strtol(strgroups[1], NULL, 16)),
-                         (strtol(strgroups[2], NULL, 16))};
-    return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];*/
-    uint8_t r = (hex & 0xff);
-    uint8_t g = (hex & 0xff00);
-    uint8_t b = (hex & 0xff0000);
-    return (0xFF << 24) | ( r | g >> 8 | b >> 16);
+uint32_t getcolor(uint32_t hex) 
+{
+    return hex | 0xff000000
 }
 
 void forgetclient(struct client *client)
