@@ -184,7 +184,6 @@ static const struct {
    KF_CURSMOVE_DOWN_FAST,
    KF_CURSMOVE_RIGHT_FAST,
    KF_CURSMOVE_LEFT_FAST,
-   KF_ALWAYSONTOP,
    KF_SPAWN_CUSTOM,
    KF_EXIT,
    KF_RESTART,
@@ -268,7 +267,6 @@ static void changescreen(const Arg *arg);
 static void grabkeys(void);
 static void twobwm_restart();
 static void twobwm_exit();
-static void always_on_top();
 static bool setup_keyboard(void);
 static bool setupscreen(void);
 static int  setuprandr(void);
@@ -561,20 +559,6 @@ void changeworkspace_helper(const uint32_t ws)// Change current workspace to ws
         setfocus(findclient(&pointer->child));
         free(pointer);
     }
-}
-
-void always_on_top()
-{
-    if(focuswin==NULL) return;
-    if(top_win!=focuswin->id) {
-        struct client *cl  = NULL;
-        if (0!=top_win) cl = findclient(&top_win);
-        top_win = focuswin->id; 
-        if (NULL!=cl)  setborders(cl,false);
-        raisewindow(top_win);
-    }
-    else top_win = 0;
-    setborders(focuswin,true);
 }
 
 void fixwindow(struct client *client)
