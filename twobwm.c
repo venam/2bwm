@@ -25,7 +25,6 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
-#include "common.h"
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define BUTTONMASK      XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE
@@ -89,6 +88,42 @@ struct winconf {                    // Window configuration data.
     uint8_t      stackmode;
     xcb_window_t sibling;
 };
+
+/* user configuration */
+long val;
+uint8_t borders[4] = {0,5,5,5};
+uint8_t offsets[4] = {0,0,0,0}; 
+uint16_t movements[4] = {10,40,14,400};
+uint32_t colors[7] = { 0x35586c, 0x333333, 0x8a8c5c, 0xff6666, 0xcc9933, 0x0d131a, 0x000000 };
+bool resize_by_line = false;
+bool inverted_colors = false;
+float resize_keep_aspect_ratio = 1.03;
+static const struct { 
+    const char *name;
+    size_t size;
+} config[] = {
+    { "outerborder", sizeof("outerborder") },
+    { "normalborder", sizeof("normalborder") },
+    { "magnetborder", sizeof("magnetborder") },
+    { "resizeborder", sizeof("resizeborder") },
+    { "activeborder", sizeof("activeborder") },
+    { "inactiveborder", sizeof("inactiveborder") },
+    { "fixedborder", sizeof("fixedborder") },
+    { "unkilborder", sizeof("unkilborder") },
+    { "fixedunkilborder", sizeof("fixedunkilborder") },
+    { "outerborder", sizeof("outerborder") },
+    { "empty", sizeof("empty") },
+    { "x", sizeof("x") },
+    { "y", sizeof("y") },
+    { "height", sizeof("height") },
+    { "width", sizeof("width") },
+    { "slow", sizeof("slow") },
+    { "fast", sizeof("fast") },
+    { "mouseslow", sizeof("mouseslow") },
+    { "mousefast", sizeof("mousefast") },
+};
+
+
 /*
    struct spawn_prog {
    char                        *name;
@@ -2015,6 +2050,97 @@ void ewmh_init(void)
     if (!xcb_ewmh_init_atoms_replies(ewmh, cookie, &err)) printf("failed to init ewmh");
 }
 
+void readrc(void) {
+    FILE *rcfile;
+    char buffer[256];
+    int i;
+
+    rcfile = fopen("rc", "r");
+    if (rcfile == NULL) {
+        printf("Config file not found.\n");
+        return;
+    } else { 
+        while(fgets(buffer,sizeof buffer,rcfile) != NULL) {
+            if(buffer[0] == '#') continue;
+            if(strnstr(buffer, "width", sizeof("width") - 1)) {
+                const char *bordertype = buffer + sizeof("width");
+                for(i=0; i<4; i++) {
+                    if(!strncmp(bordertype, config[i].name, config[i].size - 1)) {
+                        val = strtol(bordertype + config[i].size, NULL, 10);
+                        if (errno != 0) {
+                            printf("config error: wrong border values\n");
+                            exit(EXIT_FAILURE);
+                        } else borders[i] = (uint8_t)val;
+                    }
+                }
+            } else if(strnstr(buffer, "color", sizeof("color") - 1)) {
+                const char *colortype = buffer + sizeof("color");
+                for (i=4; i<11; i++) {
+                    if(!strncmp(colortype, config[i].name, config[i].size - 1)) {
+                        val = strtol(colortype + config[i].size + 1, NULL, 16);
+                        if((errno != 0) || (val & ~0xffffffL)) {
+                            printf("config error: wrong color value nr.%d\n",i-4);
+                            exit(EXIT_FAILURE);
+                        } else colors[i-4] = (uint32_t)val;
+                    }
+                } 
+                if(!strncmp(colortype, "invert", sizeof("invert") - 1)) {
+                    const char *inverttype = colortype + sizeof("invert");
+                    if(!strncmp(inverttype, "true", sizeof("true") - 1)) {
+                        inverted_colors = true;
+                    } else inverted_colors = false;
+                }
+            } else if(strnstr(buffer, "offset", sizeof("offset") - 1)) {
+                const char *offsettype = buffer + sizeof("offset");
+                for (i=11; i<15; i++) { 
+                    if (!strncmp(offsettype, config[i].name, config[i].size - 1)) {
+                        val = strtol(offsettype + config[i].size, NULL, 10);
+                        if(errno != 0) {
+                            printf("config error: wrong offset value nr.%d\n",i-11);
+                            exit(EXIT_FAILURE);
+                        } else offsets[i-11] = (uint8_t)val;
+                    }
+                }
+            } else if(strnstr(buffer, "speed", sizeof("speed") - 1)) {
+                const char *speedtype = buffer + sizeof("speed");
+                for (i=15; i<19; i++) { 
+                    if (!strncmp(speedtype, config[i].name, config[i].size - 1)) {
+                        val = strtol(speedtype + config[i].size, NULL, 10);
+                        if(errno != 0) {
+                            printf("config error: wrong speed value nr.%d\n",i-15);
+                            exit(EXIT_FAILURE);
+                        } else movements[i-15] = (uint8_t)val;
+                    }
+                }
+            } /*else if(strnstr(buffer, "modkey", sizeof("modkey") - 1)) {
+                const char *modtype = buffer + sizeof("modkey");
+                if(!strncmp(modtype, "mod1", sizeof("mod1") - 1)) {
+                    mod = XCB_MOD_MASK_1;
+                } else if (!strncmp(modtype, "mod2", sizeof("mod2") - 1)) {
+                    mod = XCB_MOD_MASK_2;
+                } else if (!strncmp(modtype, "mod3", sizeof("mod3") - 1)) {
+                    mod = XCB_MOD_MASK_3;
+                } else if (!strncmp(modtype, "mod4", sizeof("mod4") - 1)) {
+                    mod = XCB_MOD_MASK_4;
+                }
+            } */else if(strnstr(buffer, "resizebyline", sizeof("resizebyline") - 1)) {
+                const char *resizebylinetype = buffer + sizeof("resizebyline");
+                if(!strncmp(resizebylinetype, "true", sizeof("true") - 1)) {
+                    resize_by_line = true;
+                } else resize_by_line = false;
+            } else if(strnstr(buffer, "aspect_ratio", sizeof("aspect_ratio") - 1)) {
+                const char *aspectratiotype = buffer + sizeof("aspect_ratio");
+                resize_keep_aspect_ratio = strtof(aspectratiotype, NULL);
+                if(errno != 0) {
+                    printf("config error: wrong aspect ratio value.\n");
+                    exit(EXIT_FAILURE);
+                }
+            }
+        } 
+    } /* while end */
+    fclose(rcfile);
+}
+
 bool setup(int scrno)
 {
     screen = xcb_screen_of_display(conn, scrno);
@@ -2032,14 +2158,15 @@ bool setup(int scrno)
         ewmh->_NET_WM_PID
     };
     xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
+
     /* read config file */
     readrc();
 
     conf.borderwidth     = borders[1];                      conf.outer_border    = borders[0];
-    conf.focuscol        = getcolor(twobwm_colors[0]);             conf.unfocuscol      = getcolor(twobwm_colors[1]);
-    conf.fixedcol        = getcolor(twobwm_colors[2]);             conf.unkillcol       = getcolor(twobwm_colors[3]);
-    conf.outer_border_col= getcolor(twobwm_colors[5]);             conf.fixed_unkil_col = getcolor(twobwm_colors[4]);
-    conf.empty_col       = getcolor(twobwm_colors[6]);
+    conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
+    conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
+    conf.outer_border_col= getcolor(colors[5]);             conf.fixed_unkil_col = getcolor(colors[4]);
+    conf.empty_col       = getcolor(colors[6]);
     for (unsigned int i=0; i<NB_ATOMS; i++)  ATOM[i] = getatom(atomnames[i][0]);
     randrbase = setuprandr();
     if (!setupscreen())    return false;
