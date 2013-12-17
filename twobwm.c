@@ -19,6 +19,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
@@ -47,6 +48,7 @@ uint32_t colors[7];
 bool     inverted_colors;
 bool     resize_by_line;
 float    resize_keep_aspect_ratio;
+long     val;
 ///---Types---///
 struct item {
     void *data;
@@ -64,13 +66,41 @@ typedef union {
     const char** com;
     const int8_t i;
 } Arg;
-struct key {
-    uint8_t mod;
+typedef struct {
+    unsigned int mod;
     xcb_keysym_t keysym;
     void (*func)(const Arg *);
     const Arg arg;
+} key;
+typedef struct {
+    unsigned int mask, button;
+    void (*func)(const Arg *);
+    const Arg arg;
+} Button;
+static const struct { 
+    const char *name;
+    size_t size;
+} config[] = {
+    { "outerborder", sizeof("outerborder") },
+    { "normalborder", sizeof("normalborder") },
+    { "magnetborder", sizeof("magnetborder") },
+    { "resizeborder", sizeof("resizeborder") },
+    { "activeborder", sizeof("activeborder") },
+    { "inactiveborder", sizeof("inactiveborder") },
+    { "fixedborder", sizeof("fixedborder") },
+    { "unkilborder", sizeof("unkilborder") },
+    { "fixedunkilborder", sizeof("fixedunkilborder") },
+    { "outerborder", sizeof("outerborder") },
+    { "empty", sizeof("empty") },
+    { "x", sizeof("x") },
+    { "y", sizeof("y") },
+    { "height", sizeof("height") },
+    { "width", sizeof("width") },
+    { "slow", sizeof("slow") },
+    { "fast", sizeof("fast") },
+    { "mouseslow", sizeof("mouseslow") },
+    { "mousefast", sizeof("mousefast") },
 };
-
 struct sizepos {
     int16_t x, y,width,height;
 };
@@ -93,6 +123,97 @@ struct winconf {                    // Window configuration data.
     uint8_t      stackmode;
     xcb_window_t sibling;
 };
+/*
+   struct spawn_prog {
+   char                        *name;
+   int                        argc;
+   char                        **argv;
+   int                        flags;
+   };
+   enum keyfuncid {
+   KF_FOCUSNEXT,
+   KF_FOCUSPREV,
+   KF_DELETEWIN,
+   KF_RESIZESTEP_LEFT,
+   KF_RESIZESTEP_DOWN,
+   KF_RESIZESTEP_UP,
+   KF_RESIZESTEP_RIGHT,
+   KF_RESIZESTEP_LEFT_SLOW,
+   KF_RESIZESTEP_DOWN_SLOW,
+   KF_RESIZESTEP_UP_SLOW,
+   KF_RESIZESTEP_RIGHT_SLOW,
+   KF_MOVESTEP_LEFT,
+   KF_MOVESTEP_DOWN,
+   KF_MOVESTEP_UP,
+   KF_MOVESTEP_RIGHT,
+   KF_MOVESTEP_LEFT_SLOW,
+   KF_MOVESTEP_DOWN_SLOW,
+   KF_MOVESTEP_UP_SLOW,
+   KF_MOVESTEP_RIGHT_SLOW,
+   KF_TELEPORT_TOP_LEFT,
+   KF_TELEPORT_TOP_RIGHT,
+   KF_TELEPORT_BOTTOM_LEFT,
+   KF_TELEPORT_BOTTOM_RIGHT,
+   KF_TELEPORT_CENTER,
+   KF_RESIZESTEP_ASPECT,
+   KF_RESIZESTEP_ASPECT_DOWN,
+   KF_MAXIMIZE,
+   KF_MAXHOR,
+   KF_MAXVERT,
+   KF_MAXHALF_TOP_LEFT,
+   KF_MAXHALF_TOP_RIGHT,
+   KF_MAXHALF_BOTTOM_LEFT,
+   KF_MAXHALF_BOTTOM_RIGHT,
+   KF_NEXTSCREEN,
+   KF_PREVSCREEN,
+   KF_RAISE,
+   KF_NEXTWS,
+   KF_PREVWS,
+   KF_HIDE,
+   KF_UNKIL,
+   KF_FIXED,
+   KF_CURSMOVE_UP,
+   KF_CURSMOVE_DOWN,
+   KF_CURSMOVE_RIGHT,
+   KF_CURSMOVE_LEFT,
+   KF_CURSMOVE_UP_FAST,
+   KF_CURSMOVE_DOWN_FAST,
+   KF_CURSMOVE_RIGHT_FAST,
+   KF_CURSMOVE_LEFT_FAST,
+   KF_ALWAYSONTOP,
+   KF_SPAWN_CUSTOM,
+   KF_EXIT,
+   KF_RESTART,
+   KF_CHANGEWS_0,
+   KF_CHANGEWS_1,
+   KF_CHANGEWS_2,
+   KF_CHANGEWS_3,
+   KF_CHANGEWS_4,
+   KF_CHANGEWS_5,
+   KF_CHANGEWS_6,
+   KF_CHANGEWS_7,
+   KF_CHANGEWS_8,
+   KF_CHANGEWS_9,
+KF_SENDTOWS_0,
+    KF_SENDTOWS_1,
+    KF_SENDTOWS_2,
+    KF_SENDTOWS_3,
+    KF_SENDTOWS_4,
+    KF_SENDTOWS_5,
+    KF_SENDTOWS_6,
+    KF_SENDTOWS_7,
+    KF_SENDTOWS_8,
+    KF_SENDTOWS_9,
+    KF_INVALID
+    };
+
+struct key {
+    uint8_t                 mod;
+    xcb_keysym_t            keysym;
+    enum keyfuncid          funcid;
+    char                    *spawn_name;
+};
+*/
 ///---Globals---///
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 static unsigned int numlockmask = 0;
@@ -213,8 +334,7 @@ static void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint
 static void noborder(int16_t *temp,struct client *client, bool set_unset);
 static void movepointerback(const int16_t startx, const int16_t starty, const struct client *client);
 static void snapwindow(struct client *client);
-static void readrc();
-static void update_modkey(uint8_t mod);
+void readrc(void);
 #include "config.h"
 
 ///---Function bodies---///
@@ -305,24 +425,6 @@ void updateclientlist(void)
         if(NULL!=cl) addtoclientlist(cl->id);
     }
 }
-void
-update_modkey(uint8_t mod)
-{
-    int                        i;
-    struct Key                *kp;
-    
-    mod_key = mod;
-    if (kp->mod & XCB_MOD_MASK_SHIFT)
-        kp->mod = mod | XCB_MOD_MASK_SHIFT;
-    else
-        kp->mod = mod;
-    
-    for (i = 0; i < LENGTH(buttons); i++)
-        if (buttons[i].mask & XCB_MOD_MASK_SHIFT)
-            buttons[i].mask = mod | XCB_MOD_MASK_SHIFT;
-        else
-            buttons[i].mask = mod;
-}
 
 xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen)
 {                                   // get screen of display
@@ -397,7 +499,10 @@ bool get_unkil_state(xcb_drawable_t win)
 void check_name(struct client *client)
 {
     if (NULL==client) return;
-    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, xcb_get_property(conn, false, client->id, getatom("_NET_WM_NAME") ,XCB_GET_PROPERTY_TYPE_ANY, 0,60), NULL);
+    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, 
+            xcb_get_property(conn, false, client->id,
+                getatom("_NET_WM_NAME") ,
+                XCB_GET_PROPERTY_TYPE_ANY, 0,60), NULL);
     if (NULL==reply ||0 == xcb_get_property_value_length(reply)){
         if (NULL!=reply) free(reply);
         return;
@@ -408,7 +513,8 @@ void check_name(struct client *client)
         if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
             client->ignore_borders = true;
             uint32_t values[1]     = {0};
-            xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
+            xcb_configure_window(conn, client->id, 
+                    XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
             break;
         }
 }
@@ -728,13 +834,13 @@ void grabkeys(void)
     unsigned int modifiers[] = { 0, XCB_MOD_MASK_LOCK, numlockmask, numlockmask
         |XCB_MOD_MASK_LOCK };
     xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-    for (unsigned int i=0; i<LENGTH(keys); i++) {
-        keycode = xcb_get_keycodes(keys[i].keysym);
-        for (unsigned int k=0; keycode[k] != XCB_NO_SYMBOL; k++)
-            for (unsigned int m=0; m<LENGTH(modifiers); m++)
-                xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m],
-                        keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    }
+    /*for (unsigned int i=0; i<LENGTH(keys); i++) {
+      keycode = xcb_get_keycodes(keys[i].keysym);
+      for (unsigned int k=0; keycode[k] != XCB_NO_SYMBOL; k++)
+      for (unsigned int m=0; m<LENGTH(modifiers); m++)
+      xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m],
+      keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+      }*/
 }
 
 bool setup_keyboard(void)
@@ -1624,9 +1730,9 @@ void handle_keypress(xcb_generic_event_t *e)
 {
     xcb_key_press_event_t *ev       = (xcb_key_press_event_t *)e;
     xcb_keysym_t           keysym   = xcb_get_keysym(ev->detail);
-    for (unsigned int i=0; i<LENGTH(keys); i++)
-        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod)==CLEANMASK(ev->state) && keys[i].func)
-            keys[i].func(&keys[i].arg);
+    /*for (unsigned int i=0; i<LENGTH(keys); i++)
+      if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod)==CLEANMASK(ev->state) && keys[i].func)
+      keys[i].func(&keys[i].arg);*/
 }
 
 void configwin(xcb_window_t win, uint16_t mask,const struct winconf *wc)
@@ -1751,9 +1857,9 @@ static void mousemotion(const Arg *arg)
     struct client example;
     raise_current_window();
 
-    if(arg->i == TWOBWM_MOVE) cursor = Create_Font_Cursor (conn, CURSOR_MOVING ); /* fleur */
+    if(arg->i == TWOBWM_MOVE) cursor = Create_Font_Cursor (conn, 52 ); /* fleur */
     else  {                   
-        cursor  = Create_Font_Cursor (conn, CURSOR_RESIZING); /* sizing */
+        cursor  = Create_Font_Cursor (conn, 120); /* sizing */
         example = create_back_win();
         xcb_map_window(conn,example.id);
     }
@@ -1803,11 +1909,11 @@ static void mousemotion(const Arg *arg)
 void buttonpress(xcb_generic_event_t *ev)
 {
     xcb_button_press_event_t *e = (xcb_button_press_event_t *)ev;
-    for (unsigned int i=0; i<LENGTH(buttons); i++)
-        if (buttons[i].func && buttons[i].button == e->detail &&CLEANMASK(buttons[i].mask) == CLEANMASK(e->state)){
-            if((focuswin==NULL) && buttons[i].func ==mousemotion) return;
-            buttons[i].func(&(buttons[i].arg));
-        }
+    /*for (unsigned int i=0; i<LENGTH(buttons); i++)
+      if (buttons[i].func && buttons[i].button == e->detail &&CLEANMASK(buttons[i].mask) == CLEANMASK(e->state)){
+      if((focuswin==NULL) && buttons[i].func ==mousemotion) return;
+      buttons[i].func(&(buttons[i].arg));
+      }*/
 }
 
 void clientmessage(xcb_generic_event_t *ev)
@@ -1928,10 +2034,100 @@ xcb_atom_t getatom(const char *atom_name) // Get a defined atom from the X serve
 void grabbuttons(struct client *c)  // set the given client to listen to button events (presses / releases)
 {
     unsigned int modifiers[] = { 0, XCB_MOD_MASK_LOCK, numlockmask, numlockmask|XCB_MOD_MASK_LOCK };
-    for (unsigned int b=0; b<LENGTH(buttons); b++)
+    for (unsigned int b=0; b<2; b++)
         for (unsigned int m=0; m<LENGTH(modifiers); m++)
             xcb_grab_button(conn, 1, c->id, XCB_EVENT_MASK_BUTTON_PRESS, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
                     screen->root, XCB_NONE, buttons[b].button, buttons[b].mask|modifiers[m]);
+}
+void readrc(void) {
+    FILE *rcfile;
+    char buffer[256];
+    int i;
+
+    rcfile = fopen("rc", "r");
+    if (rcfile == NULL) {
+        printf("Config file not found.\n");
+        return;
+    } else { 
+        while(fgets(buffer,sizeof buffer,rcfile) != NULL) {
+            if(buffer[0] == '#') continue;
+            if(strnstr(buffer, "width", sizeof("width") - 1)) {
+                const char *bordertype = buffer + sizeof("width");
+                for(i=0; i<4; i++) {
+                    if(!strncmp(bordertype, config[i].name, config[i].size - 1)) {
+                        val = strtol(bordertype + config[i].size, NULL, 10);
+                        if (errno != 0) {
+                            printf("config error: wrong border value nr.%d\n",i);
+                            exit(EXIT_FAILURE);
+                        } else borders[i] = (uint8_t)val;
+                    }
+                }
+            } else if(strnstr(buffer, "color", sizeof("color") - 1)) {
+                const char *colortype = buffer + sizeof("color");
+                for (i=4; i<11; i++) {
+                    if(!strncmp(colortype, config[i].name, config[i].size - 1)) {
+                        val = strtol(colortype + config[i].size + 1, NULL, 16);
+                        if((errno != 0) || (val & ~0xffffffL)) {
+                            printf("config error: wrong color value nr.%d\n",i-4);
+                            exit(EXIT_FAILURE);
+                        } else colors[i-4] = (uint32_t)val;
+                    }
+                } 
+                if(!strncmp(colortype, "invert", sizeof("invert") - 1)) {
+                    const char *inverttype = colortype + sizeof("invert");
+                    if(!strncmp(inverttype, "true", sizeof("true") - 1)) {
+                        inverted_colors = true;
+                    } else inverted_colors = false;
+                }
+            } else if(strnstr(buffer, "offset", sizeof("offset") - 1)) {
+                const char *offsettype = buffer + sizeof("offset");
+                for (i=11; i<15; i++) { 
+                    if (!strncmp(offsettype, config[i].name, config[i].size - 1)) {
+                        val = strtol(offsettype + config[i].size, NULL, 10);
+                        if(errno != 0) {
+                            printf("config error: wrong offset value nr.%d\n",i-11);
+                            exit(EXIT_FAILURE);
+                        } else offsets[i-11] = (uint8_t)val;
+                    }
+                }
+            } else if(strnstr(buffer, "speed", sizeof("speed") - 1)) {
+                const char *speedtype = buffer + sizeof("speed");
+                for (i=15; i<19; i++) { 
+                    if (!strncmp(speedtype, config[i].name, config[i].size - 1)) {
+                        val = strtol(speedtype + config[i].size, NULL, 10);
+                        if(errno != 0) {
+                            printf("config error: wrong speed value nr.%d\n",i-15);
+                            exit(EXIT_FAILURE);
+                        } else movements[i-15] = (uint8_t)val;
+                    }
+                }
+            } else if(strnstr(buffer, "modkey", sizeof("modkey") - 1)) {
+                const char *modtype = buffer + sizeof("modkey");
+                if(!strncmp(modtype, "mod1", sizeof("mod1") - 1)) {
+                    mod = XCB_MOD_MASK_1;
+                } else if (!strncmp(modtype, "mod2", sizeof("mod2") - 1)) {
+                    mod = XCB_MOD_MASK_2;
+                } else if (!strncmp(modtype, "mod3", sizeof("mod3") - 1)) {
+                    mod = XCB_MOD_MASK_3;
+                } else if (!strncmp(modtype, "mod4", sizeof("mod4") - 1)) {
+                    mod = XCB_MOD_MASK_4;
+                }
+            } else if(strnstr(buffer, "resizebyline", sizeof("resizebyline") - 1)) {
+                const char *resizebylinetype = buffer + sizeof("resizebyline");
+                if(!strncmp(resizebylinetype, "true", sizeof("true") - 1)) {
+                    resize_by_line = true;
+                } else resize_by_line = false;
+            } else if(strnstr(buffer, "aspect_ratio", sizeof("aspect_ratio") - 1)) {
+                const char *aspectratiotype = buffer + sizeof("aspect_ratio");
+                resize_keep_aspect_ratio = strtof(aspectratiotype, NULL);
+                if(errno != 0) {
+                    printf("config error: wrong aspect ratio value.\n");
+                    exit(EXIT_FAILURE);
+                }
+            }
+        } 
+    } /* while end */
+    fclose(rcfile);
 }
 
 void ewmh_init(void)
@@ -1967,13 +2163,13 @@ bool setup(int scrno)
     offsets[0] = 0; offsets[1] = 0; offsets[2] = 0; offsets[3] = 0;
     borders[0] = 0; borders[2] = 5; borders[2] = 5; borders[3] = 5;
     resize_keep_aspect_ratio = 1.03;
-    colors[0] = 35586c; colors[1] = 333333; colors[2] = 8a8c5c;
-    colors[3] = ff6666; colors[4] = cc9933; colors[5] = 0d131a;
-    colors[6] = 000000;
-
+    colors[0] = strtol("35586c", NULL, 16); colors[1] = strtol("333333", NULL, 16); 
+    colors[2] = strtol("8a8c5c", NULL, 16); colors[3] = strtol("ff6666", NULL, 16); 
+    colors[4] = strtol("cc9933", NULL, 16); colors[5] = strtol("0d131a", NULL, 16);
+    colors[6] = strtol("000000", NULL, 16);
     inverted_colors = false;
     resize_by_line = false;
-    readrc();
+    //readrc();
     conf.borderwidth     = borders[1];                      conf.outer_border    = borders[0];
     conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
     conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
