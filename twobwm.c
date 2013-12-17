@@ -2036,10 +2036,10 @@ bool setup(int scrno)
     readrc();
 
     conf.borderwidth     = borders[1];                      conf.outer_border    = borders[0];
-    conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
-    conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
-    conf.outer_border_col= getcolor(colors[5]);             conf.fixed_unkil_col = getcolor(colors[4]);
-    conf.empty_col       = getcolor(colors[6]);
+    conf.focuscol        = getcolor(twobwm_colors[0]);             conf.unfocuscol      = getcolor(twobwm_colors[1]);
+    conf.fixedcol        = getcolor(twobwm_colors[2]);             conf.unkillcol       = getcolor(twobwm_colors[3]);
+    conf.outer_border_col= getcolor(twobwm_colors[5]);             conf.fixed_unkil_col = getcolor(twobwm_colors[4]);
+    conf.empty_col       = getcolor(twobwm_colors[6]);
     for (unsigned int i=0; i<NB_ATOMS; i++)  ATOM[i] = getatom(atomnames[i][0]);
     randrbase = setuprandr();
     if (!setupscreen())    return false;
