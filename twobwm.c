@@ -94,7 +94,10 @@ long val;
 uint8_t borders[4] = {0,5,5,5};
 uint8_t offsets[4] = {0,0,0,0}; 
 uint16_t movements[4] = {10,40,14,400};
-uint32_t colors[7] = { 0x35586c, 0x333333, 0x8a8c5c, 0xff6666, 0xcc9933, 0x0d131a, 0x000000 };
+uint32_t colors[7] = { 
+    0x35586c, 0x333333, 0x8a8c5c, 
+    0xff6666, 0xcc9933, 0x0d131a, 0x000000 
+};
 bool resize_by_line = false;
 bool inverted_colors = false;
 float resize_keep_aspect_ratio = 1.03;
@@ -836,12 +839,12 @@ void grabkeys(void)
         |XCB_MOD_MASK_LOCK };
     xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
     for (unsigned int i=0; i<LENGTH(keys); i++) {
-      keycode = xcb_get_keycodes(keys[i].keysym);
-      for (unsigned int k=0; keycode[k] != XCB_NO_SYMBOL; k++)
-      for (unsigned int m=0; m<LENGTH(modifiers); m++)
-      xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m],
-      keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-      }
+        keycode = xcb_get_keycodes(keys[i].keysym);
+        for (unsigned int k=0; keycode[k] != XCB_NO_SYMBOL; k++)
+            for (unsigned int m=0; m<LENGTH(modifiers); m++)
+                xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m],
+                        keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    }
 }
 
 bool setup_keyboard(void)
@@ -986,8 +989,8 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
             if ((mon = findmonitor(outputs[i]))) {
                 struct client *client;
                 for (struct item *item = winlist; item != NULL; item = item->next) { /* Check all windows on this monitor
-                                                                                      * and move them to the next or to the
-                                                                                      * first monitor if there is no next. */
+                                                                                          * and move them to the next or to the
+                                                                                          * first monitor if there is no next. */
                     client = item->data;
                     if (client->monitor == mon) {
                         if (NULL == client->monitor->item->next)
@@ -1732,8 +1735,8 @@ void handle_keypress(xcb_generic_event_t *e)
     xcb_key_press_event_t *ev       = (xcb_key_press_event_t *)e;
     xcb_keysym_t           keysym   = xcb_get_keysym(ev->detail);
     for (unsigned int i=0; i<LENGTH(keys); i++)
-      if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod)==CLEANMASK(ev->state) && keys[i].func)
-      keys[i].func(&keys[i].arg);
+        if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod)==CLEANMASK(ev->state) && keys[i].func)
+            keys[i].func(&keys[i].arg);
 }
 
 void configwin(xcb_window_t win, uint16_t mask,const struct winconf *wc)
@@ -1911,10 +1914,10 @@ void buttonpress(xcb_generic_event_t *ev)
 {
     xcb_button_press_event_t *e = (xcb_button_press_event_t *)ev;
     for (unsigned int i=0; i<LENGTH(buttons); i++)
-      if (buttons[i].func && buttons[i].button == e->detail &&CLEANMASK(buttons[i].mask) == CLEANMASK(e->state)){
-      if((focuswin==NULL) && buttons[i].func ==mousemotion) return;
-      buttons[i].func(&(buttons[i].arg));
-      }
+        if (buttons[i].func && buttons[i].button == e->detail &&CLEANMASK(buttons[i].mask) == CLEANMASK(e->state)){
+            if((focuswin==NULL) && buttons[i].func ==mousemotion) return;
+            buttons[i].func(&(buttons[i].arg));
+        }
 }
 
 void clientmessage(xcb_generic_event_t *ev)
@@ -2115,27 +2118,27 @@ void readrc(void) {
             } /*else if(strnstr(buffer, "modkey", sizeof("modkey") - 1)) {
                 const char *modtype = buffer + sizeof("modkey");
                 if(!strncmp(modtype, "mod1", sizeof("mod1") - 1)) {
-                    mod = XCB_MOD_MASK_1;
+                mod = XCB_MOD_MASK_1;
                 } else if (!strncmp(modtype, "mod2", sizeof("mod2") - 1)) {
-                    mod = XCB_MOD_MASK_2;
+                mod = XCB_MOD_MASK_2;
                 } else if (!strncmp(modtype, "mod3", sizeof("mod3") - 1)) {
-                    mod = XCB_MOD_MASK_3;
+                mod = XCB_MOD_MASK_3;
                 } else if (!strncmp(modtype, "mod4", sizeof("mod4") - 1)) {
-                    mod = XCB_MOD_MASK_4;
+                mod = XCB_MOD_MASK_4;
                 }
-            } */else if(strnstr(buffer, "resizebyline", sizeof("resizebyline") - 1)) {
-                const char *resizebylinetype = buffer + sizeof("resizebyline");
-                if(!strncmp(resizebylinetype, "true", sizeof("true") - 1)) {
-                    resize_by_line = true;
-                } else resize_by_line = false;
-            } else if(strnstr(buffer, "aspect_ratio", sizeof("aspect_ratio") - 1)) {
-                const char *aspectratiotype = buffer + sizeof("aspect_ratio");
-                resize_keep_aspect_ratio = strtof(aspectratiotype, NULL);
-                if(errno != 0) {
-                    printf("config error: wrong aspect ratio value.\n");
-                    exit(EXIT_FAILURE);
+                } */else if(strnstr(buffer, "resizebyline", sizeof("resizebyline") - 1)) {
+                    const char *resizebylinetype = buffer + sizeof("resizebyline");
+                    if(!strncmp(resizebylinetype, "true", sizeof("true") - 1)) {
+                        resize_by_line = true;
+                    } else resize_by_line = false;
+                } else if(strnstr(buffer, "aspect_ratio", sizeof("aspect_ratio") - 1)) {
+                    const char *aspectratiotype = buffer + sizeof("aspect_ratio");
+                    resize_keep_aspect_ratio = strtof(aspectratiotype, NULL);
+                    if(errno != 0) {
+                        printf("config error: wrong aspect ratio value.\n");
+                        exit(EXIT_FAILURE);
+                    }
                 }
-            }
         } 
     } /* while end */
     fclose(rcfile);
@@ -2194,6 +2197,7 @@ void twobwm_restart()
     xcb_ewmh_connection_wipe(ewmh);
     if (ewmh)   free(ewmh);
     xcb_disconnect(conn);
+    printf("restarting...\n");
     execvp(TWOBWM_PATH, NULL);
 }
 
