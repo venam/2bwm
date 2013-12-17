@@ -1,44 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <stdbool.h>
-#include <xcb/xcb.h>
-
-long val;
-uint8_t mod;
-uint8_t borders[4];
-uint8_t offsets[4];
-uint16_t movements[4];
-uint32_t colors[7];
-bool resize_by_line;
-bool inverted_colors;
-float resize_keep_aspect_ratio;
-static const struct { 
-    const char *name;
-    size_t size;
-} config[] = {
-    { "outerborder", sizeof("outerborder") },
-    { "normalborder", sizeof("normalborder") },
-    { "magnetborder", sizeof("magnetborder") },
-    { "resizeborder", sizeof("resizeborder") },
-    { "activeborder", sizeof("activeborder") },
-    { "inactiveborder", sizeof("inactiveborder") },
-    { "fixedborder", sizeof("fixedborder") },
-    { "unkilborder", sizeof("unkilborder") },
-    { "fixedunkilborder", sizeof("fixedunkilborder") },
-    { "outerborder", sizeof("outerborder") },
-    { "empty", sizeof("empty") },
-    { "x", sizeof("x") },
-    { "y", sizeof("y") },
-    { "height", sizeof("height") },
-    { "width", sizeof("width") },
-    { "slow", sizeof("slow") },
-    { "fast", sizeof("fast") },
-    { "mouseslow", sizeof("mouseslow") },
-    { "mousefast", sizeof("mousefast") },
-};
-
+#include "common.h"
 void readrc() {
     FILE *rcfile;
     char buffer[256];
@@ -101,7 +61,7 @@ void readrc() {
                         } else movements[i-15] = (uint8_t)val;
                     }
                 }
-            } else if(strnstr(buffer, "modkey", sizeof("modkey") - 1)) {
+            } /*else if(strnstr(buffer, "modkey", sizeof("modkey") - 1)) {
                 const char *modtype = buffer + sizeof("modkey");
                 if(!strncmp(modtype, "mod1", sizeof("mod1") - 1)) {
                     mod = XCB_MOD_MASK_1;
@@ -112,7 +72,7 @@ void readrc() {
                 } else if (!strncmp(modtype, "mod4", sizeof("mod4") - 1)) {
                     mod = XCB_MOD_MASK_4;
                 }
-            } else if(strnstr(buffer, "resizebyline", sizeof("resizebyline") - 1)) {
+            } */else if(strnstr(buffer, "resizebyline", sizeof("resizebyline") - 1)) {
                 const char *resizebylinetype = buffer + sizeof("resizebyline");
                 if(!strncmp(resizebylinetype, "true", sizeof("true") - 1)) {
                     resize_by_line = true;
@@ -128,33 +88,4 @@ void readrc() {
         } 
     } /* while end */
     fclose(rcfile);
-}
-
-
-int main()
-{
-    readrc();
-    for(int i=0;i<4;i++) {
-        printf("%d\n", borders[i]);
-    }
-    printf("==================\n");
-    for(int i=0;i<7;i++) {
-        printf("%.6x\n", colors[i]);
-    }
-    if (inverted_colors) printf("invert colors enabled\n");
-    else printf("invert colors disabled\n");
-    printf("==================\n");
-    for(int i=0;i<4;i++) {
-        printf("%d\n", offsets[i]);
-    }
-    printf("==================\n");
-    for(int i=0;i<4;i++) {
-        printf("%d\n", movements[i]);
-    }
-    printf("==================\n");
-    printf("mod key: %d\n", mod);
-    if (resize_by_line) printf("resize by line enabled\n");
-    printf("==================\n");
-    printf("aspect_ratio: %.2f\n", resize_keep_aspect_ratio);
-
 }

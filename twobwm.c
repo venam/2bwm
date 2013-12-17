@@ -25,6 +25,7 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
+#include "common.h"
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define BUTTONMASK      XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE
@@ -38,17 +39,6 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define WORKSPACES 10
 #define MODKEY XCB_MOD_MASK_4 /* default mod key */
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
-///---user config variables.---///
-uint8_t  mod_key = MODKEY;
-uint8_t  mod;
-uint8_t  borders[4];
-uint8_t  offsets[4];
-uint16_t movements[4];
-uint32_t colors[7];
-bool     inverted_colors;
-bool     resize_by_line;
-float    resize_keep_aspect_ratio;
-long     val;
 ///---Types---///
 struct item {
     void *data;
@@ -77,30 +67,6 @@ typedef struct {
     void (*func)(const Arg *);
     const Arg arg;
 } Button;
-static const struct { 
-    const char *name;
-    size_t size;
-} config[] = {
-    { "outerborder", sizeof("outerborder") },
-    { "normalborder", sizeof("normalborder") },
-    { "magnetborder", sizeof("magnetborder") },
-    { "resizeborder", sizeof("resizeborder") },
-    { "activeborder", sizeof("activeborder") },
-    { "inactiveborder", sizeof("inactiveborder") },
-    { "fixedborder", sizeof("fixedborder") },
-    { "unkilborder", sizeof("unkilborder") },
-    { "fixedunkilborder", sizeof("fixedunkilborder") },
-    { "outerborder", sizeof("outerborder") },
-    { "empty", sizeof("empty") },
-    { "x", sizeof("x") },
-    { "y", sizeof("y") },
-    { "height", sizeof("height") },
-    { "width", sizeof("width") },
-    { "slow", sizeof("slow") },
-    { "fast", sizeof("fast") },
-    { "mouseslow", sizeof("mouseslow") },
-    { "mousefast", sizeof("mousefast") },
-};
 struct sizepos {
     int16_t x, y,width,height;
 };
@@ -834,13 +800,13 @@ void grabkeys(void)
     unsigned int modifiers[] = { 0, XCB_MOD_MASK_LOCK, numlockmask, numlockmask
         |XCB_MOD_MASK_LOCK };
     xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
-    /*for (unsigned int i=0; i<LENGTH(keys); i++) {
+    for (unsigned int i=0; i<LENGTH(keys); i++) {
       keycode = xcb_get_keycodes(keys[i].keysym);
       for (unsigned int k=0; keycode[k] != XCB_NO_SYMBOL; k++)
       for (unsigned int m=0; m<LENGTH(modifiers); m++)
       xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m],
       keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-      }*/
+      }
 }
 
 bool setup_keyboard(void)
@@ -1730,9 +1696,9 @@ void handle_keypress(xcb_generic_event_t *e)
 {
     xcb_key_press_event_t *ev       = (xcb_key_press_event_t *)e;
     xcb_keysym_t           keysym   = xcb_get_keysym(ev->detail);
-    /*for (unsigned int i=0; i<LENGTH(keys); i++)
+    for (unsigned int i=0; i<LENGTH(keys); i++)
       if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod)==CLEANMASK(ev->state) && keys[i].func)
-      keys[i].func(&keys[i].arg);*/
+      keys[i].func(&keys[i].arg);
 }
 
 void configwin(xcb_window_t win, uint16_t mask,const struct winconf *wc)
@@ -1909,11 +1875,11 @@ static void mousemotion(const Arg *arg)
 void buttonpress(xcb_generic_event_t *ev)
 {
     xcb_button_press_event_t *e = (xcb_button_press_event_t *)ev;
-    /*for (unsigned int i=0; i<LENGTH(buttons); i++)
+    for (unsigned int i=0; i<LENGTH(buttons); i++)
       if (buttons[i].func && buttons[i].button == e->detail &&CLEANMASK(buttons[i].mask) == CLEANMASK(e->state)){
       if((focuswin==NULL) && buttons[i].func ==mousemotion) return;
       buttons[i].func(&(buttons[i].arg));
-      }*/
+      }
 }
 
 void clientmessage(xcb_generic_event_t *ev)
@@ -2039,96 +2005,6 @@ void grabbuttons(struct client *c)  // set the given client to listen to button 
             xcb_grab_button(conn, 1, c->id, XCB_EVENT_MASK_BUTTON_PRESS, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
                     screen->root, XCB_NONE, buttons[b].button, buttons[b].mask|modifiers[m]);
 }
-void readrc(void) {
-    FILE *rcfile;
-    char buffer[256];
-    int i;
-
-    rcfile = fopen("rc", "r");
-    if (rcfile == NULL) {
-        printf("Config file not found.\n");
-        return;
-    } else { 
-        while(fgets(buffer,sizeof buffer,rcfile) != NULL) {
-            if(buffer[0] == '#') continue;
-            if(strnstr(buffer, "width", sizeof("width") - 1)) {
-                const char *bordertype = buffer + sizeof("width");
-                for(i=0; i<4; i++) {
-                    if(!strncmp(bordertype, config[i].name, config[i].size - 1)) {
-                        val = strtol(bordertype + config[i].size, NULL, 10);
-                        if (errno != 0) {
-                            printf("config error: wrong border value nr.%d\n",i);
-                            exit(EXIT_FAILURE);
-                        } else borders[i] = (uint8_t)val;
-                    }
-                }
-            } else if(strnstr(buffer, "color", sizeof("color") - 1)) {
-                const char *colortype = buffer + sizeof("color");
-                for (i=4; i<11; i++) {
-                    if(!strncmp(colortype, config[i].name, config[i].size - 1)) {
-                        val = strtol(colortype + config[i].size + 1, NULL, 16);
-                        if((errno != 0) || (val & ~0xffffffL)) {
-                            printf("config error: wrong color value nr.%d\n",i-4);
-                            exit(EXIT_FAILURE);
-                        } else colors[i-4] = (uint32_t)val;
-                    }
-                } 
-                if(!strncmp(colortype, "invert", sizeof("invert") - 1)) {
-                    const char *inverttype = colortype + sizeof("invert");
-                    if(!strncmp(inverttype, "true", sizeof("true") - 1)) {
-                        inverted_colors = true;
-                    } else inverted_colors = false;
-                }
-            } else if(strnstr(buffer, "offset", sizeof("offset") - 1)) {
-                const char *offsettype = buffer + sizeof("offset");
-                for (i=11; i<15; i++) { 
-                    if (!strncmp(offsettype, config[i].name, config[i].size - 1)) {
-                        val = strtol(offsettype + config[i].size, NULL, 10);
-                        if(errno != 0) {
-                            printf("config error: wrong offset value nr.%d\n",i-11);
-                            exit(EXIT_FAILURE);
-                        } else offsets[i-11] = (uint8_t)val;
-                    }
-                }
-            } else if(strnstr(buffer, "speed", sizeof("speed") - 1)) {
-                const char *speedtype = buffer + sizeof("speed");
-                for (i=15; i<19; i++) { 
-                    if (!strncmp(speedtype, config[i].name, config[i].size - 1)) {
-                        val = strtol(speedtype + config[i].size, NULL, 10);
-                        if(errno != 0) {
-                            printf("config error: wrong speed value nr.%d\n",i-15);
-                            exit(EXIT_FAILURE);
-                        } else movements[i-15] = (uint8_t)val;
-                    }
-                }
-            } else if(strnstr(buffer, "modkey", sizeof("modkey") - 1)) {
-                const char *modtype = buffer + sizeof("modkey");
-                if(!strncmp(modtype, "mod1", sizeof("mod1") - 1)) {
-                    mod = XCB_MOD_MASK_1;
-                } else if (!strncmp(modtype, "mod2", sizeof("mod2") - 1)) {
-                    mod = XCB_MOD_MASK_2;
-                } else if (!strncmp(modtype, "mod3", sizeof("mod3") - 1)) {
-                    mod = XCB_MOD_MASK_3;
-                } else if (!strncmp(modtype, "mod4", sizeof("mod4") - 1)) {
-                    mod = XCB_MOD_MASK_4;
-                }
-            } else if(strnstr(buffer, "resizebyline", sizeof("resizebyline") - 1)) {
-                const char *resizebylinetype = buffer + sizeof("resizebyline");
-                if(!strncmp(resizebylinetype, "true", sizeof("true") - 1)) {
-                    resize_by_line = true;
-                } else resize_by_line = false;
-            } else if(strnstr(buffer, "aspect_ratio", sizeof("aspect_ratio") - 1)) {
-                const char *aspectratiotype = buffer + sizeof("aspect_ratio");
-                resize_keep_aspect_ratio = strtof(aspectratiotype, NULL);
-                if(errno != 0) {
-                    printf("config error: wrong aspect ratio value.\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
-        } 
-    } /* while end */
-    fclose(rcfile);
-}
 
 void ewmh_init(void)
 {
@@ -2156,20 +2032,9 @@ bool setup(int scrno)
         ewmh->_NET_WM_PID
     };
     xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
+    /* read config file */
+    readrc();
 
-    /* Set default config variables */
-    //mod = XCB_MOD_MASK_4;
-    movements[0] = 10; movements[1] = 40; movements[2] = 14, movements[3] = 400;
-    offsets[0] = 0; offsets[1] = 0; offsets[2] = 0; offsets[3] = 0;
-    borders[0] = 0; borders[2] = 5; borders[2] = 5; borders[3] = 5;
-    resize_keep_aspect_ratio = 1.03;
-    colors[0] = strtol("35586c", NULL, 16); colors[1] = strtol("333333", NULL, 16); 
-    colors[2] = strtol("8a8c5c", NULL, 16); colors[3] = strtol("ff6666", NULL, 16); 
-    colors[4] = strtol("cc9933", NULL, 16); colors[5] = strtol("0d131a", NULL, 16);
-    colors[6] = strtol("000000", NULL, 16);
-    inverted_colors = false;
-    resize_by_line = false;
-    //readrc();
     conf.borderwidth     = borders[1];                      conf.outer_border    = borders[0];
     conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
     conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);

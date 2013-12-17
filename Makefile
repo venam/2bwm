@@ -11,7 +11,9 @@ MANPREFIX=$(PREFIX)/man
 TWOBWM_PATH=${PREFIX}/bin/twobwm
 
 all: 
-	$(CC) $(CFLAGS) $(LDFLAGS) twobwm.c -o twobwm
+	$(CC) $(CFLAGS) -c readrc.c
+	$(CC) $(CFLAGS) -c twobwm.c
+	$(CC) $(CFLAGS) $(LDFLAGS) twobwm.o readrc.o -o twobwm
 
 install:
 	test -d $(DESTDIR)$(PREFIX)/bin || mkdir -p $(DESTDIR)$(PREFIX)/bin
@@ -25,4 +27,5 @@ deinstall:
 	$(RM) $(DESTDIR)$(MANPREFIX)/man1/twobwm.1
 
 clean:
-	rm twobwm
+	rm ./twobwm
+	rm ./*.o
