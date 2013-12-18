@@ -20,10 +20,10 @@ OBJS=2bwm.o
 all: $(TARGETS)
 
 2bwm: $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
+	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LDFLAGS)
 
 hidden: hidden.c
-	$(CC) $(CFLAGS) hidden.c $(LDFLAGS) -o $@
+	$(CC) -o $@ $(CFLAGS) hidden.c $(LDFLAGS)
 
 2bwm.o: 2bwm.c list.h config.h Makefile
 
