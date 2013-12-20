@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
@@ -2110,7 +2111,7 @@ void readrc(void) {
 			//if the line starts with color
 			else if(strstr(buffer, "color")) {
 				val = findConf(buffer, "color", 4, 12,16, &position_in_conf);
-				val & ~0xffffffL;
+				val &= ~0xffffffL;
 				if (position_in_conf ==11 ) {
 					inverted_colors = val? true: false;
 				}
