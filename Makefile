@@ -12,6 +12,7 @@ TWOBWM_PATH=${PREFIX}/bin/twobwm
 
 all: 
 	$(CC) $(CFLAGS) $(LDFLAGS) -o twobwm twobwm.c
+#	$(CC) -o twobwm $(CFLAGS) twobwm.c $(LDFLAGS)
 
 install:
 	test -d $(DESTDIR)$(PREFIX)/bin || mkdir -p $(DESTDIR)$(PREFIX)/bin

@@ -105,26 +105,37 @@ static const struct {
     const char *name;
     size_t size;
 } config[] = {
-    { "outerborder", sizeof("outerborder") },
-    { "normalborder", sizeof("normalborder") },
-    { "magnetborder", sizeof("magnetborder") },
-    { "resizeborder", sizeof("resizeborder") },
-    { "activeborder", sizeof("activeborder") },
-    { "inactiveborder", sizeof("inactiveborder") },
-    { "fixedborder", sizeof("fixedborder") },
-    { "unkilborder", sizeof("unkilborder") },
-    { "fixedunkilborder", sizeof("fixedunkilborder") },
-    { "outerborder", sizeof("outerborder") },
-    { "empty", sizeof("empty") },
-    { "x", sizeof("x") },
-    { "y", sizeof("y") },
-    { "height", sizeof("height") },
-    { "width", sizeof("width") },
-    { "slow", sizeof("slow") },
-    { "fast", sizeof("fast") },
-    { "mouseslow", sizeof("mouseslow") },
-    { "mousefast", sizeof("mousefast") },
+	/* 0 -> 3 */
+	{ "outerborder", sizeof("outerborder") },
+	{ "normalborder", sizeof("normalborder") },
+	{ "magnetborder", sizeof("magnetborder") },
+	{ "resizeborder", sizeof("resizeborder") },
+	/* 4 -> 11 */
+	{ "activeborder", sizeof("activeborder") },
+	{ "inactiveborder", sizeof("inactiveborder") },
+	{ "fixedborder", sizeof("fixedborder") },
+	{ "unkilborder", sizeof("unkilborder") },
+	{ "fixedunkilborder", sizeof("fixedunkilborder") },
+	{ "outerborder", sizeof("outerborder") },
+	{ "empty", sizeof("empty") },
+	/* 11 */
+	{ "invert", sizeof("invert") },
+	/* 12->15 */
+	{ "x", sizeof("x") },
+	{ "y", sizeof("y") },
+	{ "height", sizeof("height") },
+	{ "width", sizeof("width") },
+	/* 16-> 19 */
+	{ "slow", sizeof("slow") },
+	{ "fast", sizeof("fast") },
+	{ "mouseslow", sizeof("mouseslow") },
+	{ "mousefast", sizeof("mousefast") },
+	/* 20 */
+	{ "line", sizeof("line") },
+	/* 21 */
+	{ "ratio", sizeof("ratio") }
 };
+
 
 
 /*
@@ -337,6 +348,8 @@ static void noborder(int16_t *temp,struct client *client, bool set_unset);
 static void movepointerback(const int16_t startx, const int16_t starty, const struct client *client);
 static void snapwindow(struct client *client);
 void readrc(void);
+long findConf(char buffer[256],const char* starts_with,int config_start, int config_end,int size_strtol,int* position_in_conf);
+
 #include "config.h"
 
 ///---Function bodies---///
@@ -2037,92 +2050,91 @@ void ewmh_init(void)
     if (!xcb_ewmh_init_atoms_replies(ewmh, cookie, &err)) printf("failed to init ewmh");
 }
 
+long findConf(
+	char buffer[256],
+	const char* starts_with,
+	int config_start, 
+	int config_end,
+	int size_strtol,
+	int* position_in_conf) 
+{
+	long val = 0;
+	//next_words is the buffer without starts_with at the begining
+	const char *next_words = buffer + sizeof(starts_with)+2;
+	while (next_words[0] == ' ')  next_words++;
+
+	//loop the values of the config array to check if we find
+	//a corresponding conf
+	for(int i=config_start; i<config_end; i++) {
+		//if it's found
+		if(!strncmp(next_words, config[i].name, config[i].size - 1)) {
+			//convert the string to a long int
+			*position_in_conf = i;
+			val = strtol(next_words + config[i].size, NULL, size_strtol);
+			//now errno *header* is supposed to do debug check
+			if (errno != 0) {
+				printf("config error: wrong value\n");
+				exit(EXIT_FAILURE);
+			}
+			return val;
+		}
+	}
+	return val;
+}
+
+
 void readrc(void) {
     FILE *rcfile;
     char buffer[256];
-    int i;
+    int position_in_conf;
+	long val;
 
-    rcfile = fopen("rc", "r");
+    rcfile = fopen(RCLOCATION, "r");
     if (rcfile == NULL) {
-        printf("Config file not found.\n");
-        return;
-    } else { 
-        while(fgets(buffer,sizeof buffer,rcfile) != NULL) {
-            if(buffer[0] == '#') continue;
-            if(strnstr(buffer, "width", sizeof("width") - 1)) {
-                const char *bordertype = buffer + sizeof("width");
-                for(i=0; i<4; i++) {
-                    if(!strncmp(bordertype, config[i].name, config[i].size - 1)) {
-                        val = strtol(bordertype + config[i].size, NULL, 10);
-                        if (errno != 0) {
-                            printf("config error: wrong border values\n");
-                            exit(EXIT_FAILURE);
-                        } else borders[i] = (uint8_t)val;
-                    }
-                }
-            } else if(strnstr(buffer, "color", sizeof("color") - 1)) {
-                const char *colortype = buffer + sizeof("color");
-                for (i=4; i<11; i++) {
-                    if(!strncmp(colortype, config[i].name, config[i].size - 1)) {
-                        val = strtol(colortype + config[i].size + 1, NULL, 16);
-                        if((errno != 0) || (val & ~0xffffffL)) {
-                            printf("config error: wrong color value nr.%d\n",i-4);
-                            exit(EXIT_FAILURE);
-                        } else colors[i-4] = (uint32_t)val;
-                    }
-                } 
-                if(!strncmp(colortype, "invert", sizeof("invert") - 1)) {
-                    const char *inverttype = colortype + sizeof("invert");
-                    if(!strncmp(inverttype, "true", sizeof("true") - 1)) {
-                        inverted_colors = true;
-                    } else inverted_colors = false;
-                }
-            } else if(strnstr(buffer, "offset", sizeof("offset") - 1)) {
-                const char *offsettype = buffer + sizeof("offset");
-                for (i=11; i<15; i++) { 
-                    if (!strncmp(offsettype, config[i].name, config[i].size - 1)) {
-                        val = strtol(offsettype + config[i].size, NULL, 10);
-                        if(errno != 0) {
-                            printf("config error: wrong offset value nr.%d\n",i-11);
-                            exit(EXIT_FAILURE);
-                        } else offsets[i-11] = (uint8_t)val;
-                    }
-                }
-            } else if(strnstr(buffer, "speed", sizeof("speed") - 1)) {
-                const char *speedtype = buffer + sizeof("speed");
-                for (i=15; i<19; i++) { 
-                    if (!strncmp(speedtype, config[i].name, config[i].size - 1)) {
-                        val = strtol(speedtype + config[i].size, NULL, 10);
-                        if(errno != 0) {
-                            printf("config error: wrong speed value nr.%d\n",i-15);
-                            exit(EXIT_FAILURE);
-                        } else movements[i-15] = (uint8_t)val;
-                    }
-                }
-            } /*else if(strnstr(buffer, "modkey", sizeof("modkey") - 1)) {
-                const char *modtype = buffer + sizeof("modkey");
-                if(!strncmp(modtype, "mod1", sizeof("mod1") - 1)) {
-                mod = XCB_MOD_MASK_1;
-                } else if (!strncmp(modtype, "mod2", sizeof("mod2") - 1)) {
-                mod = XCB_MOD_MASK_2;
-                } else if (!strncmp(modtype, "mod3", sizeof("mod3") - 1)) {
-                mod = XCB_MOD_MASK_3;
-                } else if (!strncmp(modtype, "mod4", sizeof("mod4") - 1)) {
-                mod = XCB_MOD_MASK_4;
-                }
-                } */else if(strnstr(buffer, "resizebyline", sizeof("resizebyline") - 1)) {
-                    const char *resizebylinetype = buffer + sizeof("resizebyline");
-                    if(!strncmp(resizebylinetype, "true", sizeof("true") - 1)) {
-                        resize_by_line = true;
-                    } else resize_by_line = false;
-                } else if(strnstr(buffer, "aspect_ratio", sizeof("aspect_ratio") - 1)) {
-                    const char *aspectratiotype = buffer + sizeof("aspect_ratio");
-                    resize_keep_aspect_ratio = strtof(aspectratiotype, NULL);
-                    if(errno != 0) {
-                        printf("config error: wrong aspect ratio value.\n");
-                        exit(EXIT_FAILURE);
-                    }
-                }
+		printf("Config file not found.\n");
+		return;
+    } 
+	else { 
+		while(fgets(buffer,sizeof buffer,rcfile) != NULL) {
+			//if the first character of the line is # skip the line
+			//DEBUG
+			//printf("%s",buffer);
+			if(buffer[0] == '#') continue;
+			//if the line exactly starts with width
+			if(strstr(buffer, "width")) {
+				val = findConf(buffer,"width",0,4,10,&position_in_conf);
+				borders[position_in_conf] = (uint8_t) val;
+			} 
+			//if the line starts with color
+			else if(strstr(buffer, "color")) {
+				val = findConf(buffer, "color", 4, 12,16, &position_in_conf);
+				val & ~0xffffffL;
+				if (position_in_conf ==11 ) {
+					inverted_colors = val? true: false;
+				}
+				else {
+					colors[position_in_conf-4] = (uint32_t)val;
+				}
+			} 
+			//if the first word is offset
+			else if(strstr(buffer, "offset")) {
+				val = findConf(buffer, "offset", 12, 16, 10, &position_in_conf);
+				//printf("position: %d\n", position_in_conf);
+				offsets[position_in_conf-12] = (uint8_t)val;
+			} 
+			//if the first word is speed
+			else if(strstr(buffer, "speed")) {
+				val = findConf( buffer, "speed", 16, 20,10, &position_in_conf); 
+				movements[position_in_conf-16] = (uint16_t)val;
+			}
+			else if(strstr(buffer, "resize")) {
+				val = findConf( buffer, "line", 20, 21, 10, &position_in_conf);
+				resize_by_line = val ? true: false;
+			} 
+			else if(strstr(buffer, "aspect" )) {
+				val = findConf( buffer, "ratio", 21, 22, 10, &position_in_conf);
+				resize_keep_aspect_ratio = (float)val/100;
+			}
         } 
     } /* while end */
     fclose(rcfile);
