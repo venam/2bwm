@@ -37,6 +37,8 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
 #define WORKSPACES 10
 #define MODKEY XCB_MOD_MASK_4 /* default mod key */
+#define RCLOCATION "rc"
+
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---Types---///
 struct item {
