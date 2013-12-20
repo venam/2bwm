@@ -2111,7 +2111,7 @@ void readrc(void) {
 			//if the line starts with color
 			else if(strstr(buffer, "color")) {
 				val = findConf(buffer, "color", 4, 12,16, &position_in_conf);
-				val &= ~0xffffffL;
+				val &= 0xffffffL;
 				if (position_in_conf ==11 ) {
 					inverted_colors = val? true: false;
 				}
