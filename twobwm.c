@@ -1805,7 +1805,7 @@ xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph)
 {
     static xcb_font_t cursor_font;
     cursor_font        = xcb_generate_id (conn);
-    xcb_open_font (conn, cursor_font, strlen ("cursor"), "cursor");
+    xcb_open_font (conn, cursor_font, strnlen ("cursor", sizeof("cursor")-1), "cursor");
     xcb_cursor_t cursor = xcb_generate_id (conn);
     xcb_create_glyph_cursor (conn, cursor, cursor_font, cursor_font,glyph, glyph+1,0x3232, 0x3232, 0x3232, 0xeeee, 0xeeee, 0xeeec);
     return cursor;
@@ -2010,7 +2010,7 @@ void run(void)
 
 xcb_atom_t getatom(const char *atom_name) // Get a defined atom from the X server.
 {
-    xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0, strlen(atom_name), atom_name);
+    xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0, strnlen(atom_name, sizeof(atom_name)-1), atom_name);
     xcb_intern_atom_reply_t *rep = xcb_intern_atom_reply(conn, atom_cookie, NULL);
     /* XXX Note that we return 0 as an atom if anything goes wrong. Might become interesting.*/
     if (NULL == rep) return 0;
