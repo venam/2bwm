@@ -5,7 +5,6 @@
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
-#define LENGTH(x)       (sizeof(x)/sizeof(*x))
 #define RCLOCATION "rc"
 
 //foo prototype
@@ -68,7 +67,10 @@ long findConf(
 {
 	long val = 0;
 	//next_words is the buffer without starts_with at the begining
-	const char *next_words = buffer + sizeof(starts_with)+2;
+	const char *next_words = buffer;
+	//just go to the next space
+	while (next_words[0] != ' ')  next_words++;
+	//and ignore all the spaces
 	while (next_words[0] == ' ')  next_words++;
 
 	//loop the values of the config array to check if we find
@@ -76,8 +78,9 @@ long findConf(
 	for(int i=config_start; i<config_end; i++) {
 		//if it's found
 		if(!strncmp(next_words, config[i].name, config[i].size - 1)) {
-			//convert the string to a long int
+			//save the position
 			*position_in_conf = i;
+			//convert the string to a long int
 			val = strtol(next_words + config[i].size, NULL, size_strtol);
 			//now errno *header* is supposed to do debug check
 			if (errno != 0) {
@@ -115,7 +118,8 @@ void readrc(void) {
 			//if the line starts with color
 			else if(strstr(buffer, "color")) {
 				val = findConf(buffer, "color", 4, 12,16, &position_in_conf);
-				val &= 0xffffffL;
+				//val |= 0xff000000;
+				//val &= 0xffffffL;
 				if (position_in_conf ==11 ) {
 					inverted_colors = val? true: false;
 				}
