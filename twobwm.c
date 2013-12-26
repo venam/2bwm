@@ -321,7 +321,6 @@ static void grabbuttons(struct client *c);
 static void delfromworkspace(struct client *client, uint32_t ws);
 static void unkillablewindow(struct client *client);
 static void fixwindow(struct client *client);
-static uint32_t getcolor(uint32_t hex);
 static void forgetclient(struct client *client);
 static void forgetwin(xcb_window_t win);
 static void fitonscreen(struct client *client);
@@ -623,11 +622,6 @@ void sendtoworkspace(const Arg *arg)
     delfromworkspace(focuswin, curws);
     xcb_unmap_window(conn, focuswin->id);
     xcb_flush(conn);
-}
-
-uint32_t getcolor(uint32_t hex) 
-{
-    return hex | 0xff000000;
 }
 
 void forgetclient(struct client *client)
