@@ -15,7 +15,6 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,16 +22,12 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
-#include <sys/wait.h>
-#include <sys/select.h>
-#include <xcb/xcb.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
 
-#include <signal.h>
 
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
