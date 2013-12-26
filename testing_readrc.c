@@ -76,15 +76,20 @@ long findConf(
 	//loop the values of the config array to check if we find
 	//a corresponding conf
 	for(int i=config_start; i<config_end; i++) {
+		if (starts_with=="offset") {
+			printf("for offset %s\n", config[i].name);
+		}
 		//if it's found
 		if(!strncmp(next_words, config[i].name, config[i].size - 1)) {
+			printf("config %s %s\n", config[i].name, next_words+config[i].size);
+
 			//save the position
 			*position_in_conf = i;
 			//convert the string to a long int
 			val = strtol(next_words + config[i].size, NULL, size_strtol);
 			//now errno *header* is supposed to do debug check
 			if (errno != 0) {
-				printf("config error: wrong value\n");
+				printf("%s %s",config[i].name,"config error: wrong value\n");
 				exit(EXIT_FAILURE);
 			}
 			return val;
@@ -110,8 +115,14 @@ void readrc(void) {
 			//DEBUG
 			//printf("%s",buffer);
 			if(buffer[0] == '#') continue;
+			//if the first word is offset
+			if(strstr(buffer, "offset")) {
+				val = findConf(buffer, "offset", 12, 16, 10, &position_in_conf);
+				//printf("position: %d\n", position_in_conf);
+				offsets[position_in_conf-12] = (uint8_t)val;
+			} 
 			//if the line exactly starts with width
-			if(strstr(buffer, "width")) {
+			else if(strstr(buffer, "width")) {
 				val = findConf(buffer,"width",0,4,10,&position_in_conf);
 				borders[position_in_conf] = (uint8_t) val;
 			} 
@@ -127,12 +138,6 @@ void readrc(void) {
 					colors[position_in_conf-4] = (uint32_t)val;
 				}
 			} 
-			//if the first word is offset
-			else if(strstr(buffer, "offset")) {
-				val = findConf(buffer, "offset", 12, 16, 10, &position_in_conf);
-				//printf("position: %d\n", position_in_conf);
-				offsets[position_in_conf-12] = (uint8_t)val;
-			} 
 			//if the first word is speed
 			else if(strstr(buffer, "speed")) {
 				val = findConf( buffer, "speed", 16, 20,10, &position_in_conf); 
@@ -146,6 +151,7 @@ void readrc(void) {
 				val = findConf( buffer, "ratio", 21, 22, 10, &position_in_conf);
 				resize_keep_aspect_ratio = (float)val/100;
 			}
+
         } 
     } /* while end */
     fclose(rcfile);

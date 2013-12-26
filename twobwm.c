@@ -15,17 +15,25 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <unistd.h>
-#include <string.h>
 #include <errno.h>
+#include <string.h>
 #include <signal.h>
+#include <sys/wait.h>
+#include <sys/select.h>
+#include <xcb/xcb.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
+
+#include <signal.h>
+
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define BUTTONMASK      XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE
@@ -38,7 +46,7 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
 #define WORKSPACES 10
 #define MODKEY XCB_MOD_MASK_4 /* default mod key */
-#define RCLOCATION "rc"
+#define RCLOCATION "/home/raptor/.twobwmrc"
 
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---Types---///
@@ -351,7 +359,7 @@ static void noborder(int16_t *temp,struct client *client, bool set_unset);
 static void movepointerback(const int16_t startx, const int16_t starty, const struct client *client);
 static void snapwindow(struct client *client);
 void readrc(void);
-long findConf(char buffer[256],const char* starts_with,int config_start, int config_end,int size_strtol,int* position_in_conf);
+long find_conf(char buffer[256],const char* starts_with,int config_start, int config_end,int size_strtol,int* position_in_conf);
 
 #include "config.h"
 
@@ -527,7 +535,7 @@ void check_name(struct client *client)
     }
     char *wm_name_window = xcb_get_property_value(reply);
     if(NULL!=reply) free(reply);
-    for(int i=0;i<sizeof(ignore_names)/sizeof(__typeof__(*ignore_names));i++)
+    for(unsigned int i=0;i<sizeof(ignore_names)/sizeof(__typeof__(*ignore_names));i++)
         if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
             client->ignore_borders = true;
             uint32_t values[1]     = {0};
@@ -957,7 +965,8 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
     for (int i = 0; i < len; i ++) { /* Loop through all outputs. */
         output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL);
 
-        if (output == NULL) continue;
+		if (output == NULL) continue;
+        asprintf(&name, "%.*s",xcb_randr_get_output_info_name_length(output),xcb_randr_get_output_info_name(output));
 
         if (XCB_NONE != output->crtc) {
             icookie = xcb_randr_get_crtc_info(conn, output->crtc, timestamp);
@@ -1821,7 +1830,7 @@ xcb_cursor_t Create_Font_Cursor (xcb_connection_t *conn, uint16_t glyph)
 {
     static xcb_font_t cursor_font;
     cursor_font        = xcb_generate_id (conn);
-    xcb_open_font (conn, cursor_font, strnlen ("cursor", sizeof("cursor")-1), "cursor");
+    xcb_open_font (conn, cursor_font, strlen ("cursor"), "cursor");
     xcb_cursor_t cursor = xcb_generate_id (conn);
     xcb_create_glyph_cursor (conn, cursor, cursor_font, cursor_font,glyph, glyph+1,0x3232, 0x3232, 0x3232, 0xeeee, 0xeeee, 0xeeec);
     return cursor;
@@ -1884,8 +1893,7 @@ static void mousemotion(const Arg *arg)
             case XCB_CONFIGURE_REQUEST: case XCB_MAP_REQUEST:
                 events[e->response_type & ~0x80](e);
                 break;
-            case XCB_MOTION_NOTIFY:
-                ev = (xcb_motion_notify_event_t*)e;
+            case XCB_MOTION_NOTIFY:                ev = (xcb_motion_notify_event_t*)e;
                 if (arg->i == TWOBWM_MOVE) mousemove(winx +ev->root_x-mx, winy+ev->root_y-my);
                 else                       mouseresize(&example,winw +ev->root_x-mx, winh+ev->root_y-my);
                 xcb_flush(conn);
@@ -2026,7 +2034,7 @@ void run(void)
 
 xcb_atom_t getatom(const char *atom_name) // Get a defined atom from the X server.
 {
-    xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0, strnlen(atom_name, sizeof(atom_name)-1), atom_name);
+    xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0, strlen(atom_name), atom_name);
     xcb_intern_atom_reply_t *rep = xcb_intern_atom_reply(conn, atom_cookie, NULL);
     /* XXX Note that we return 0 as an atom if anything goes wrong. Might become interesting.*/
     if (NULL == rep) return 0;
@@ -2046,14 +2054,12 @@ void grabbuttons(struct client *c)  // set the given client to listen to button 
 
 void ewmh_init(void)
 {
-    ewmh = calloc(1, sizeof(xcb_ewmh_connection_t));
-    xcb_intern_atom_cookie_t *cookie;
-    xcb_generic_error_t *err;
-    cookie = xcb_ewmh_init_atoms(conn, ewmh);
-    if (!xcb_ewmh_init_atoms_replies(ewmh, cookie, &err)) printf("failed to init ewmh");
+    if (!(ewmh = calloc(1, sizeof(xcb_ewmh_connection_t))))    printf("Fail\n");
+    xcb_intern_atom_cookie_t *cookie = xcb_ewmh_init_atoms(conn, ewmh);
+    xcb_ewmh_init_atoms_replies(ewmh, cookie, (void *)0);
 }
 
-long findConf(
+long find_conf(
 	char buffer[256],
 	const char* starts_with,
 	int config_start, 
@@ -2080,8 +2086,9 @@ long findConf(
 			val = strtol(next_words + config[i].size, NULL, size_strtol);
 			//now errno *header* is supposed to do debug check
 			if (errno != 0) {
-				printf("config error: wrong value\n");
-				exit(EXIT_FAILURE);
+				//for some weird reasons it's always giving an error
+				printf("%ld %s %s",val,config[i].name,"config error: wrong value\n");
+				//exit(EXIT_FAILURE);
 			}
 			return val;
 		}
@@ -2103,43 +2110,45 @@ void readrc(void) {
     } 
 	else { 
 		while(fgets(buffer,sizeof buffer,rcfile) != NULL) {
+			printf("color[0] %u \n", colors[0]);
+			
 			//if the first character of the line is # skip the line
 			//DEBUG
 			//printf("%s",buffer);
 			if(buffer[0] == '#') continue;
+			//if the first word is offset
+			else if(strstr(buffer, "offset")) {
+				val = find_conf(buffer, "offset", 12, 16, 10, &position_in_conf);
+				//printf("position: %d\n", position_in_conf);
+				offsets[position_in_conf-12] = val;
+			} 
 			//if the line exactly starts with width
 			if(strstr(buffer, "width")) {
-				val = findConf(buffer,"width",0,4,10,&position_in_conf);
+				val = find_conf(buffer,"width",0,4,10,&position_in_conf);
 				borders[position_in_conf] = (uint8_t) val;
 			} 
 			//if the line starts with color
 			else if(strstr(buffer, "color")) {
-				val = findConf(buffer, "color", 4, 12,16, &position_in_conf);
-				val &= 0xffffffL;
+				val = find_conf(buffer, "color", 4, 12,16, &position_in_conf);
 				if (position_in_conf ==11 ) {
 					inverted_colors = val? true: false;
 				}
 				else {
-					colors[position_in_conf-4] = (uint32_t)val;
+					colors[position_in_conf-4] = val;
+					printf("color %d %u\n",position_in_conf-4 ,colors[position_in_conf-4]);
 				}
-			} 
-			//if the first word is offset
-			else if(strstr(buffer, "offset")) {
-				val = findConf(buffer, "offset", 12, 16, 10, &position_in_conf);
-				//printf("position: %d\n", position_in_conf);
-				offsets[position_in_conf-12] = (uint8_t)val;
 			} 
 			//if the first word is speed
 			else if(strstr(buffer, "speed")) {
-				val = findConf( buffer, "speed", 16, 20,10, &position_in_conf); 
-				movements[position_in_conf-16] = (uint16_t)val;
+				val = find_conf( buffer, "speed", 16, 20,10, &position_in_conf); 
+				movements[position_in_conf-16] = val;
 			}
 			else if(strstr(buffer, "resize")) {
-				val = findConf( buffer, "line", 20, 21, 10, &position_in_conf);
+				val = find_conf( buffer, "line", 20, 21, 10, &position_in_conf);
 				resize_by_line = val ? true: false;
 			} 
 			else if(strstr(buffer, "aspect" )) {
-				val = findConf( buffer, "ratio", 21, 22, 10, &position_in_conf);
+				val = find_conf( buffer, "ratio", 21, 22, 10, &position_in_conf);
 				resize_keep_aspect_ratio = (float)val/100;
 			}
         } 
@@ -2167,12 +2176,14 @@ bool setup(int scrno)
 
     /* read config file */
     readrc();
+	printf("%u\n", colors[0]);
+	printf("%u\n", colors[1]);
 
     conf.borderwidth     = borders[1];                      conf.outer_border    = borders[0];
-    conf.focuscol        = getcolor(colors[0]);             conf.unfocuscol      = getcolor(colors[1]);
-    conf.fixedcol        = getcolor(colors[2]);             conf.unkillcol       = getcolor(colors[3]);
-    conf.outer_border_col= getcolor(colors[5]);             conf.fixed_unkil_col = getcolor(colors[4]);
-    conf.empty_col       = getcolor(colors[6]);
+    conf.focuscol        = colors[0];             conf.unfocuscol      = colors[1];
+    conf.fixedcol        = colors[2];             conf.unkillcol       = colors[3];
+    conf.outer_border_col= colors[5];             conf.fixed_unkil_col = colors[4];
+    conf.empty_col       = colors[6];
     for (unsigned int i=0; i<NB_ATOMS; i++)  ATOM[i] = getatom(atomnames[i][0]);
     randrbase = setuprandr();
     if (!setupscreen())    return false;
@@ -2200,6 +2211,7 @@ void twobwm_restart()
     xcb_ewmh_connection_wipe(ewmh);
     if (ewmh)   free(ewmh);
     xcb_disconnect(conn);
+	xcb_flush(conn);
     printf("restarting...\n");
     execvp(TWOBWM_PATH, NULL);
 }

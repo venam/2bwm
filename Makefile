@@ -3,14 +3,20 @@ CC=clang
 CFLAGS+=-std=c99 -I/usr/pkg/include \
         -DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
 
-LDFLAGS+=-L/usr/pkg/lib -lxcb -lxcb-randr -lxcb-keysyms \
+LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms \
 	 -lxcb-icccm -lxcb-util -lxcb-ewmh
 
-PREFIX=/usr/pkg
+PREFIX=/usr/local
 MANPREFIX=$(PREFIX)/man
 TWOBWM_PATH=${PREFIX}/bin/twobwm
+#for now this is shitty
+TWOBWM_CONF=\/home\/raptor
+REMOVE=echo $$HOME  | sed -s 's/\//\\\//g'
+
 
 all: 
+	sed -i 's/#define RCLOCATION .*/#define RCLOCATION "$(TWOBWM_CONF)\/.twobwmrc"/' twobwm.c
+	cp .twobwmrc $(TWOBWM_CONF)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o twobwm twobwm.c
 #	$(CC) -o twobwm $(CFLAGS) twobwm.c $(LDFLAGS)
 
@@ -27,3 +33,4 @@ deinstall:
 
 clean:
 	rm ./twobwm
+

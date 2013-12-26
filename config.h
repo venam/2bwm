@@ -1,5 +1,6 @@
 static const char *ignore_names[] = {"xload" };
 
+#define MOD XCB_MOD_MASK_4
 #define MODKEY_SHIFT         MODKEY | SHIFT
 #define MODKEY_SHIFT_CONTROL MODKEY | SHIFT | CONTROL
 #define MODKEY_CONTROL       MODKEY | CONTROL
@@ -162,84 +163,136 @@ static const char *ignore_names[] = {"xload" };
 //    setkeybinding(MODKEY,              XK_9,       KF_SENDTOWS_9, NULL);
 //}; 
 
-static const char *menucmd[]  = { "open", "-a", "Finder", NULL };
-static const char *terminal[] = { "urxvt", NULL };
-static const char *dmenucmd[] = { "dnemu", NULL };
-static const char *mmenucmd[] = { "8menu", NULL };
-static const char *pausecmd[] = { "ncmpcpp", "toggle", NULL };
-static const char *nextcmd[]  = { "ncmpcpp", "next", NULL };
-static const char *prevcmd[]  = { "ncmpcpp", "prev", NULL };
+static const char *menucmd[]   = { "/usr/bin/my_menu.sh", NULL };
+static const char *gmrun[]     = { "/usr/bin/gmrun",NULL};
+static const char *terminal[]  = { "urxvtc", NULL };
 
-#define MOD XCB_MOD_MASK_2
+
 #define DESKTOPCHANGE(K,N) \
     {  MOD ,              K,             changeworkspace,   {.i = N}}, \
     {  MOD |SHIFT,        K,             sendtoworkspace,   {.i = N}},
+
+
 static key keys[] = {
-    {  MOD ,              XK_k,          focusnext,         {.i = 0}},
-    {  MOD |SHIFT,        XK_k,          focusnext,         {.i = 1}},
-    {  MOD ,              XK_x,          deletewin,         {.i=0}},        
-    {  MOD |SHIFT,        XK_n,/*h*/     resizestep,        {.i=0}},
-    {  MOD |SHIFT,        XK_e,/*j*/     resizestep,        {.i=1}},
-    {  MOD |SHIFT,        XK_i,/*k*/     resizestep,        {.i=2}},
-    {  MOD |SHIFT,        XK_o,/*l*/     resizestep,        {.i=3}},
-    {  MOD |SHIFT|CONTROL,XK_n,          resizestep,        {.i=4}},
-    {  MOD |SHIFT|CONTROL,XK_e,          resizestep,        {.i=5}},
-    {  MOD |SHIFT|CONTROL,XK_i,          resizestep,        {.i=6}},
-    {  MOD |SHIFT|CONTROL,XK_o,          resizestep,        {.i=7}},
-    {  MOD ,              XK_n,          movestep,          {.i=0}},
-    {  MOD ,              XK_e,          movestep,          {.i=1}},
-    {  MOD ,              XK_i,          movestep,          {.i=2}},
-    {  MOD ,              XK_o,          movestep,          {.i=3}},
-    {  MOD |CONTROL,      XK_n,          movestep,          {.i=4}},
-    {  MOD |CONTROL,      XK_e,          movestep,          {.i=5}},
-    {  MOD |CONTROL,      XK_i,          movestep,          {.i=6}},
-    {  MOD |CONTROL,      XK_o,          movestep,          {.i=7}},
-    {  MOD ,              XK_d,          teleport,          {.i = 0}},
-    {  MOD ,              XK_a,          teleport,          {.i = 2}},
-    {  MOD ,              XK_t,          teleport,          {.i = -2}},
-    {  MOD ,              XK_r,          teleport,          {.i = 1}},
-    {  MOD ,              XK_s,          teleport,          {.i = -1}},
-    {  MOD ,              XK_w,          resizestep_aspect,{.i=0}},
-    {  MOD ,              XK_q,          resizestep_aspect,{.i=1}},
-    {  MOD ,              XK_m,          maximize,          {.i=0}},
-    {  MOD |CONTROL,      XK_m,          maxvert_hor,       {.i=1}},
+    /* modifier           key            function           argument */
+    // Focus to next/previous window
+    {  MOD ,              XK_Tab,        focusnext,         {.i=0}},
+    {  MOD |SHIFT,        XK_Tab,        focusnext,         {.i=1}},
+    // Kill a window
+    {  MOD ,              XK_q,          deletewin,         {.i=0}},
+    // Resize a window
+    {  MOD |SHIFT,        XK_k,          resizestep,        {.i=2}},
+    {  MOD |SHIFT,        XK_j,          resizestep,        {.i=1}},
+    {  MOD |SHIFT,        XK_l,          resizestep,        {.i=3}},
+    {  MOD |SHIFT,        XK_h,          resizestep,        {.i=0}},
+    // Resize a window slower
+    {  MOD |SHIFT|CONTROL,XK_k,          resizestep,        {.i=6}},
+    {  MOD |SHIFT|CONTROL,XK_j,          resizestep,        {.i=5}},
+    {  MOD |SHIFT|CONTROL,XK_l,          resizestep,        {.i=7}},
+    {  MOD |SHIFT|CONTROL,XK_h,          resizestep,        {.i=4}},
+    // Move a window
+    {  MOD ,              XK_k,          movestep,          {.i=2}},
+    {  MOD ,              XK_j,          movestep,          {.i=1}},
+    {  MOD ,              XK_l,          movestep,          {.i=3}},
+    {  MOD ,              XK_h,          movestep,          {.i=0}},
+    // Move a window slower
+    {  MOD |CONTROL,      XK_k,          movestep,          {.i=6}},
+    {  MOD |CONTROL,      XK_j,          movestep,          {.i=5}},
+    {  MOD |CONTROL,      XK_l,          movestep,          {.i=7}},
+    {  MOD |CONTROL,      XK_h,          movestep,          {.i=4}},
+    // Teleport the window to an area of the screen.
+    // Center:
+    {  MOD ,              XK_g,          teleport,          {.i=0}},
+    // Center y:
+    {  MOD |SHIFT,        XK_g,          teleport,          {.i=3}},
+    // Center x:
+    {  MOD |CONTROL,      XK_g,          teleport,          {.i=-3}},
+    // Top left:
+    {  MOD ,              XK_y,          teleport,          {.i=2}},
+    // Top right:
+    {  MOD ,              XK_u,          teleport,          {.i=-2}},
+    // Bottom left:
+    {  MOD ,              XK_b,          teleport,          {.i=1}},
+    // Bottom right:
+    {  MOD ,              XK_n,          teleport,          {.i=-1}},
+    // Resize while keeping the window aspect
+    {  MOD ,              XK_Home,       resizestep_aspect, {.i=0}},
+    {  MOD ,              XK_End,        resizestep_aspect, {.i=1}},
+    // Full screen window without borders
+    {  MOD ,              XK_x,         maximize,          {.i=0}},
+    //Full screen window without borders overiding offsets
+    {  MOD |SHIFT ,       XK_x,          maximize,          {.i=1}},
+    // Maximize vertically
+    {  MOD ,              XK_m,          maxvert_hor,       {.i=1}},
+    // Maximize horizontally
     {  MOD |SHIFT,        XK_m,          maxvert_hor,       {.i=0}},
-    {  MOD |SHIFT,        XK_a,          maxhalf,           {.i=2}},
-    {  MOD |SHIFT,        XK_t,          maxhalf,           {.i=1}},
-    {  MOD |SHIFT,        XK_r,          maxhalf,           {.i=-1}},
-    {  MOD |SHIFT,        XK_s,          maxhalf,           {.i=-2}},
+    // Maximize and move
+    // vertically left
+    {  MOD |SHIFT,        XK_y,          maxhalf,           {.i=2}},
+    // vertically right
+    {  MOD |SHIFT,        XK_u,          maxhalf,           {.i=1}},
+    // horizontally left
+    {  MOD |SHIFT,        XK_b,          maxhalf,           {.i=-1}},
+    // horizontally right
+    {  MOD |SHIFT,        XK_n,          maxhalf,           {.i=-2}},
+    //fold half vertically
+    {  MOD |SHIFT|CONTROL,XK_y,          maxhalf,           {.i=4}},
+    //fold half horizontally
+    {  MOD |SHIFT|CONTROL,XK_b,          maxhalf,           {.i=-4}},
+    //unfold vertically
+    {  MOD |SHIFT|CONTROL,XK_u,          maxhalf,           {.i=3}},
+    //unfold horizontally
+    {  MOD |SHIFT|CONTROL,XK_n,          maxhalf,           {.i=-3}},
+    // Next/Previous screen
     {  MOD ,              XK_comma,      changescreen,      {.i=1}},
     {  MOD ,              XK_period,     changescreen,      {.i=0}},
-    {  MOD ,              XK_h,          raiseorlower,      {.i=0}},
+    // Raise or lower a window
+    {  MOD ,              XK_r,          raiseorlower,      {.i=0}},
+    // Next/Previous workspace
     {  MOD ,              XK_v,          nextworkspace,     {.i=0}},
     {  MOD ,              XK_c,          prevworkspace,     {.i=0}},
-    {  MOD ,              XK_l,          hide,              {.i=0}},
-    {  MOD ,              XK_u,          unkillable,        {.i=0}},
+    // Iconify the window
+    {  MOD ,              XK_i,          hide,              {.i=0}},
+    // Make the window unkillable
+    {  MOD ,              XK_a,          unkillable,        {.i=0}},
+    // Make the window stay on all workspaces
     {  MOD ,              XK_f,          fix,               {.i=0}},
+    // Move the cursor
     {  MOD ,              XK_Up,         cursor_move,       {.i=4}},
     {  MOD ,              XK_Down,       cursor_move,       {.i=5}},
     {  MOD ,              XK_Right,      cursor_move,       {.i=6}},
     {  MOD ,              XK_Left,       cursor_move,       {.i=7}},
+    // Move the cursor faster
     {  MOD |SHIFT,        XK_Up,         cursor_move,       {.i=0}},
     {  MOD |SHIFT,        XK_Down,       cursor_move,       {.i=1}},
     {  MOD |SHIFT,        XK_Right,      cursor_move,       {.i=2}},
     {  MOD |SHIFT,        XK_Left,       cursor_move,       {.i=3}},
+    // Start programs
     {  MOD ,              XK_Return,     start,             {.com = terminal}},
-    {  MOD ,              XK_y,          start,             {.com = menucmd}},
-    {  MOD ,              XK_p,          start,             {.com = dmenucmd}},
-    {  MOD ,              XK_g,          start,             {.com = mmenucmd}},
-    {  MOD ,              XK_F8,         start,             {.com = pausecmd}},
-    {  MOD ,              XK_F9,         start,             {.com = nextcmd}},
-    {  MOD ,              XK_F7,         start,             {.com = prevcmd}},
-    {  MOD |CONTROL,      XK_q,          twobwm_exit,       {.i=0}},
-    {  MOD |CONTROL,      XK_r,          twobwm_restart,    {.i=0}},
-    DESKTOPCHANGE(        XK_1,                             0)
-    DESKTOPCHANGE(        XK_2,                             1)
-    DESKTOPCHANGE(        XK_3,                             2)
-    DESKTOPCHANGE(        XK_4,                             3)
-    DESKTOPCHANGE(        XK_5,                             4)};
-static Button buttons[] = {
-    {  MOD ,        XCB_BUTTON_INDEX_1,  mousemotion,       {.i = TWOBWM_MOVE}},
-    {  MOD ,        XCB_BUTTON_INDEX_3,  mousemotion,       {.i = TWOBWM_RESIZE}},
-    {  MOD |CONTROL,XCB_BUTTON_INDEX_3,  start,             {.com = menucmd}},
+    {  MOD ,              XK_w,          start,             {.com = menucmd}},
+    {  MOD |SHIFT,        XK_w,          start,             {.com = gmrun}},
+    // Exit or restart 2bwm
+    {  MOD |CONTROL,      XK_q,          twobwm_exit,         {.i=0}},
+    {  MOD |CONTROL,      XK_r,          twobwm_restart,      {.i=0}},
+    // Change current workspace
+       DESKTOPCHANGE(     XK_1,                             0)
+       DESKTOPCHANGE(     XK_2,                             1)
+       DESKTOPCHANGE(     XK_3,                             2)
+       DESKTOPCHANGE(     XK_4,                             3)
+       DESKTOPCHANGE(     XK_5,                             4)
+       DESKTOPCHANGE(     XK_6,                             5)
+       DESKTOPCHANGE(     XK_7,                             6)
+       DESKTOPCHANGE(     XK_8,                             7)
+       DESKTOPCHANGE(     XK_9,                             8)
+       DESKTOPCHANGE(     XK_0,                             9)
 };
+static Button buttons[] = {
+    {  MOD        ,XCB_BUTTON_INDEX_1,     mousemotion,   {.i=TWOBWM_MOVE}},
+    {  MOD        ,XCB_BUTTON_INDEX_3,     mousemotion,   {.i=TWOBWM_RESIZE}},
+    {  MOD|CONTROL,XCB_BUTTON_INDEX_3,     start,         {.com = menucmd}},
+    {  MOD|SHIFT,  XCB_BUTTON_INDEX_1,     changeworkspace, {.i=0}},
+    {  MOD|SHIFT,  XCB_BUTTON_INDEX_3,     changeworkspace, {.i=1}},
+    {  MOD|ALT,    XCB_BUTTON_INDEX_1,     changescreen,    {.i=1}},
+    {  MOD|ALT,    XCB_BUTTON_INDEX_3,     changescreen,    {.i=0}}
+};
+
