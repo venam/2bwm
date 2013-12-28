@@ -9,14 +9,10 @@ LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms \
 PREFIX=/usr/local
 MANPREFIX=$(PREFIX)/man
 TWOBWM_PATH=${PREFIX}/bin/twobwm
-#for now this is shitty
-TWOBWM_CONF=\/home\/raptor
-REMOVE=echo $$HOME  | sed -s 's/\//\\\//g'
 
 
 all: 
-	sed -i 's/#define RCLOCATION .*/#define RCLOCATION "$(TWOBWM_CONF)\/.twobwmrc"/' twobwm.c
-	cp .twobwmrc $(TWOBWM_CONF)
+	./prepare_conf.sh
 	$(CC) $(CFLAGS) $(LDFLAGS) -o twobwm twobwm.c
 #	$(CC) -o twobwm $(CFLAGS) twobwm.c $(LDFLAGS)
 

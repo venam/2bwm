@@ -1,0 +1,47 @@
+######
+#
+# twobwm config file
+#
+######
+
+## mod key 
+# alt = mod1
+# winkey = mod4
+# osx cmd = mod2
+# See xmodmap.
+#modkey mod2
+#
+### Border width
+width outerborder 2
+width normalborder 5
+width magnetborder 5
+width resizeborder 5
+
+## Colors
+color activeborder 35586c
+color inactiveborder 333333
+color fixedborder 7a8c5c
+color unkilborder ff6666
+color fixedunkilborder cc9933
+color outerborder 0d131a
+color empty 000000
+color invert 1
+##color invert true
+#
+### offsets
+offset x 12
+offset y 10
+offset height 0
+offset width 0
+#
+### movements
+speed slow 20
+speed fast 40
+speed mouseslow 25
+speed mousefast 400
+#
+### other
+resize line 1
+#number/100
+aspect ratio 104
+
