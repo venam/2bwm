@@ -12,7 +12,7 @@ LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util
 RM=/bin/rm
 
 PREFIX=/usr/local
-MANPREFIX=$(PREFIX)/man
+MANPREFIX=$(PREFIX)/share/man
 
 TARGETS=2bwm hidden
 OBJS=2bwm.o
@@ -29,11 +29,11 @@ hidden: hidden.c
 
 install: $(TARGETS)
 	test -d $(DESTDIR)$(PREFIX)/bin || mkdir -p $(DESTDIR)$(PREFIX)/bin
-	install -m 755 2bwm $(DESTDIR)$(PREFIX)/bin
-	install -m 755 hidden $(DESTDIR)$(PREFIX)/bin
+	install -pm755 2bwm $(DESTDIR)$(PREFIX)/bin
+	install -pm755 hidden $(DESTDIR)$(PREFIX)/bin
 	test -d $(DESTDIR)$(MANPREFIX)/man1 || mkdir -p $(DESTDIR)$(MANPREFIX)/man1
-	install -m 644 2bwm.man $(DESTDIR)$(MANPREFIX)/man1/2bwm.1
-	install -m 644 hidden.man $(DESTDIR)$(MANPREFIX)/man1/hidden.1
+	install -pm644 2bwm.man $(DESTDIR)$(MANPREFIX)/man1/2bwm.1
+	install -pm644 hidden.man $(DESTDIR)$(MANPREFIX)/man1/hidden.1
 
 uninstall: deinstall
 deinstall:
