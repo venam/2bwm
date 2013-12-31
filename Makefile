@@ -18,9 +18,9 @@ all:
 
 install:
 	test -d $(DESTDIR)$(PREFIX)/bin || mkdir -p $(DESTDIR)$(PREFIX)/bin
-	install -m 755 twobwm $(DESTDIR)$(PREFIX)/bin
+	install -pm 755 twobwm $(DESTDIR)$(PREFIX)/bin
 	test -d $(DESTDIR)$(MANPREFIX)/man1 || mkdir -p $(DESTDIR)$(MANPREFIX)/man1
-	install -m 644 twobwm.man $(DESTDIR)$(MANPREFIX)/man1/twobwm.1
+	install -pm 644 twobwm.man $(DESTDIR)$(MANPREFIX)/man1/twobwm.1
 
 uninstall: deinstall
 deinstall:
