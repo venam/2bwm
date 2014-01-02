@@ -1,23 +1,22 @@
 #!/bin/sh
 
-echo -e "\n\n[*] Preparing config file (.twobwmrc) location"
+echo "[*] Preparing config file (.twobwmrc) location"
 
 REMOVE=$(echo $HOME  | sed -s 's/\//\\\//g')
 sed -i "s/#define RCLOCATION .*/#define RCLOCATION \"$REMOVE\/.twobwmrc\"/" twobwm.c
 
 
-echo -e "[*] Checking if .twobwmrc is present in the home directory"
+echo "[*] Checking if .twobwmrc is present in the home directory"
 
-ISTHERE=$(ls -a $HOME| grep '.twobwmrc')
-if [ "$ISTHERE" == "" ];
+if [ -f $HOME/.twobwmrc ];
 then
-	echo -e "[-] Config file not found in home directory"
-	echo -e "[+] Copying default config file into the home directory"
-	cp .twobwmrc $HOME
+	echo "[+] Config file already present in home directory"
 else
-	echo -e "[+] Config file already present in home directory"
+	echo "[-] Config file not found in home directory"
+	echo "[+] Copying default config file into the home directory"
+	cp .twobwmrc $HOME
 fi
 
-echo -e "[*] Now Compiling\n\n"
+echo "[*] Now Compiling"
 
 
