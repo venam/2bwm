@@ -50,8 +50,7 @@ Now comparing Memory ressource usage. (in KB)
 mcwm -- the wm 2bwm is based upon  
 dvtm -- a terminal multiplexer  
 ```
-
- ~ > ps -eo args,size,vsize,rss | grep -P "(^mcwm|^2bwm|^bspwm|^dwm|^monsterwm|^openbox|^dvtm|^fbpanel|^cwm|^ctwm|^herbs)"
+ ~ > ps -eo args,size,vsize,rss 
  mcwm                          300   2480   668
  2bwm                          300   2536   680
  9wm                           296   3816  1160
@@ -62,6 +61,8 @@ dvtm -- a terminal multiplexer
  herbstluftwm                  316   5536  1844
  herbstclient --idle           312   5204  1224
  ctwm                          708   7112  2360
+ twm                           964   6820  2552
+ i3                           1400  14760  4248
  openbox                      1952  16412  736
  dvtm                         5624   9656  6256
  fbpanel                      3460 135928 14012
