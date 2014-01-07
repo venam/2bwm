@@ -28,7 +28,6 @@ static const bool inverted_colors = false;
  *3) Resize border size  */
 static const uint8_t borders[] = {2,5,9,9};
 /* Windows that won't have a border.*/
-#define NB_NAMES 1
 #define LOOK_INTO "_NET_WM_NAME"
 static const char *ignore_names[] = {"bar"};
 ///--Menus and Programs---///
