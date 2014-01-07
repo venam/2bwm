@@ -2,7 +2,7 @@
  * over the XCB library and derived from mcwm written by Michael Cardell.
  * Heavily modified version of http://www.hack.org/mc/hacks/mcwm/
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at the domain hack.org.
- * Copyright (c) 2013 Patrick Louis and Youri Mouton, patrick or beastie at the domain unixhub.net.
+ * Copyright (c) 2013 Patrick Louis and Youri Mouton, patrick or yrmt at the domain unixhub.net.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,24 +15,20 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/select.h>
-#include <xcb/xcb.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
 #include "list.h"
-#include <signal.h>
 
 ///---Internal Constants---///
 enum {TWOBWM_MOVE,TWOBWM_RESIZE};
@@ -207,7 +203,7 @@ static void sigcatch(const int sig);
 static void ewmh_init(void);
 static xcb_atom_t getatom(const char *atom_name);
 static void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *mon_height,const struct client *client);
-static void setignoreborder(int16_t *temp,struct client *client, bool set_unset);
+static void noborder(int16_t *temp,struct client *client, bool set_unset);
 static void movepointerback(const int16_t startx, const int16_t starty, const struct client *client);
 static void snapwindow(struct client *client);
 #include "config.h"
@@ -332,7 +328,7 @@ void check_name(struct client *client)
     }
     char *wm_name_window = xcb_get_property_value(reply);
     if(NULL!=reply) free(reply);
-    for(int i=0;i<NB_NAMES;i++)
+    for(unsigned int i=0;i<sizeof(ignore_names)/sizeof(__typeof__(*ignore_names));i++)
         if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
             client->ignore_borders = true;
             uint32_t values[1]     = {0};
@@ -442,9 +438,9 @@ void sendtoworkspace(const Arg *arg)
 
 uint32_t getcolor(const char *hex)  // Get the pixel values of a named colour colstr.
 {                                   // Returns pixel values.
-    char strgroups[3][3] = {{hex[1], hex[2], '\0'},{hex[3], hex[4], '\0'},{hex[5], hex[6], '\0'}};
-    uint32_t rgb16[3] = {(strtol(strgroups[0], NULL, 16)),(strtol(strgroups[1], NULL, 16)),(strtol(strgroups[2], NULL, 16))};
-    return (rgb16[0] << 16) + (rgb16[1] << 8) + rgb16[2];
+    char strgroups[7]    = {hex[1], hex[2], hex[3], hex[4], hex[5], hex[6], '\0'};
+    uint32_t rgb48 = strtol(strgroups, NULL, 16);
+    return rgb48 | 0xff000000;
 }
 
 void forgetclient(struct client *client)
@@ -482,7 +478,7 @@ void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *m
 	*mon_height = client->monitor->height;
 }
 
-void setignoreborder(int16_t *temp,struct client *client, bool set_unset)
+void noborder(int16_t *temp,struct client *client, bool set_unset)
 {
 	if (client->ignore_borders) {
 		if (set_unset) {
@@ -525,7 +521,7 @@ void fitonscreen(struct client *client)
         client->width = client->min_width;
         willresize = true;
     }
-    setignoreborder(&temp, client, true);
+    noborder(&temp, client, true);
     /* If the window is larger than our screen, just place it in the corner and resize. */
     if (client->width + conf.borderwidth * 2 > mon_width) {
         client->x = mon_x;
@@ -550,7 +546,7 @@ void fitonscreen(struct client *client)
 
     if (willmove)   movewindow(client->id, client->x, client->y);
     if (willresize) resize(client->id, client->width, client->height);
-    setignoreborder( &temp, client, false);
+    noborder( &temp, client, false);
 }
 
 
@@ -901,7 +897,7 @@ void movelim(struct client *client) //Keep the window inside the screen
     int16_t mon_y, mon_x,temp=0;
     uint16_t mon_height, mon_width;
     getmonsize(&mon_x, &mon_y, &mon_width, &mon_height, client);
-    setignoreborder(&temp, client,true);
+    noborder(&temp, client,true);
     /* Is it outside the physical monitor or close to the side? */
     if (client->y-conf.borderwidth < mon_y)     client->y = mon_y;
     else if (client->y < borders[2] + mon_y) client->y = mon_y;
@@ -915,7 +911,7 @@ void movelim(struct client *client) //Keep the window inside the screen
     if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
         client->y = (mon_y + mon_height - conf.borderwidth * 2) - client->height;
     movewindow(client->id, client->x, client->y);
-    setignoreborder(&temp, client,false);
+    noborder(&temp, client,false);
 }
 
 void movewindow(xcb_drawable_t win, const int16_t x, const int16_t y)
@@ -1050,7 +1046,7 @@ void resizelim(struct client *client)
     int16_t mon_x, mon_y,temp=0;
     uint16_t mon_width, mon_height;
     getmonsize( &mon_x, &mon_y, &mon_width, &mon_height, client);
-    setignoreborder(&temp, client,true);
+    noborder(&temp, client,true);
     /* Is it smaller than it wants to  be? */
     if (0 != client->min_height && client->height < client->min_height)
         client->height = client->min_height;
@@ -1061,7 +1057,7 @@ void resizelim(struct client *client)
     if (client->y + client->height + conf.borderwidth * 2 > mon_y + mon_height)
         client->height = mon_height - ((client->y - mon_y) + conf.borderwidth*2);
     resize(client->id, client->width, client->height);
-    setignoreborder(&temp, client,false);
+    noborder(&temp, client,false);
 }
 
 void moveresize(xcb_drawable_t win, const uint16_t x, const uint16_t y,const uint16_t width, const uint16_t height)
@@ -1322,7 +1318,7 @@ void maxvert_hor(const Arg *arg)
     uint16_t mon_height, mon_width;
     getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
     saveorigsize(focuswin);
-    setignoreborder(&temp, focuswin,true);
+    noborder(&temp, focuswin,true);
 
     if (arg->i>0) {
         focuswin->y = mon_y+offsets[1];
@@ -1342,7 +1338,7 @@ void maxvert_hor(const Arg *arg)
                            | XCB_CONFIG_WINDOW_WIDTH, values);
         focuswin->hormaxed = true;
     }
-    setignoreborder(&temp, focuswin,false);
+    noborder(&temp, focuswin,false);
     raise_current_window();
     centerpointer(focuswin->id,focuswin);
     setborders(focuswin,true);
@@ -1355,7 +1351,7 @@ void maxhalf(const Arg *arg)
     int16_t mon_x, mon_y,temp=0;
     uint16_t mon_width, mon_height;
     getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
-    setignoreborder(&temp, focuswin,true);
+    noborder(&temp, focuswin,true);
     if (arg->i>0) {
         if (arg->i>2) { /* in folding mode */
             if (arg->i>3) focuswin->height = focuswin->height/2 - (conf.borderwidth);
@@ -1386,7 +1382,7 @@ void maxhalf(const Arg *arg)
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT, values);
     movewindow(focuswin->id, focuswin->x, focuswin->y);
     focuswin->verthor = true;
-    setignoreborder(&temp, focuswin,false);
+    noborder(&temp, focuswin,false);
     raise_current_window();
     setborders(focuswin,true);
     fitonscreen(focuswin);
@@ -1430,7 +1426,7 @@ void teleport(const Arg *arg)
     if (!getpointer(&focuswin->id, &pointx, &pointy)) return;
     uint16_t mon_width, mon_height;
     getmonsize(&mon_x, &mon_y, &mon_width, &mon_height,focuswin);
-    setignoreborder(&temp, focuswin,true);
+    noborder(&temp, focuswin,true);
     uint16_t tmp_x = focuswin->x;  uint16_t tmp_y=  focuswin->y;
     focuswin->x = mon_x+offsets[0]; focuswin->y = mon_y;
 
@@ -1467,7 +1463,7 @@ void teleport(const Arg *arg)
     }
     movewindow(focuswin->id, focuswin->x, focuswin->y);
     movepointerback(pointx,pointy,focuswin);
-    setignoreborder(&temp, focuswin,false);
+    noborder(&temp, focuswin,false);
     raise_current_window();
     xcb_flush(conn);
 }
@@ -1680,9 +1676,9 @@ static void mousemotion(const Arg *arg)
     struct client example;
     raise_current_window();
 
-    if(arg->i == TWOBWM_MOVE) cursor = Create_Font_Cursor (conn, CURSOR_MOVING ); /* fleur */
+    if(arg->i == TWOBWM_MOVE) cursor = Create_Font_Cursor (conn, 52 ); /* fleur */
     else  {                   
-        cursor  = Create_Font_Cursor (conn, CURSOR_RESIZING); /* sizing */
+        cursor  = Create_Font_Cursor (conn, 120); /* sizing */
         example = create_back_win();
         xcb_map_window(conn,example.id);
     }
@@ -1920,9 +1916,8 @@ void twobwm_restart()
     xcb_ewmh_connection_wipe(ewmh);
     if (ewmh)   free(ewmh);
     xcb_disconnect(conn);
-    xcb_flush(conn);
-    char* argv[2] = {"",NULL};
-    execvp(twobwm_path, argv);
+
+    execvp(TWOBWM_PATH, NULL);
 }
 
 int main()
