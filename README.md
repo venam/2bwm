@@ -55,7 +55,7 @@ dvtm -- a terminal multiplexer
  2bwm                          300   2536   680
  9wm                           296   3816  1160
  cwm                           584   7044  3308
- bspwm                         300   2796   720
+ bspwm                         304   2872   964
  dwm                           300   5400  1384
  monsterwm                     304   3708  1008
  herbstluftwm                  316   5536  1844
