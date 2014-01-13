@@ -34,6 +34,14 @@ static const char *ignore_names[] = {"bar"};
 static const char *menucmd[]   = { "/usr/bin/my_menu.sh", NULL };
 static const char *gmrun[]     = { "/usr/bin/gmrun",NULL};
 static const char *terminal[]  = { "urxvtc", NULL };
+///--Custom foo---///
+static void halfandcentered(const Arg *arg)
+{
+	Arg arg2 = {.i=2};
+	maxhalf(&arg2);
+	Arg arg3 = {.i=0};
+	teleport(&arg3);
+}
 ///---Shortcuts---///
 /* Check /usr/include/X11/keysymdef.h for the list of all keys
  * For AZERTY keyboards XK_1...0 should be replaced by :
@@ -154,6 +162,7 @@ static key keys[] = {
     // Exit or restart 2bwm
     {  MOD |CONTROL,      XK_q,          twobwm_exit,         {.i=0}},
     {  MOD |CONTROL,      XK_r,          twobwm_restart,      {.i=0}},
+    {  MOD ,              XK_space,      halfandcentered,    {.i=0}},
     // Change current workspace
        DESKTOPCHANGE(     XK_1,                             0)
        DESKTOPCHANGE(     XK_2,                             1)
