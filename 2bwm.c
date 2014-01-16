@@ -819,6 +819,7 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
             }
         }
         if(NULL!=output) free(output);
+        if(NULL!=name) free(name);
     } /* for */
 }
 
