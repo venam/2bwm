@@ -4,8 +4,9 @@ DIST=2bwm-$(VERSION)
 SRC=2bwm.c list.h hidden.c config.h
 DISTFILES=Makefile README.md TODO 2bwm.man $(SRC)
 CFLAGS+=-std=c99 -Os -s -I/usr/local/include \
-		-DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
-
+		-DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" \
+		-pie -fPIE -fstack-protector --param=ssp-buffer-size=4 \
+		-Wformat -Werror=format-security -Wl,-z,relro -Wl,-z,now
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms \
 		 -lxcb-icccm -lxcb-util -lxcb-ewmh
 
