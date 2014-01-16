@@ -41,7 +41,7 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
 #define WORKSPACES 10
 #define MODKEY XCB_MOD_MASK_4 /* default mod key */
-#define RCLOCATION "/home/user/.twobwmrc"
+#define RCLOCATION "/home/raptor/.twobwmrc"
 
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---Types---///
@@ -1002,6 +1002,7 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
             }
         }
         if(NULL!=output) free(output);
+        if(NULL!=name) free(name);
     } /* for */
 }
 
