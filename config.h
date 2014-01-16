@@ -31,9 +31,9 @@ static const uint8_t borders[] = {2,5,9,9};
 #define LOOK_INTO "_NET_WM_NAME"
 static const char *ignore_names[] = {"bar"};
 ///--Menus and Programs---///
-static const char *menucmd[]   = { "/usr/bin/my_menu.sh", NULL };
+static const char *menucmd[]   = { "/usr/bin/dmenu_run", NULL };
 static const char *gmrun[]     = { "/usr/bin/gmrun",NULL};
-static const char *terminal[]  = { "urxvtc", NULL };
+static const char *terminal[]  = { "/usr/bin/uxterm", NULL };
 ///--Custom foo---///
 static void halfandcentered(const Arg *arg)
 {
