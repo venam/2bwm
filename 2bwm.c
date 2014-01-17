@@ -326,7 +326,10 @@ void check_name(struct client *client)
         if (NULL!=reply) free(reply);
         return;
     }
-    char *wm_name_window = xcb_get_property_value(reply);
+    int reply_len = xcb_get_property_value_length(reply);
+    char *wm_name_window = malloc(sizeof(char) * (reply_len + 1));
+    memcpy(wm_name_window, xcb_get_property_value(reply), reply_len);
+    wm_name_window[reply_len] = '\0';
     if(NULL!=reply) free(reply);
     for(unsigned int i=0;i<sizeof(ignore_names)/sizeof(__typeof__(*ignore_names));i++)
         if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
