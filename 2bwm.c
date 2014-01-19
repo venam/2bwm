@@ -304,17 +304,17 @@ int32_t getwmdesktop(xcb_drawable_t win)
 
 bool get_unkil_state(xcb_drawable_t win)
 {                                   // check if the window is unkillable, if yes return true
-    uint8_t *wsp;
+    uint8_t wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_unkillable],
-        XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(int8_t));
+        XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(uint8_t));
     xcb_get_property_reply_t *reply  = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL== reply || 0 == xcb_get_property_value_length(reply)){
         if(NULL!=reply ) free(reply);
         return false;
     }
-    wsp = xcb_get_property_value(reply);
+    wsp = *(uint8_t *) xcb_get_property_value(reply);
     if(NULL!=reply)free(reply);
-    if (*wsp == 1) return true;
+    if (wsp == 1) return true;
     else           return false;
 }
 
