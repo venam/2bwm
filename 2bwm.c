@@ -289,7 +289,7 @@ int32_t getwmdesktop(xcb_drawable_t win)
                                     // Returns either workspace, NET_WM_FIXED if this window should be
                                     // visible on all workspaces or TWOBWM_NOWS if we didn't find any hints.
     xcb_get_property_reply_t *reply;
-    uint32_t *wsp;
+    int32_t *wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_desktop],
         XCB_GET_PROPERTY_TYPE_ANY, 0, sizeof(int32_t));
     reply = xcb_get_property_reply(conn, cookie, NULL);
@@ -297,7 +297,7 @@ int32_t getwmdesktop(xcb_drawable_t win)
         if(NULL!=reply) free(reply);
         return TWOBWM_NOWS;
     }
-    wsp = xcb_get_property_value(reply);
+    *wsp = *(int32_t *) xcb_get_property_value(reply);
     if(NULL!=reply)free(reply);
     return *wsp;
 }
