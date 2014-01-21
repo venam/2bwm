@@ -168,7 +168,7 @@ static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen);
 static struct client *setupwin(xcb_window_t win);
 static struct client create_back_win(void);
 static void cleanup(const int code);
-static int32_t getwmdesktop(xcb_drawable_t win);
+static uint32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void grabbuttons(struct client *c);
 static void delfromworkspace(struct client *client, uint32_t ws);
@@ -284,37 +284,37 @@ void arrangewindows(void)           // Rearrange windows to fit new screen size.
     }
 }
 
-int32_t getwmdesktop(xcb_drawable_t win)
+uint32_t getwmdesktop(xcb_drawable_t win)
 {                                   // Get EWWM hint so we might know what workspace window win should be visible on.
                                     // Returns either workspace, NET_WM_FIXED if this window should be
                                     // visible on all workspaces or TWOBWM_NOWS if we didn't find any hints.
     xcb_get_property_reply_t *reply;
-    uint32_t *wsp;
+    int32_t *wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_desktop],
-        XCB_GET_PROPERTY_TYPE_ANY, 0, sizeof(int32_t));
+        XCB_GET_PROPERTY_TYPE_ANY, 0, sizeof(uint32_t));
     reply = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL==reply || 0 == xcb_get_property_value_length(reply)) { /* 0 if we didn't find it. */
         if(NULL!=reply) free(reply);
         return TWOBWM_NOWS;
     }
-    wsp = xcb_get_property_value(reply);
+    *wsp = *(uint32_t *) xcb_get_property_value(reply);
     if(NULL!=reply)free(reply);
     return *wsp;
 }
 
 bool get_unkil_state(xcb_drawable_t win)
 {                                   // check if the window is unkillable, if yes return true
-    uint8_t *wsp;
+    uint8_t wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_unkillable],
-        XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(int8_t));
+        XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(uint8_t));
     xcb_get_property_reply_t *reply  = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL== reply || 0 == xcb_get_property_value_length(reply)){
         if(NULL!=reply ) free(reply);
         return false;
     }
-    wsp = xcb_get_property_value(reply);
+    wsp = *(uint8_t *) xcb_get_property_value(reply);
     if(NULL!=reply)free(reply);
-    if (*wsp == 1) return true;
+    if (wsp == 1) return true;
     else           return false;
 }
 
@@ -326,7 +326,10 @@ void check_name(struct client *client)
         if (NULL!=reply) free(reply);
         return;
     }
-    char *wm_name_window = xcb_get_property_value(reply);
+    size_t reply_len = xcb_get_property_value_length(reply);
+    char *wm_name_window = malloc(sizeof(char) * (reply_len + 1));
+    memcpy(wm_name_window, xcb_get_property_value(reply), reply_len);
+    wm_name_window[reply_len] = '\0';
     if(NULL!=reply) free(reply);
     for(unsigned int i=0;i<sizeof(ignore_names)/sizeof(__typeof__(*ignore_names));i++)
         if (strstr(wm_name_window, ignore_names[i]) !=NULL) {
