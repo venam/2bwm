@@ -168,7 +168,7 @@ static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen);
 static struct client *setupwin(xcb_window_t win);
 static struct client create_back_win(void);
 static void cleanup(const int code);
-static int32_t getwmdesktop(xcb_drawable_t win);
+static uint32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void grabbuttons(struct client *c);
 static void delfromworkspace(struct client *client, uint32_t ws);
@@ -284,14 +284,14 @@ void arrangewindows(void)           // Rearrange windows to fit new screen size.
     }
 }
 
-int32_t getwmdesktop(xcb_drawable_t win)
+uint32_t getwmdesktop(xcb_drawable_t win)
 {                                   // Get EWWM hint so we might know what workspace window win should be visible on.
                                     // Returns either workspace, NET_WM_FIXED if this window should be
                                     // visible on all workspaces or TWOBWM_NOWS if we didn't find any hints.
     xcb_get_property_reply_t *reply;
     uint32_t *wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_desktop],
-        XCB_GET_PROPERTY_TYPE_ANY, 0, sizeof(int32_t));
+        XCB_GET_PROPERTY_TYPE_ANY, 0, sizeof(uint32_t));
     reply = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL==reply || 0 == xcb_get_property_value_length(reply)) { /* 0 if we didn't find it. */
         if(NULL!=reply) free(reply);
