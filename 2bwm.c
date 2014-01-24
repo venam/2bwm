@@ -297,7 +297,7 @@ uint32_t getwmdesktop(xcb_drawable_t win)
         if(NULL!=reply) free(reply);
         return TWOBWM_NOWS;
     }
-    *wsp = *(uint32_t *) xcb_get_property_value(reply);
+    wsp = xcb_get_property_value(reply);
     if(NULL!=reply)free(reply);
     return *wsp;
 }
