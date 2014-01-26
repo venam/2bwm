@@ -1168,8 +1168,8 @@ void mouseresize(struct client *client, const int16_t rel_x, const int16_t rel_y
         client->height -= (client->height - client->base_height) % client->height_inc;
     }
     resizelim(client);
-    if (client->vertmaxed) client->vertmaxed = false;
-    if (client->hormaxed)  client->hormaxed  = false;
+    client->vertmaxed = false;
+    client->hormaxed  = false;
 }
 
 void movestep(const Arg *arg)
