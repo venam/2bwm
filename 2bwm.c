@@ -66,7 +66,8 @@ typedef struct {
     const Arg arg;
 } Button;
 struct sizepos {
-    int16_t x, y,width,height;
+    int16_t x, y;
+    uint16_t width,height;
 };
 struct client {                     // Everything we know about a window.
     xcb_drawable_t id;              // ID of this window.
@@ -75,7 +76,7 @@ struct client {                     // Everything we know about a window.
     uint16_t width,height;          // Width,Height in pixels.
     struct sizepos origsize;        // Original size if we're currently maxed.
     uint16_t max_width, max_height,min_width, min_height; // Hints from application.
-    int32_t width_inc, height_inc,base_width, base_height;
+    uint16_t width_inc, height_inc,base_width, base_height;
     bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic;
     struct monitor *monitor;        // The physical output this window is on.
     struct item *winitem;           // Pointer to our place in global windows list.
