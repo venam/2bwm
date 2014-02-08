@@ -220,7 +220,9 @@ void changeworkspace(const Arg *arg){ changeworkspace_helper(arg->i);}
 void nextworkspace(){curws==WORKSPACES-1?changeworkspace_helper(0):changeworkspace_helper(curws+1);}
 void prevworkspace(){curws>0?changeworkspace_helper(curws-1):changeworkspace_helper(WORKSPACES-1);}
 void twobwm_exit(){sigcode = 0; cleanup(0); exit(0);}
-void centerpointer(xcb_drawable_t win, struct client *cl){ xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,cl->width / 2, cl->height / 2); }
+void centerpointer(xcb_drawable_t win, struct client *cl){
+    (void) xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0, (int16_t) (cl->width / 2), (int16_t) (cl->height / 2));
+}
 void sigcatch(const int sig){sigcode = sig;}
 void saveorigsize(struct client *client)
 {
@@ -233,8 +235,8 @@ void updateclientlist(void)
 	/* can only be called after the first window has been spawn */
 	xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn,xcb_query_tree(conn, screen->root), 0);
 	if (NULL == reply){
-		xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
-		xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
+		(void) xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
+		(void) xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
 		addtoclientlist(0);
 		return;
 	}
