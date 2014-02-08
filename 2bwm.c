@@ -36,6 +36,7 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define NET_WM_FIXED    0xffffffff  // Value in WM hint which means this window is fixed on all workspaces.
 #define TWOBWM_NOWS     0xfffffffe  // This means we didn't get any window hint at all.
 #define LENGTH(x)       (sizeof(x)/sizeof(*x))
+#define MIN(X, Y)       ((X) < (Y) ? (X) : (Y))
 #define CLEANMASK(mask) (mask & ~(numlockmask|XCB_MOD_MASK_LOCK))
 #define CONTROL         XCB_MOD_MASK_CONTROL /* Control key */
 #define ALT             XCB_MOD_MASK_1       /* ALT key */
@@ -764,7 +765,6 @@ void getrandr(void)                 // Get RANDR resources and figure out how ma
 void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t timestamp)
 {                                   // Walk through all the RANDR outputs (number of outputs == len) there
                                     // was at time timestamp.
-    char *name;
     xcb_randr_get_crtc_info_cookie_t icookie;
     xcb_randr_get_crtc_info_reply_t *crtc = NULL;
     xcb_randr_get_output_info_reply_t *output;
@@ -776,7 +776,9 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
         output = xcb_randr_get_output_info_reply(conn, ocookie[i], NULL);
 
         if (output == NULL) continue;
-        asprintf(&name, "%.*s",xcb_randr_get_output_info_name_length(output),xcb_randr_get_output_info_name(output));
+        int name_len = MIN(16, xcb_randr_get_output_info_name_length(output));
+        char *name = malloc(name_len + 1);
+        snprintf(name, name_len+1, "%.*s", name_len, xcb_randr_get_output_info_name(output));
 
         if (XCB_NONE != output->crtc) {
             icookie = xcb_randr_get_crtc_info(conn, output->crtc, timestamp);
@@ -823,7 +825,7 @@ void getoutputs(xcb_randr_output_t *outputs, const int len, xcb_timestamp_t time
             }
         }
         if(NULL!=output) free(output);
-        if(NULL!=name) free(name);
+        free(name);
     } /* for */
 }
 
