@@ -1,6 +1,9 @@
 ///---User configurable stuff---///
 ///---Modifiers---///
 #define MOD             XCB_MOD_MASK_4       /* Super/Windows key  or check xmodmap(1) with -pm*/
+#ifndef TWOBWM_PATH
+#define TWOBWM_PATH          "/usr/local/bin/2bwm"
+#endif
 ///--Speed---///
 /* Move this many pixels when moving or resizing with keyboard unless the window has hints saying otherwise.
  *0)move step slow   1)move step fast
