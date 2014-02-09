@@ -100,9 +100,9 @@ int randrbase;                      // Beginning of RANDR extension events.
 uint32_t curws = 0;                  // Current workspace.
 struct client *focuswin;            // Current focus window.
 xcb_drawable_t top_win=0;           // Window always on top.
-struct item *winlist = NULL;        // Global list of all client windows.
-struct item *monlist = NULL;        // List of all physical monitor outputs.
-struct item *wslist[WORKSPACES]={NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+struct item *winlist;               // Global list of all client windows.
+struct item *monlist;               // List of all physical monitor outputs.
+struct item *wslist[WORKSPACES];
 ///---Global configuration.---///
 struct conf {
     int8_t borderwidth;             // Do we draw borders for non-focused window? If so, how large?
@@ -606,7 +606,7 @@ struct client *setupwin(xcb_window_t win)
     client->monitor       = NULL;
     client->winitem       = item;
 
-    for (uint32_t ws = 0; ws < WORKSPACES; ws ++) client->wsitem[ws] = NULL;
+    for (uint32_t ws = 0; ws < WORKSPACES; ws ++) client->wsitem[ws] = NULL;/* Initialize workspace pointers. */
     getgeom(&client->id, &client->x, &client->y, &client->width, &client->height);/* Get window geometry. */
     /* Get the window's incremental size step, if any.*/
     xcb_icccm_get_wm_normal_hints_reply(conn,xcb_icccm_get_wm_normal_hints_unchecked(conn, win), &hints, NULL);
