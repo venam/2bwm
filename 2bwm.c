@@ -676,7 +676,7 @@ bool setup_keyboard(void)
     if (!modmap) return false;
 
     xcb_keycode_t *numlock = xcb_get_keycodes(XK_Num_Lock);
-    for (unsigned int i=0; i<8; i++)
+    for (unsigned int i=0; i<8; i++) {
        for (unsigned int j=0; j<reply->keycodes_per_modifier; j++) {
            xcb_keycode_t keycode = modmap[i * reply->keycodes_per_modifier + j];
            if (keycode == XCB_NO_SYMBOL) continue;
@@ -686,7 +686,8 @@ bool setup_keyboard(void)
                        numlockmask = 1 << i;
                        break;
                }
-       }
+        }
+    }
     return true;
 }
 
