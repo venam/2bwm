@@ -235,16 +235,15 @@ void updateclientlist(void)
 {
 	/* can only be called after the first window has been spawn */
 	xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn,xcb_query_tree(conn, screen->root), 0);
-	if (NULL == reply){
-		(void) xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
-		(void) xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
+	(void) xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
+	(void) xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
+	
+    if (NULL == reply){
 		addtoclientlist(0);
 		return;
 	}
 	uint32_t len = xcb_query_tree_children_length(reply);
 	xcb_window_t *children = xcb_query_tree_children(reply);
-	xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
-	xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
 	struct client *cl;
 	for (uint32_t i = 0; i < len; i ++) {
 		cl = findclient(&children[i]);
