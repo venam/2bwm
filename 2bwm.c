@@ -248,6 +248,7 @@ void updateclientlist(void)
 		cl = findclient(&children[i]);
 		if(NULL!=cl) addtoclientlist(cl->id);
 	}
+    free(reply);
 }
 
 xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen)
