@@ -42,7 +42,7 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define ALT             XCB_MOD_MASK_1       /* ALT key */
 #define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
 #define WORKSPACES 10
-static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
+static const uint32_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---Types---///
 struct monitor {
     xcb_randr_output_t id;
@@ -53,7 +53,7 @@ struct monitor {
 };
 typedef union {
     const char** com;
-    const int8_t i;
+    const uint32_t i;
 } Arg;
 typedef struct {
     unsigned int mod;
@@ -97,7 +97,7 @@ xcb_connection_t *conn;             // Connection to X server.
 xcb_ewmh_connection_t *ewmh;        // Ewmh Connection.
 xcb_screen_t     *screen;           // Our current screen.
 int randrbase;                      // Beginning of RANDR extension events.
-uint8_t curws = 0;                  // Current workspace.
+uint32_t curws = 0;                  // Current workspace.
 struct client *focuswin;            // Current focus window.
 xcb_drawable_t top_win=0;           // Window always on top.
 struct item *winlist = NULL;        // Global list of all client windows.
@@ -308,7 +308,7 @@ uint32_t getwmdesktop(xcb_drawable_t win)
 
 bool get_unkil_state(xcb_drawable_t win)
 {                                   // check if the window is unkillable, if yes return true
-    uint8_t wsp;
+    uint32_t wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_unkillable],
         XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(uint8_t));
     xcb_get_property_reply_t *reply  = xcb_get_property_reply(conn, cookie, NULL);
@@ -316,7 +316,7 @@ bool get_unkil_state(xcb_drawable_t win)
         if(NULL!=reply ) free(reply);
         return false;
     }
-    wsp = *(uint8_t *) xcb_get_property_value(reply);
+    wsp = *(uint32_t *) xcb_get_property_value(reply);
     if(NULL!=reply)free(reply);
     if (wsp == 1) return true;
     else           return false;
