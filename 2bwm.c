@@ -271,6 +271,7 @@ void cleanup(const int code)        // Set keyboard focus to follow mouse pointe
 {                                   // We don't need to bother mapping all windows we know about. They
                                     // should all be in the X server's Save Set and should be mapped automagically.
     xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,XCB_CURRENT_TIME);
+    delallitems(wslist, NULL);
     xcb_ewmh_connection_wipe(ewmh);
     xcb_flush(conn);
     if (NULL!=ewmh)   free(ewmh);
@@ -666,6 +667,7 @@ void grabkeys(void)
             for (unsigned int m=0; m<LENGTH(modifiers); m++)
                 xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m], keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
+    free(keycode); // allocated in xcb_get_keycodes()
 }
 
 bool setup_keyboard(void)
@@ -688,6 +690,7 @@ bool setup_keyboard(void)
                }
         }
     }
+    free(reply);
     return true;
 }
 
