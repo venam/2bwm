@@ -6,12 +6,13 @@ DISTFILES=Makefile README.md TODO 2bwm.man $(SRC)
 CFLAGS+=-std=c99 -Os -s -I/usr/local/include \
 		-DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
 
-LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms \
+LDFLAGS+=-L${PREFIX}/${LIB_SUFFIX} -lxcb -lxcb-randr -lxcb-keysyms \
 		 -lxcb-icccm -lxcb-util -lxcb-ewmh
 
 RM=/bin/rm
 PREFIX=/usr/local
-MANPREFIX=$(PREFIX)/man
+LIB_SUFFIX=lib
+MANPREFIX=$(PREFIX)/share/man
 TWOBWM_PATH=${PREFIX}/bin/2bwm
 
 TARGETS=2bwm hidden
