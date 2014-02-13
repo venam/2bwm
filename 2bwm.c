@@ -1985,11 +1985,11 @@ int main()
 {
     int scrno;
     /* Install signal handlers. */
-    if (SIG_ERR!=signal(SIGCHLD, SIG_IGN)||SIG_ERR!=signal(SIGINT, sigcatch)
-        ||SIG_ERR!=signal(SIGTERM, sigcatch) )
-        if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno) ))
-            if (setup(scrno))
-                run();
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGINT, sigcatch);
+    signal(SIGTERM, sigcatch);
+    if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno)))
+        if (setup(scrno)) run();
     cleanup(sigcode); /* Die gracefully. */
     exit(0);
 }
