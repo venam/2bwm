@@ -1,14 +1,15 @@
 CC=clang
 
-CFLAGS+=-std=c99 -I/usr/pkg/include \
+PREFIX=/usr/local
+LIB_SUFFIX=lib
+MANPREFIX=$(PREFIX)/share/man
+TWOBWM_PATH=${PREFIX}/bin/twobwm
+
+CFLAGS+=-g -std=c99 -I/usr/pkg/include \
         -DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
 
-LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms \
+LDFLAGS+=-L${PREFIX}/${LIB_SUFFIX} -lxcb -lxcb-randr -lxcb-keysyms \
 	 -lxcb-icccm -lxcb-util -lxcb-ewmh
-
-PREFIX=/usr/local
-MANPREFIX=$(PREFIX)/man
-TWOBWM_PATH=${PREFIX}/bin/twobwm
 
 
 all: 
