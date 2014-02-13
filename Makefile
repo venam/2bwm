@@ -1,4 +1,12 @@
 VERSION=2013-3
+
+RM=/bin/rm
+PREFIX=/usr/local
+LIB_SUFFIX=lib
+MANPREFIX=$(PREFIX)/share/man
+TWOBWM_PATH=${PREFIX}/bin/2bwm
+
+
 #CC=clang
 DIST=2bwm-$(VERSION)
 SRC=2bwm.c list.h hidden.c config.h
@@ -8,13 +16,6 @@ CFLAGS+=-std=c99 -Os -s -I/usr/local/include \
 
 LDFLAGS+=-L${PREFIX}/${LIB_SUFFIX} -lxcb -lxcb-randr -lxcb-keysyms \
 		 -lxcb-icccm -lxcb-util -lxcb-ewmh
-
-RM=/bin/rm
-PREFIX=/usr/local
-LIB_SUFFIX=lib
-MANPREFIX=$(PREFIX)/share/man
-TWOBWM_PATH=${PREFIX}/bin/2bwm
-
 TARGETS=2bwm hidden
 OBJS=2bwm.o
 

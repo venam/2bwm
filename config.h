@@ -44,6 +44,7 @@ static void halfandcentered(const Arg *arg)
 }
 ///---Shortcuts---///
 /* Check /usr/include/X11/keysymdef.h for the list of all keys
+ * 0x000000 is for no modkey
  * For AZERTY keyboards XK_1...0 should be replaced by :
  *      DESKTOPCHANGE(     XK_ampersand,                     0)
  *      DESKTOPCHANGE(     XK_eacute,                        1)
