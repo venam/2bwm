@@ -343,6 +343,7 @@ void check_name(struct client *client)
             xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
             break;
         }
+    free(wm_name_window);
 }
 
 void addtoworkspace(struct client *client, uint32_t ws)
