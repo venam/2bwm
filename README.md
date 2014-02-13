@@ -82,6 +82,8 @@ Screenshots:
 
 TODO:
 =====
+* Fix the crash that happens with randr
+
 * Rewrite the readme file
 	with more statistic, 
 	specifying all the features, 
@@ -98,9 +100,7 @@ TODO:
      _NET_WM_STATE_MAXIMIZED_VERT, 
      _NET_WM_STATE_FULLSCREEN
 
-* configs in a text file, parsed, and updated at restart
-
-* Handle new modes on physical outputs. What do we have to do?
+* configs in a text file, parsed, and updated at restart (done in the devel branch)
 
 * A separate workspace list for every monitor. (CTRL+NUM)
 	* get the cursor position (on which monitor)
