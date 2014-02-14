@@ -1670,7 +1670,7 @@ struct client create_back_win(void)
     temp_win.x=focuswin->x;temp_win.y=focuswin->y;temp_win.width=focuswin->width;temp_win.unkillable=focuswin->unkillable;
     temp_win.fixed=focuswin->fixed;temp_win.height=focuswin->height;temp_win.width_inc=focuswin->width_inc;temp_win.height_inc=focuswin->height_inc;
     temp_win.base_width=focuswin->base_width;temp_win.base_height=focuswin->base_height;temp_win.monitor=focuswin->monitor;
-    temp_win.min_height = focuswin->min_height; temp_win.min_width=focuswin->min_height;
+    temp_win.min_height = focuswin->min_height; temp_win.min_width=focuswin->min_height;temp_win.ignore_borders = focuswin->ignore_borders;
     return temp_win;
 }
 
