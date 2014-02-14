@@ -82,8 +82,6 @@ Screenshots:
 
 TODO:
 =====
-* Fix the crash that happens with randr
-
 * Rewrite the readme file
 	with more statistic, 
 	specifying all the features, 
