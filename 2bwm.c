@@ -663,8 +663,8 @@ void grabkeys(void)
         for (unsigned int k=0; keycode[k] != XCB_NO_SYMBOL; k++)
             for (unsigned int m=0; m<LENGTH(modifiers); m++)
                 xcb_grab_key(conn, 1, screen->root, keys[i].mod | modifiers[m], keycode[k], XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+		free(keycode); // allocated in xcb_get_keycodes()
     }
-    free(keycode); // allocated in xcb_get_keycodes()
 }
 
 bool setup_keyboard(void)
@@ -688,6 +688,7 @@ bool setup_keyboard(void)
 		}
 	}
     free(reply);
+	free(numlock);
     return true;
 }
 
@@ -1411,9 +1412,9 @@ void hide()
 bool getpointer(const xcb_drawable_t *win, int16_t *x, int16_t *y)
 {
     xcb_query_pointer_reply_t *pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, *win), 0);
+	*x = pointer->win_x;        *y = pointer->win_y;
+	free(pointer);
     if (NULL == pointer) return false;
-    *x = pointer->win_x;        *y = pointer->win_y;
-    free(pointer);
     return true;
 }
 
@@ -1676,7 +1677,10 @@ struct client create_back_win(void)
 static void mousemotion(const Arg *arg)
 {
     xcb_query_pointer_reply_t *pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, screen->root), 0);
-    if (!pointer||focuswin->maxed) return;
+    if (!pointer||focuswin->maxed){ 
+		free(pointer);
+		return;
+	}
     int16_t mx   = pointer->root_x;       int16_t my   = pointer->root_y;
     int16_t winx = focuswin->x;           int16_t winy = focuswin->y;
     int16_t winw = focuswin->width;       int16_t winh = focuswin->height;
@@ -1692,10 +1696,12 @@ static void mousemotion(const Arg *arg)
     }
     xcb_grab_pointer_reply_t *grab_reply = xcb_grab_pointer_reply(conn, xcb_grab_pointer(conn, 0, screen->root, BUTTONMASK|
         XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION,XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, cursor, XCB_CURRENT_TIME), NULL);
-    if (!grab_reply || grab_reply->status != XCB_GRAB_STATUS_SUCCESS) {
+    if (grab_reply->status != XCB_GRAB_STATUS_SUCCESS) {
+		free(grab_reply);
         if (arg->i == TWOBWM_RESIZE) xcb_unmap_window(conn,example.id);
         return;
     }
+	free(grab_reply);
     xcb_motion_notify_event_t *ev = NULL;
     xcb_generic_event_t        *e = NULL;
     bool ungrab                   = false;
@@ -1720,13 +1726,14 @@ static void mousemotion(const Arg *arg)
             if (arg->i==TWOBWM_RESIZE) {
                 ev = (xcb_motion_notify_event_t*)e;
                 mouseresize(focuswin,winw +ev->root_x-mx, winh+ev->root_y-my);
-                free(pointer);
                 setborders(focuswin,true);
             }
             ungrab = true;
         break;
         }
     } while (!ungrab && focuswin!=NULL);
+	free(pointer);
+	free(e);
     xcb_free_cursor(conn,cursor);
     xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
     if (arg->i == TWOBWM_RESIZE) xcb_unmap_window(conn,example.id);
