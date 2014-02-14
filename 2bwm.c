@@ -212,7 +212,7 @@ static void snapwindow(struct client *client);
 ///---Function bodies---///
 void fix(){fixwindow(focuswin);}
 void unkillable(void){unkillablewindow(focuswin);}
-void delmonitor(struct monitor *mon){ free(mon->name);    freeitem(&monlist, NULL, mon->item);}
+void delmonitor(struct monitor *mon){ freeitem(&monlist, NULL, mon->item);}
 void raise_current_window(void){raisewindow(focuswin->id);}
 void focusnext(const Arg *arg){ focusnext_helper(arg->i > 0);}
 void delfromworkspace(struct client *client, uint32_t ws){delitem(&wslist[ws], client->wsitem[ws]); client->wsitem[ws] = NULL; }
