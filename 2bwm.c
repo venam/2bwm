@@ -219,7 +219,7 @@ void delfromworkspace(struct client *client, uint32_t ws){delitem(&wslist[ws], c
 void changeworkspace(const Arg *arg){ changeworkspace_helper(arg->i);}
 void nextworkspace(){curws==WORKSPACES-1?changeworkspace_helper(0):changeworkspace_helper(curws+1);}
 void prevworkspace(){curws>0?changeworkspace_helper(curws-1):changeworkspace_helper(WORKSPACES-1);}
-void twobwm_exit(){sigcode = 0; cleanup(0); exit(0);}
+void twobwm_exit(){sigcode = 0; cleanup(0);}
 void centerpointer(xcb_drawable_t win, struct client *cl){ xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0, (int16_t) (cl->width / 2), (int16_t) (cl->height / 2));}
 void sigcatch(const int sig){sigcode = sig;}
 void saveorigsize(struct client *client)
@@ -1944,6 +1944,5 @@ int main()
     signal(SIGTERM, sigcatch);
     if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno)))
         if (setup(scrno)) run();
-    cleanup(sigcode); /* Die gracefully. */
-    exit(0);
+    return EXIT_FAILURE; /* If we exit here, something went wrong in cleanup. */
 }
