@@ -122,4 +122,6 @@ maxrp
 cicku
 tbck
 anshin
-thanks to the UnixHub community for the support and ideas.
+
+Thanks to the UnixHub community for the support and ideas.
+Thanks to Michael Cardell for starting it all.
