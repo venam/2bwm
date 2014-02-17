@@ -1046,7 +1046,6 @@ void start(const Arg *arg)
     if (conn) close(screen->root);
     setsid();
     execvp((char*)arg->com[0], (char**)arg->com);
-    exit(0);
 }
 
 void resizelim(struct client *client)
@@ -1851,7 +1850,6 @@ void run(void)
         if(top_win!=0) raisewindow(top_win);
         }
     }
-    exit(sigcode); /* the WM has stopped running, because sigcode is not 0 */
 }
 
 xcb_atom_t getatom(const char *atom_name) // Get a defined atom from the X server.
@@ -1945,5 +1943,5 @@ int main()
     atexit(cleanup);
     if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno)))
         if (setup(scrno)) run();
-    return EXIT_FAILURE; /* If we exit here, something went wrong in cleanup. */
+    exit(sigcode); /* the WM has stopped running, because sigcode is not 0 */
 }
