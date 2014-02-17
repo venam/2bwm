@@ -117,3 +117,8 @@ TODO:
 Authors:
 =======
 `Beastie | Youri Mouton + Venam | Patrick Louis`
+Big thanks for the help of the following persons:
+maxrp
+cicku
+tbck
+anshin

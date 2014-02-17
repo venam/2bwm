@@ -5,8 +5,8 @@
 /* Move this many pixels when moving or resizing with keyboard unless the window has hints saying otherwise.
  *0)move step slow   1)move step fast
  *2)mouse slow       3)mouse fast     */
-static const uint16_t movements[] = {10,40,15,450};
-/* resize by line like in mcwm -- jjumbi */
+static const uint16_t movements[] = {20,40,15,400};
+/* resize by line like in mcwm -- jmbi */
 static const bool     resize_by_line          = true;
 /* the ratio used when resizing and keeping the aspect */
 static const float    resize_keep_aspect_ratio= 1.03;
@@ -19,17 +19,17 @@ static const uint8_t offsets[] = {0,0,0,0};
  *2)fixedcol         3)unkilcol
  *4)fixedunkilcol    5)outerbordercol
  *6)emptycol         */
-static const char *colors[] = {"#323232","#191919","#4c5739","#682a2a","#604818","#151515","#222222"};
+static const char *colors[] = {"#35586c","#333333","#7a8c5c","#ff6666","#cc9933","#0d131a","#000000"};
 /* if this is set to true the inner border and outer borders colors will be swapped */
-static const bool inverted_colors = false;
+static const bool inverted_colors = true;
 ///---Borders---///
 /*0) Outer border size. If you put this negative it will be a square.
  *1) Full borderwidth    2) Magnet border size    
  *3) Resize border size  */
-static const uint8_t borders[] = {2,5,9,9};
+static const uint8_t borders[] = {3,5,5,4};
 /* Windows that won't have a border.*/
-#define LOOK_INTO "_NET_WM_NAME"
-static const char *ignore_names[] = {"bar"};
+#define LOOK_INTO "WM_NAME"
+static const char *ignore_names[] = {"bar", "xclock"};
 ///--Menus and Programs---///
 static const char *menucmd[]   = { "/usr/bin/my_menu.sh", NULL };
 static const char *gmrun[]     = { "/usr/bin/gmrun",NULL};
