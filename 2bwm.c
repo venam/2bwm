@@ -1842,7 +1842,7 @@ void run(void)
     sigcode = 0;
     while (0 == sigcode) { /* the WM is running */
         xcb_flush(conn);
-        if (xcb_connection_has_error(conn)) exit(SIGABRT);
+        if (xcb_connection_has_error(conn)) abort();
         if ((ev = xcb_wait_for_event(conn))) {
             if(ev->response_type==randrbase + XCB_RANDR_SCREEN_CHANGE_NOTIFY) getrandr();
             if (events[ev->response_type & ~0x80]) events[ev->response_type & ~0x80](ev);
