@@ -82,6 +82,8 @@ Screenshots:
 
 TODO:
 =====
+* Find out why this (https://github.com/u-ra/bar) doesn't work with 2bwm
+
 * Rewrite the readme file
 	with more statistic, 
 	specifying all the features, 
