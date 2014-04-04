@@ -475,12 +475,18 @@ void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *m
 		*mon_x      = *mon_y = 0;
 		*mon_width  = screen->width_in_pixels;
 		*mon_height = screen->height_in_pixels;
-		return;
+		goto offsets;
 	}
 	*mon_x      = client->monitor->x;
 	*mon_y      = client->monitor->y;
 	*mon_width  = client->monitor->width;
 	*mon_height = client->monitor->height;
+
+	offsets:
+	*mon_x      += offsets[0];
+	*mon_y      += offsets[1];
+	*mon_width  -= offsets[2];
+	*mon_height -= offsets[3];
 }
 
 void noborder(int16_t *temp,struct client *client, bool set_unset)
@@ -1299,10 +1305,6 @@ void maximize(const Arg *arg)
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
     focuswin->x = mon_x;             focuswin->y = mon_y;
     focuswin->width = mon_width;    focuswin->height = mon_height;
-    if (arg->i==0) {
-        focuswin->x     += offsets[0]; focuswin->y      += offsets[1];
-        focuswin->width -= offsets[2]; focuswin->height -= offsets[3];
-    }
     values[0] = focuswin->x;                 values[1] = focuswin->y;
     values[2] = focuswin->width;             values[3] = focuswin->height;
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_X|XCB_CONFIG_WINDOW_Y
@@ -1330,9 +1332,9 @@ void maxvert_hor(const Arg *arg)
     noborder(&temp, focuswin,true);
 
     if (arg->i>0) {
-        focuswin->y = mon_y+offsets[1];
+        focuswin->y = mon_y;
         /* Compute new height considering height increments and screen height. */
-        focuswin->height = mon_height - (conf.borderwidth * 2) - offsets[3];
+        focuswin->height = mon_height - (conf.borderwidth * 2);
         /* Move to top of screen and resize. */
         values[0] = focuswin->y;        values[1] = focuswin->height;
         xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_Y
@@ -1340,8 +1342,8 @@ void maxvert_hor(const Arg *arg)
         focuswin->vertmaxed = true;
     }
     else {
-        focuswin->x = mon_x+offsets[0];
-        focuswin->width = mon_width - (conf.borderwidth * 2) - offsets[2];
+        focuswin->x = mon_x;
+        focuswin->width = mon_width - (conf.borderwidth * 2);
         values[0] = focuswin->x;        values[1] = focuswin->width;
         xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_X
                            | XCB_CONFIG_WINDOW_WIDTH, values);
@@ -1367,11 +1369,11 @@ void maxhalf(const Arg *arg)
             else          focuswin->height = focuswin->height*2 + (2*conf.borderwidth);
         }
         else {
-            focuswin->y       =  mon_y+offsets[1];
-            focuswin->height  =  mon_height - (offsets[3] + (conf.borderwidth * 2));
-            focuswin->width   = ((float)(mon_width)/2)- (offsets[2]+ (conf.borderwidth * 2));
-            if (arg->i>1) focuswin->x = mon_x+offsets[0];
-            else          focuswin->x = mon_x-offsets[0]+mon_width -(focuswin->width+conf.borderwidth*2);
+            focuswin->y       =  mon_y;
+            focuswin->height  =  mon_height - (conf.borderwidth * 2);
+            focuswin->width   = ((float)(mon_width)/2)- (conf.borderwidth * 2);
+            if (arg->i>1) focuswin->x = mon_x;
+            else          focuswin->x = mon_x+mon_width -(focuswin->width+conf.borderwidth*2);
         }
     }
     else {
@@ -1380,11 +1382,11 @@ void maxhalf(const Arg *arg)
             else           focuswin->width = focuswin->width*2 +(2*conf.borderwidth);
         }
         else {
-            focuswin->x     =  mon_x+offsets[0];
-            focuswin->width =  mon_width - (offsets[2] + (conf.borderwidth * 2));
-            focuswin->height = ((float)(mon_height)/2)- (offsets[3]+ (conf.borderwidth * 2));
-            if (arg->i<-1) focuswin->y = mon_y+offsets[1];
-            else           focuswin->y = mon_y-offsets[1]+mon_height-offsets[3] -(focuswin->height+conf.borderwidth*2);
+            focuswin->x     =  mon_x;
+            focuswin->width =  mon_width - (conf.borderwidth * 2);
+            focuswin->height = ((float)(mon_height)/2)- (conf.borderwidth * 2);
+            if (arg->i<-1) focuswin->y = mon_y;
+            else           focuswin->y = mon_y+mon_height-(focuswin->height+conf.borderwidth*2);
         }
     }
     values[0] = focuswin->width;        values[1] = focuswin->height;
@@ -1437,36 +1439,36 @@ void teleport(const Arg *arg)
     getmonsize(&mon_x, &mon_y, &mon_width, &mon_height,focuswin);
     noborder(&temp, focuswin,true);
     uint16_t tmp_x = focuswin->x;  uint16_t tmp_y=  focuswin->y;
-    focuswin->x = mon_x+offsets[0]; focuswin->y = mon_y;
+    focuswin->x = mon_x; focuswin->y = mon_y;
 
     if (arg->i==0) { /* center */
-        focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x+offsets[0]+offsets[2];
-        focuswin->y  += mon_height - (focuswin->height + conf.borderwidth* 2)+ mon_y+offsets[1]+offsets[3];
-        focuswin->y  = focuswin->y /2-(offsets[3]);
-        focuswin->x  = focuswin->x /2-(offsets[2]);
+        focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x;
+        focuswin->y  += mon_height - (focuswin->height + conf.borderwidth* 2)+ mon_y;
+        focuswin->y  = focuswin->y /2;
+        focuswin->x  = focuswin->x /2;
     }
     else {
         if (arg->i>0) { /* top-left */
             if (arg->i<2) /* bottom-left */
-                focuswin->y += mon_height - (focuswin->height + conf.borderwidth* 2)-offsets[3]+offsets[1];
+                focuswin->y += mon_height - (focuswin->height + conf.borderwidth* 2);
             else if (arg->i>2) { /* center y */
                 focuswin->x  = tmp_x;
-                focuswin->y  +=mon_height - (focuswin->height + conf.borderwidth* 2)+ mon_y+offsets[1]+offsets[3];
-                focuswin->y  = focuswin->y /2-(offsets[3]);
+                focuswin->y  +=mon_height - (focuswin->height + conf.borderwidth* 2)+ mon_y;
+                focuswin->y  = focuswin->y /2;
             }
         }
         else {
             if (arg->i<-1) /*top-right */
                 if (arg->i==-3) { /* center x */
                     focuswin->y  = tmp_y;
-                    focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x+offsets[0]+offsets[2];
-                    focuswin->x  = focuswin->x /2-(offsets[2]);
+                    focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x;
+                    focuswin->x  = focuswin->x /2;
                 }
                 else
                     focuswin->x += mon_width - (focuswin->width + conf.borderwidth * 2);
             else { /* bottom-right */
                 focuswin->x += mon_width - (focuswin->width + conf.borderwidth * 2);
-                focuswin->y += mon_height - (focuswin->height + conf.borderwidth* 2)-offsets[3]+offsets[1];
+                focuswin->y += mon_height - (focuswin->height + conf.borderwidth* 2);
             }
         }
     }
