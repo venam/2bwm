@@ -74,6 +74,10 @@ Notice that all those WM are really small and that size doesn't really matter in
 //Panel that works with 2bwm: fbpanel, tint2, xfce4-panel, lxpanel, hpanel, cairo-dock
 tweaks you need for 2bwm on OpenBSD: add /usr/X11R6/include to search path, install gcc-4.7, use CC=egcc make
 Added snapping from the latest mcwm push.
+The problem with https://github.com/u-ra/bar got solved by z3bra. Here's the solution:
+sed -i 's/RELEASE/PRESS/;s/release/press' bar.c
+Also, the clickable part works fine with the bar from lemonboy so you'd rather use this one instead or u-ra one.
+
 
 Screenshots:
 ============
@@ -82,8 +86,6 @@ Screenshots:
 
 TODO:
 =====
-* Find out why this (https://github.com/u-ra/bar) doesn't work with 2bwm
-
 * Rewrite the readme file
 	with more statistic, 
 	specifying all the features, 
