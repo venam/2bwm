@@ -41,7 +41,13 @@ enum {TWOBWM_MOVE,TWOBWM_RESIZE};
 #define CONTROL         XCB_MOD_MASK_CONTROL /* Control key */
 #define ALT             XCB_MOD_MASK_1       /* ALT key */
 #define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
-#define WORKSPACES 10
+#define WORKSPACES      10
+#define BOTTOM_RIGHT    0
+#define BOTTOM_LEFT     1
+#define TOP_RIGHT       2
+#define TOP_LEFT        3
+#define MIDDLE          4
+
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---Types---///
 struct monitor {
@@ -220,12 +226,28 @@ void changeworkspace(const Arg *arg){ changeworkspace_helper(arg->i);}
 void nextworkspace(){curws==WORKSPACES-1?changeworkspace_helper(0):changeworkspace_helper(curws+1);}
 void prevworkspace(){curws>0?changeworkspace_helper(curws-1):changeworkspace_helper(WORKSPACES-1);}
 void twobwm_exit(){sigcode = 0; cleanup(0); exit(0);}
-void centerpointer(xcb_drawable_t win, struct client *cl){ xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0, (int16_t) (cl->width / 2), (int16_t) (cl->height / 2));}
 void sigcatch(const int sig){sigcode = sig;}
 void saveorigsize(struct client *client)
 {
 	client->origsize.x     = client->x;     client->origsize.y      = client->y;
 	client->origsize.width = client->width; client->origsize.height = client->height;
+}
+
+void centerpointer(xcb_drawable_t win, struct client *cl)
+{
+	int16_t cur_x, cur_y;
+
+	cur_x = cur_y = 0;
+
+	switch(CURSOR_POSITION) {
+		case BOTTOM_RIGHT:  cur_x += cl->width;
+		case BOTTOM_LEFT:   cur_y += cl->height; break;
+		case TOP_RIGHT:     cur_x += cl->width;
+		case TOP_LEFT:      break;
+		default: cur_x = cl->width/2; cur_y = cl->height/2;
+	}
+
+	xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0, cur_x, cur_y);
 }
 
 void updateclientlist(void)
