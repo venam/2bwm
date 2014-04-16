@@ -78,6 +78,8 @@ The problem with https://github.com/u-ra/bar got solved by z3bra. Here's the sol
 sed -i 's/RELEASE/PRESS/;s/release/press' bar.c
 Also, the clickable part works fine with the bar from lemonboy so you'd rather use this one instead or u-ra one.
 
+If you experience problems with java GUI you can refer to [this](http://awesome.naquadah.org/wiki/Problems_with_Java) most probably doing `export _JAVA_AWT_WM_NONREPARENTING=1` will resolve the problem.
+
 
 Screenshots:
 ============
