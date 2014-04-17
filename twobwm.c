@@ -2161,12 +2161,13 @@ void readrc(void) {
 
 bool setup(int scrno)
 {
-    xcb_drawable_t cwin;
+    xcb_window_t cwin;
     screen = xcb_screen_of_display(conn, scrno);
     if (!screen) return false;
     cwin = xcb_generate_id(conn);
     xcb_create_window(conn, XCB_COPY_FROM_PARENT, cwin, screen->root, 0, 0, 10, 10, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_COPY_FROM_PARENT, 0, NULL);
     ewmh_init();
+    xcb_ewmh_set_wm_pid(ewmh, cwin, getpid());
     xcb_ewmh_set_wm_name(ewmh, cwin, 6, "twobwm");
     xcb_ewmh_set_supporting_wm_check(ewmh, cwin, cwin);
     xcb_ewmh_set_supporting_wm_check(ewmh, screen->root, cwin);
