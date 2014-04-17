@@ -1907,11 +1907,11 @@ void ewmh_init(void)
 
 bool setup(int scrno)
 {
-    xcb_window_t cwin;
     screen = xcb_screen_of_display(conn, scrno);
     if (!screen) return false;
-    cwin = xcb_generate_id(conn);
-    xcb_create_window(conn, XCB_COPY_FROM_PARENT, cwin, screen->root, 0, 0, 10, 10, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_COPY_FROM_PARENT, 0, NULL);
+    xcb_window_t cwin = xcb_generate_id(conn);
+    uint32_t event_mask_pointer[] = {XCB_EVENT_MASK_POINTER_MOTION};
+    xcb_create_window(conn, XCB_COPY_FROM_PARENT, cwin, screen->root, 0, 0, screen->width_in_pixels, screen->height_in_pixels, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, XCB_COPY_FROM_PARENT,XCB_CW_EVENT_MASK, event_mask_pointer);
     ewmh_init();
     xcb_ewmh_set_wm_pid(ewmh, cwin, getpid());
     xcb_ewmh_set_wm_name(ewmh, cwin, 4, "2bwm");
