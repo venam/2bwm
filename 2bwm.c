@@ -133,6 +133,8 @@ static void changeworkspace_helper(const uint32_t ws);
 static void focusnext(const Arg *arg);
 static void focusnext_helper(bool arg);
 static void sendtoworkspace(const Arg *arg);
+static void sendtonextworkspace(const Arg *arg);
+static void sendtoprevworkspace(const Arg *arg);
 static void resizestep(const Arg *arg);
 static void resizestep_aspect(const Arg *arg);
 static void movestep(const Arg *arg);
@@ -461,6 +463,20 @@ void sendtoworkspace(const Arg *arg)
     delfromworkspace(focuswin, curws);
     xcb_unmap_window(conn, focuswin->id);
     xcb_flush(conn);
+}
+
+void sendtonextworkspace(const Arg *arg)
+{
+	Arg arg2 = {.i=0};
+	Arg arg3 = {.i=curws+1};
+	curws==WORKSPACES-1?sendtoworkspace(&arg2):sendtoworkspace(&arg3);
+}
+
+void sendtoprevworkspace(const Arg *arg)
+{
+	Arg arg2 = {.i=curws-1};
+	Arg arg3 = {.i=WORKSPACES-1};
+	curws>0?sendtoworkspace(&arg2):sendtoworkspace(&arg3);
 }
 
 uint32_t getcolor(const char *hex)  // Get the pixel values of a named colour colstr.

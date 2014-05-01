@@ -144,6 +144,9 @@ static key keys[] = {
     // Next/Previous workspace
     {  MOD ,              XK_v,          nextworkspace,     {.i=0}},
     {  MOD ,              XK_c,          prevworkspace,     {.i=0}},
+    // Move to Next/Previous workspace
+    {  MOD |SHIFT ,       XK_v,          sendtonextworkspace,{.i=0}},
+    {  MOD |SHIFT ,       XK_c,          sendtoprevworkspace,{.i=0}},
     // Iconify the window
     {  MOD ,              XK_i,          hide,              {.i=0}},
     // Make the window unkillable
