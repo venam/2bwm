@@ -176,7 +176,7 @@ static xcb_keycode_t* xcb_get_keycodes(xcb_keysym_t keysym);
 static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *con, int screen);
 static struct client *setupwin(xcb_window_t win);
 static struct client create_back_win(void);
-static void cleanup(const int code);
+static void cleanup(void);
 static uint32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
 static void grabbuttons(struct client *c);
@@ -227,7 +227,7 @@ void delfromworkspace(struct client *client, uint32_t ws){delitem(&wslist[ws], c
 void changeworkspace(const Arg *arg){ changeworkspace_helper(arg->i);}
 void nextworkspace(){curws==WORKSPACES-1?changeworkspace_helper(0):changeworkspace_helper(curws+1);}
 void prevworkspace(){curws>0?changeworkspace_helper(curws-1):changeworkspace_helper(WORKSPACES-1);}
-void twobwm_exit(){sigcode = 0; cleanup(0); exit(0);}
+void twobwm_exit(){exit(EXIT_SUCCESS);}
 void sigcatch(const int sig){sigcode = sig;}
 void saveorigsize(struct client *client)
 {
@@ -287,7 +287,7 @@ void movepointerback(const int16_t startx, const int16_t starty, const struct cl
         xcb_warp_pointer(conn, XCB_NONE, client->id,0,0,0,0,startx, starty);
 }
 
-void cleanup(const int code)        // Set keyboard focus to follow mouse pointer. Then exit.
+void cleanup(void)                  // Set keyboard focus to follow mouse pointer. Then exit.
 {                                   // We don't need to bother mapping all windows we know about. They
                                     // should all be in the X server's Save Set and should be mapped automagically.
     xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,XCB_CURRENT_TIME);
@@ -296,7 +296,6 @@ void cleanup(const int code)        // Set keyboard focus to follow mouse pointe
     xcb_flush(conn);
     if (NULL!=ewmh)   free(ewmh);
     xcb_disconnect(conn);
-    exit(code);
 }
 
 void arrangewindows(void)           // Rearrange windows to fit new screen size.
@@ -1091,7 +1090,6 @@ void start(const Arg *arg)
     if (conn) close(screen->root);
     setsid();
     execvp((char*)arg->com[0], (char**)arg->com);
-    exit(0);
 }
 
 void resizelim(struct client *client)
@@ -1884,7 +1882,7 @@ void run(void)
     sigcode = 0;
     while (0 == sigcode) { /* the WM is running */
         xcb_flush(conn);
-        if (xcb_connection_has_error(conn)) twobwm_exit();
+        if (xcb_connection_has_error(conn)) abort();
         if ((ev = xcb_wait_for_event(conn))) {
             if(ev->response_type==randrbase + XCB_RANDR_SCREEN_CHANGE_NOTIFY) getrandr();
             if (events[ev->response_type & ~0x80]) events[ev->response_type & ~0x80](ev);
@@ -1988,8 +1986,8 @@ int main()
     signal(SIGCHLD, SIG_IGN);
     signal(SIGINT, sigcatch);
     signal(SIGTERM, sigcatch);
+    atexit(cleanup);
     if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno)))
         if (setup(scrno)) run();
-    cleanup(sigcode); /* Die gracefully. */
-    exit(0);
+    exit(sigcode); /* the WM has stopped running, because sigcode is not 0 */
 }
