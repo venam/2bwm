@@ -80,6 +80,9 @@ Also, the clickable part works fine with the bar from lemonboy so you'd rather u
 
 If you experience problems with java GUI you can refer to [this](http://awesome.naquadah.org/wiki/Problems_with_Java) most probably doing `export _JAVA_AWT_WM_NONREPARENTING=1` will resolve the problem.
 
+To show hidden windows you can use the hidden tool:
+`hidden -c|xargs 9menu -popup -label Iconics -font "terminus12-10"`
+
 
 Screenshots:
 ============
