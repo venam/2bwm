@@ -118,7 +118,7 @@ enum { atom_desktop, atom_current_desktop, atom_unkillable, wm_delete_window, wm
 	wm_protocols, atom_nb_workspace, atom_focus, atom_client_list, atom_client_list_st, wm_hidden, NB_ATOMS
 };
 const char *atomnames[NB_ATOMS][1] = { 
-	{"_NET_WM_DESKTOP"}, {"_NET_CURRENT_DESKTOP"}, {"_NET_UNKILLABLE"}, {"WM_DELETE_WINDOW"}, {"WM_CHANGE_STATE"}, {"_NET_WM_STATE"},
+	{"_NET_WM_DESKTOP"}, {"_NET_CURRENT_DESKTOP"}, {"_NET_UNKILLABLE"}, {"WM_DELETE_WINDOW"}, {"WM_CHANGE_STATE"}, {"WM_STATE"},
 	{"WM_PROTOCOLS"}, {"_NET_NUMBER_OF_DESKTOPS"}, {"_NET_ACTIVE_WINDOW"}, {"_NET_CLIENT_LIST"}, {"_NET_CLIENT_LIST_STACKING"}, {"_NET_WM_STATE_HIDDEN"}
 };
 xcb_atom_t ATOM[NB_ATOMS];
@@ -1443,7 +1443,7 @@ void hide()
     /* Unmap window and declare iconic. Unmapping will generate an UnmapNotify event so we can forget about the window later. */
     focuswin->iconic = true;
     xcb_unmap_window(conn, focuswin->id);
-    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, focuswin->id, ATOM[wm_state], XCB_ATOM_ATOM, 32, 3, data); 
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, focuswin->id, ATOM[wm_state], ATOM[wm_state], 32, 3, data); 
     xcb_flush(conn);
 }
 

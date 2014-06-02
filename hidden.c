@@ -138,7 +138,7 @@ int findhidden(void)
                 if (printcommand)
                 {
                     /* FIXME: Need to escape : in prop.name. */
-                    printf("'%s':'xdotool windowmap 0x%x windowraise 0x%x'\n",
+                    printf("'%s':'xdotool windowactivate 0x%x windowraise 0x%x'\n",
                            prop.name, children[i], children[i]);
                 }
                 else
