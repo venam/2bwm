@@ -1431,9 +1431,9 @@ void maxhalf(const Arg *arg)
     focuswin->verthor = true;
     noborder(&temp, focuswin,false);
     raise_current_window();
-    setborders(focuswin,true);
     fitonscreen(focuswin);
     centerpointer(focuswin->id,focuswin);
+    setborders(focuswin,true);
 }
 
 void hide()
