@@ -619,12 +619,12 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
             client->monitor = monlist->data; /* Window coordinates are outside all physical monitors. Choose the first screen.*/
     }
     fitonscreen(client);
-    setborders(client,true);
     xcb_map_window(conn, client->id);                     /* Show window on screen. */
     long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };/* Declare window normal. */
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,ATOM[wm_state], ATOM[wm_state], 32, 2, data);
     centerpointer(e->window,client);
     updateclientlist();
+    setborders(client,true);
 }
 
 struct client *setupwin(xcb_window_t win)
