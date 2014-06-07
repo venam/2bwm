@@ -169,8 +169,14 @@ Available through the wip ports of yrmt:
     # make install
 
 
+Gentoo/Funtoo
+-------------
+
+Here's an ebuild by crshd [2bwm](https://github.com/nixers-projects/UnixHub-Portage/tree/master/x11-wm/2bwm)
+
+
 OpenBSD
---------------------------
+-------
 
 Tweaks you need for 2bwm on OpenBSD: add `/usr/X11R6/include` to search path,
 install `gcc-4.7`, use `CC=egcc make`
@@ -316,6 +322,7 @@ Big thanks for the help of the following persons:
 * Z3bra
 * cicku
 * tbck
+* crshd
 * anshin
 
 Thanks to the UnixHub/Nixers community for the support and ideas.  
