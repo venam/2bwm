@@ -239,7 +239,7 @@ Screenshots:
 
 Recommended Softwares
 =====================
-2bwm doesn't come with any third party softwares but it's nice to know what
+2bwm doesn't come with any third party software but it's nice to know what
 can help building up a complete working and effective system.
 
 * bar/panel
