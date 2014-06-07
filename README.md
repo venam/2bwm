@@ -168,6 +168,15 @@ Available through the wip ports of yrmt:
     $ make
     # make install
 
+
+OpenBSD
+--------------------------
+
+Tweaks you need for 2bwm on OpenBSD: add `/usr/X11R6/include` to search path,
+install `gcc-4.7`, use `CC=egcc make`
+
+
+
 From sources
 ------------
 
@@ -183,12 +192,6 @@ it right from the sources
 
 Troubleshooting
 ===============
-
-Installing 2bwm on OpenBSD
---------------------------
-
-tweaks you need for 2bwm on OpenBSD: add `/usr/X11R6/include` to search path,
-install `gcc-4.7`, use `CC=egcc make`
 
 No borders appear when using URxvt
 ----------------------------------
@@ -313,7 +316,6 @@ Big thanks for the help of the following persons:
 * Z3bra
 * cicku
 * tbck
-* jmbi
 * anshin
 
 Thanks to the UnixHub/Nixers community for the support and ideas.  
