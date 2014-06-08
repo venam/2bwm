@@ -168,10 +168,7 @@ Available through the wip ports of yrmt:
     $ make
     # make install
 
-Pkgsrc WIP
-----------
-
-Can be found here [2bwm](http://pkgsrc-wip.cvs.sourceforge.net/viewvc/pkgsrc-wip/wip/2bwm/)
+Also available through pkgsrc-wip
 
 
 Gentoo/Funtoo
