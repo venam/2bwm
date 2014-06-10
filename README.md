@@ -7,7 +7,7 @@ the XCB library and derived from mcwm written by Michael Cardell.
 In 2bWM everything is accessible from the keyboard but a pointing device can be
 used for move, resize and raise/lower.  
 WARNING: This WM and this repository are experimental, 2bwm is only meant for
-advance users.  
+advanced users.  
 
 
 Features:
