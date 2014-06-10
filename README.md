@@ -325,6 +325,7 @@ Big thanks for the help of the following persons:
 * cicku
 * tbck
 * crshd
+* jolia
 * anshin
 
 Thanks to the UnixHub/Nixers community for the support and ideas.  
