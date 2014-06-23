@@ -2,7 +2,7 @@
  * over the XCB library and derived from mcwm written by Michael Cardell.
  * Heavily modified version of http://www.hack.org/mc/hacks/mcwm/
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at the domain hack.org.
- * Copyright (c) 2014 Patrick Louis, patrick at the domain iotek do org.
+ * Copyright (c) 2014 Patrick Louis, patrick at the domain iotek dot org.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -211,7 +211,7 @@ static void configwin(xcb_window_t win, uint16_t mask,const struct winconf *wc);
 static void sigcatch(const int sig);
 static void ewmh_init(void);
 static xcb_atom_t getatom(const char *atom_name);
-static void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *mon_height,const struct client *client);
+static void getmonsize(int8_t with_offsets, int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *mon_height,const struct client *client);
 static void noborder(int16_t *temp,struct client *client, bool set_unset);
 static void movepointerback(const int16_t startx, const int16_t starty, const struct client *client);
 static void snapwindow(struct client *client);
@@ -506,24 +506,25 @@ void forgetwin(xcb_window_t win)    // Forget everything about a client with cli
     }
 }
 
-void getmonsize(int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *mon_height, const struct client *client)
+void getmonsize(int8_t with_offsets, int16_t *mon_x, int16_t *mon_y, uint16_t *mon_width, uint16_t *mon_height, const struct client *client)
 {
     if (NULL == client || NULL == client->monitor) {/* Window isn't attached to any monitor, so we use the root window size. */
 		*mon_x      = *mon_y = 0;
 		*mon_width  = screen->width_in_pixels;
 		*mon_height = screen->height_in_pixels;
-		goto offsets;
+	} else {
+		*mon_x      = client->monitor->x;
+		*mon_y      = client->monitor->y;
+		*mon_width  = client->monitor->width;
+		*mon_height = client->monitor->height;
 	}
-	*mon_x      = client->monitor->x;
-	*mon_y      = client->monitor->y;
-	*mon_width  = client->monitor->width;
-	*mon_height = client->monitor->height;
 
-	offsets:
-	*mon_x      += offsets[0];
-	*mon_y      += offsets[1];
-	*mon_width  -= offsets[2];
-	*mon_height -= offsets[3];
+	if (with_offsets) {
+		*mon_x      += offsets[0];
+		*mon_y      += offsets[1];
+		*mon_width  -= offsets[2];
+		*mon_height -= offsets[3];
+	}
 }
 
 void noborder(int16_t *temp,struct client *client, bool set_unset)
@@ -548,7 +549,7 @@ void fitonscreen(struct client *client)
         client->maxed = false;
         setborders(client,false);
     }
-	getmonsize(&mon_x, &mon_y, &mon_width, &mon_height,client);
+	getmonsize(1, &mon_x, &mon_y, &mon_width, &mon_height,client);
 	if (client->x > mon_x + mon_width || client->y > mon_y + mon_height ||client->x < mon_x||client->y < mon_y) {
 		willmove = true;
 		if (client->x > mon_x + mon_width) /* Is it outside the physical monitor? */
@@ -948,7 +949,7 @@ void movelim(struct client *client) //Keep the window inside the screen
 {
     int16_t mon_y, mon_x,temp=0;
     uint16_t mon_height, mon_width;
-    getmonsize(&mon_x, &mon_y, &mon_width, &mon_height, client);
+    getmonsize(1, &mon_x, &mon_y, &mon_width, &mon_height, client);
     noborder(&temp, client,true);
     /* Is it outside the physical monitor or close to the side? */
     if (client->y-conf.borderwidth < mon_y)     client->y = mon_y;
@@ -1096,7 +1097,7 @@ void resizelim(struct client *client)
 {                                   // Resize with limit.
     int16_t mon_x, mon_y,temp=0;
     uint16_t mon_width, mon_height;
-    getmonsize( &mon_x, &mon_y, &mon_width, &mon_height, client);
+    getmonsize(1,  &mon_x, &mon_y, &mon_width, &mon_height, client);
     noborder(&temp, client,true);
     /* Is it smaller than it wants to  be? */
     if (0 != client->min_height && client->height < client->min_height)
@@ -1174,7 +1175,7 @@ static void snapwindow(struct client *client)
     struct client *win;
     int16_t mon_x, mon_y;
     uint16_t mon_width, mon_height;
-    getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
+    getmonsize(1, &mon_x,&mon_y,&mon_width,&mon_height,focuswin);
     for (item = wslist[curws]; item != NULL; item = item->next) {
         win = item->data;
         if (client != win) {
@@ -1335,7 +1336,7 @@ void maximize(const Arg *arg)
     uint32_t values[4];
     int16_t mon_x, mon_y;
     uint16_t mon_width, mon_height;
-    getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
+    getmonsize(arg->i, &mon_x,&mon_y,&mon_width,&mon_height,focuswin);
     saveorigsize(focuswin);
     values[0] = 0;  /* Remove borders. */
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
@@ -1363,7 +1364,7 @@ void maxvert_hor(const Arg *arg)
     uint32_t values[2];
     int16_t mon_y, mon_x,temp=0;
     uint16_t mon_height, mon_width;
-    getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
+    getmonsize(1, &mon_x,&mon_y,&mon_width,&mon_height,focuswin);
     saveorigsize(focuswin);
     noborder(&temp, focuswin,true);
 
@@ -1397,7 +1398,7 @@ void maxhalf(const Arg *arg)
     uint32_t values[4];
     int16_t mon_x, mon_y,temp=0;
     uint16_t mon_width, mon_height;
-    getmonsize(&mon_x,&mon_y,&mon_width,&mon_height,focuswin);
+    getmonsize(1, &mon_x,&mon_y,&mon_width,&mon_height,focuswin);
     noborder(&temp, focuswin,true);
     if (arg->i>0) {
         if (arg->i>2) { /* in folding mode */
@@ -1472,7 +1473,7 @@ void teleport(const Arg *arg)
     int16_t pointx, pointy, mon_x,mon_y,temp=0;
     if (!getpointer(&focuswin->id, &pointx, &pointy)) return;
     uint16_t mon_width, mon_height;
-    getmonsize(&mon_x, &mon_y, &mon_width, &mon_height,focuswin);
+    getmonsize(1, &mon_x, &mon_y, &mon_width, &mon_height,focuswin);
     noborder(&temp, focuswin,true);
     uint16_t tmp_x = focuswin->x;  uint16_t tmp_y=  focuswin->y;
     focuswin->x = mon_x; focuswin->y = mon_y;
@@ -1650,7 +1651,7 @@ void configurerequest(xcb_generic_event_t *ev)
     uint16_t mon_width, mon_height;
     uint32_t values[1];
     if ((client = findclient(&e->window))) { /* Find the client. */
-        getmonsize(&mon_x, &mon_y, &mon_width, &mon_height, client);
+        getmonsize(1, &mon_x, &mon_y, &mon_width, &mon_height, client);
         if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
             if (!client->maxed && !client->hormaxed) client->width = e->width;
         if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
