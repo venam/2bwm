@@ -298,6 +298,10 @@ TODO:
 
 * Toggable sticky workspace per monitor
 
+* Check why sometimes when mplayer is started the borders doesn't have their appropriate colors
+
+* toggle hide/show panel (idea from FrankenWM)
+
 * Extended Window Manager Hints (EWMH)
 
   - Use the new xcb-ewmh for the EWMH hints.
