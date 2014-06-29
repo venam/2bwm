@@ -230,6 +230,15 @@ To show hidden windows you can use the hidden tool:
 
     hidden -c|xargs 9menu -popup -label Iconics -font "terminus12-10"
 
+Mplayer borders aren't set on startup
+-------------------------------------
+
+A simple solution is to always use the video output as gl.<br>
+You can set it in your mplayer config `$HOME/.mplayer/config`:
+
+    vo=gl
+
+
 Preventing X11 Crash
 --------------------
 To prevent X to crash you can start the X session over your favorite terminal
@@ -297,8 +306,6 @@ TODO:
 =====
 
 * Toggable sticky workspace per monitor
-
-* Check why sometimes when mplayer is started the borders doesn't have their appropriate colors
 
 * Extended Window Manager Hints (EWMH)
 
