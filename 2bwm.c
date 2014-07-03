@@ -1386,18 +1386,6 @@ void maxvert_hor(const Arg *arg)
                            | XCB_CONFIG_WINDOW_WIDTH, values);
         focuswin->hormaxed = true;
     }
-    else if (2==arg->i){
-    focuswin->width = mon_width - (conf.borderwidth * 2 + focuswin->x);
-        values[0] = focuswin->width;
-        xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_WIDTH, values);
-        focuswin->hormaxed = true;
-    }
-    else if (3==arg->i){
-        focuswin->height = mon_height - (conf.borderwidth * 2 +focuswin->y);
-        values[0] = focuswin->height;
-        xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_HEIGHT, values);
-        focuswin->vertmaxed = true;
-    }
     noborder(&temp, focuswin,false);
     raise_current_window();
     centerpointer(focuswin->id,focuswin);

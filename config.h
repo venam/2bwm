@@ -122,10 +122,6 @@ static key keys[] = {
     {  MOD ,              XK_m,          maxvert_hor,       {.i=1}},
     // Maximize horizontally
     {  MOD |SHIFT,        XK_m,          maxvert_hor,       {.i=0}},
-    //maximize downward
-    {  MOD |ALT,          XK_m,          maxvert_hor,       {.i=3}},
-    //maximize rightward
-    {  MOD |CONTROL,      XK_m,          maxvert_hor,       {.i=2}},
     // Maximize and move
     // vertically left
     {  MOD |SHIFT,        XK_y,          maxhalf,           {.i=2}},
