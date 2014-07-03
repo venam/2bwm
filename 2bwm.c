@@ -1378,7 +1378,7 @@ void maxvert_hor(const Arg *arg)
                              | XCB_CONFIG_WINDOW_HEIGHT, values);
         focuswin->vertmaxed = true;
     }
-    else {
+    else if {
         focuswin->x = mon_x;
         focuswin->width = mon_width - (conf.borderwidth * 2);
         values[0] = focuswin->x;        values[1] = focuswin->width;
