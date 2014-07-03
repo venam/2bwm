@@ -1368,7 +1368,7 @@ void maxvert_hor(const Arg *arg)
     saveorigsize(focuswin);
     noborder(&temp, focuswin,true);
 
-    if (arg->i>0) {
+    if (arg->i==1) {
         focuswin->y = mon_y;
         /* Compute new height considering height increments and screen height. */
         focuswin->height = mon_height - (conf.borderwidth * 2);
@@ -1378,7 +1378,7 @@ void maxvert_hor(const Arg *arg)
                              | XCB_CONFIG_WINDOW_HEIGHT, values);
         focuswin->vertmaxed = true;
     }
-    else if {
+    else if (arg->i==0) {
         focuswin->x = mon_x;
         focuswin->width = mon_width - (conf.borderwidth * 2);
         values[0] = focuswin->x;        values[1] = focuswin->width;
