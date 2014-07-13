@@ -611,7 +611,7 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
     addtoworkspace(client, curws); /* Add this window to the current workspace. */
     if (!client->usercoord) { /* If we don't have specific coord map it where the pointer is.*/
         if (!getpointer(&screen->root, &client->x, &client->y)) client->x = client->y = 0;
-        movewindow(client->id, client->x, client->y);
+        movewindow(client->id, client->x-(client->width/2), client->y-(client->height/2));
     }
     /* Find the physical output this window will be on if RANDR is active. */
     if (-1 != randrbase) {
