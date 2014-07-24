@@ -44,7 +44,7 @@ http://www.hack.org/mc/hacks/mcwm/
 resources comparison
 --------------------
 
-When talking in size proportion, 2bwm binary is 36KB, when dwm bin is 33KB,
+When comparing compiled executables' size, 2bwm is 36KB, dwm is 33KB,
 dvtm 37KB, and i3 343KB.
 
     raptor $ size /usr/local/bin/2bwm
@@ -78,7 +78,7 @@ dvtm 37KB, and i3 343KB.
         text   data     bss     dec     hex filename
         296570 1984    1832  300386   49562 awesome
 
-Now comparing Memory ressource usage. (in KB)  
+Now for memory (RAM) usage (in KB):
 mcwm -- the wm 2bwm is based upon  
 dvtm -- a terminal multiplexer  
 
@@ -105,9 +105,9 @@ in the end.
 Panels / Status bar
 ===================
 
-2bwm does not come with a bar, or panel. 2bwm will respect the 
-`_NET_WM_WINDOW_TYPE_DOCK` of windows, and ignore them. So most 
-panels should work. The followings were tested and work with 2bwm:
+2bwm does not come with any bar or panel. 2bwm will respect the 
+`_NET_WM_WINDOW_TYPE_DOCK` of windows, and ignore them, thus most 
+panels should work. The following were tested and work with 2bwm:
 
 Panels
 ------
@@ -136,7 +136,7 @@ Available on the AUR:
 [2bwm](https://aur.archlinux.org/packages/2bwm/)
 [2bwm-git](https://aur.archlinux.org/packages/2bwm-git/)
 
-Download and extract the tarball, then
+Download and extract the tarball, then install it as a package:
 
     $ curl -s 'https://aur.archlinux.org/packages/2b/2bwm/2bwm.tar.gz'|tar xzf -
     $ cd 2bwm
@@ -147,7 +147,7 @@ Download and extract the tarball, then
 CRUX
 ----
 
-Available through z3bra's collection
+Available through z3bra's collection:
 [2bwm-git](http://crux.z3bra.org/ports/2bwm-git/)
 
     $ httpup sync http://crux.z3bra.org/ports/#2bwm-git 2bwm-git
@@ -203,13 +203,12 @@ Troubleshooting
 
 No borders appear when using URxvt
 ----------------------------------
-This might be due to you .Xressources. If you have `URxvt.depth: 32` comment it.
+This might be due to you .Xresources file. If you have `URxvt.depth: 32` comment it.
 
 Clickable areas with `bar`
 --------------------------
 
-The problem with https://github.com/u-ra/bar got solved by z3bra. Here's the
-solution:
+The problem with https://github.com/u-ra/bar got solved by z3bra:
 
     sed -i 's/RELEASE/PRESS/;s/release/press' bar.c
 
@@ -230,10 +229,11 @@ To show hidden windows you can use the hidden tool:
 
     hidden -c|xargs 9menu -popup -label Iconics -font "terminus12-10"
 
-Mplayer borders aren't set on startup
+mplayer borders aren't set on startup
 -------------------------------------
 
-A simple solution is to always use the video output as gl.<br>
+A simple solution is to always use the video output as gl.
+
 You can set it in your mplayer config `$HOME/.mplayer/config`:
 
     vo=gl
