@@ -157,6 +157,7 @@ static void raise_current_window(void);
 static void raiseorlower();
 static void setunfocus(void);
 static void maximize(const Arg *arg);
+static void maximize_helper(struct client *client,uint16_t mon_x, uint16_t mon_y, uint16_t mon_width, uint16_t mon_height);
 static void hide();
 static void clientmessage(xcb_generic_event_t *ev);
 static void deletewin();
@@ -538,6 +539,17 @@ void noborder(int16_t *temp,struct client *client, bool set_unset)
         else conf.borderwidth = *temp;
     }
 }
+void maximize_helper(struct client *client,uint16_t mon_x, uint16_t mon_y, uint16_t mon_width, uint16_t mon_height)
+{
+    saveorigsize(client);
+    uint32_t values[4];
+    values[0] = 0; 
+    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
+    client->x = mon_x;             client->y = mon_y;
+    client->width = mon_width;     client->height = mon_height;
+    moveresize(client->id, client->x, client->y, client->width, client->height);
+    client->maxed = true;
+}
 
 void fitonscreen(struct client *client)
 {                                   // Fit client on physical screen, moving and resizing as necessary.
@@ -552,18 +564,19 @@ void fitonscreen(struct client *client)
         setborders(client,false);
     }
     else { /* not maxed but look as if it was maxed, then make it maxed */
-        if (client->width==mon_width && client->height==mon_height) {
-            client->x      = 0;                     client->y      = 0;
+        if (client->width==mon_width && client->height==mon_height) willresize = true;
+        else {
+            getmonsize(0, &mon_x,&mon_y,&mon_width,&mon_height,client);
+            if (client->width==mon_width && client->height==mon_height) willresize = true;
+        }
+        if (willresize) {
+            client->x      = mon_x;                     client->y      = mon_y;
             client->width -= conf.borderwidth*2;    client->height-= conf.borderwidth*2;
-            saveorigsize(client);
-            uint32_t values[4];
-            values[0] = 0; 
-            xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
-            client->x = mon_x;             client->y = mon_y;
-            client->width = mon_width;     client->height = mon_height;
-            moveresize(client->id, client->x, client->y, client->width, client->height);
-            client->maxed = true;
+            maximize_helper(client, mon_x,mon_y,mon_width,mon_height);
             return;
+        }
+        else {
+            getmonsize(1, &mon_x, &mon_y, &mon_width, &mon_height,client);
         }
     }
     if (client->x > mon_x + mon_width || client->y > mon_y + mon_height ||client->x < mon_x||client->y < mon_y) {
@@ -588,7 +601,7 @@ void fitonscreen(struct client *client)
     }
     noborder(&temp, client, true);
     /* If the window is larger than our screen, just place it in the corner and resize. */
-    if (client->width + conf.borderwidth * 2 > mon_x+ mon_width) {
+    if (client->width + conf.borderwidth * 2 > mon_width) {
         client->x = mon_x;
         client->width = mon_width - conf.borderwidth * 2;;
         willmove = willresize = true;
@@ -598,7 +611,7 @@ void fitonscreen(struct client *client)
             client->x = mon_x + mon_width - (client->width + conf.borderwidth * 2);
             willmove = true;
         }
-    if (client->height + conf.borderwidth * 2 > mon_height + mon_y) {
+    if (client->height + conf.borderwidth * 2 > mon_height) {
         client->y = mon_y;
         client->height = mon_height - conf.borderwidth * 2;
         willmove = willresize = true;
@@ -1355,14 +1368,8 @@ void maximize(const Arg *arg)
     int16_t mon_x, mon_y;
     uint16_t mon_width, mon_height;
     getmonsize(arg->i, &mon_x,&mon_y,&mon_width,&mon_height,focuswin);
-    saveorigsize(focuswin);
-    values[0] = 0;  /* Remove borders. */
-    xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
-    focuswin->x = mon_x;             focuswin->y = mon_y;
-    focuswin->width = mon_width;    focuswin->height = mon_height;
-    moveresize(focuswin->id, focuswin->x, focuswin->y, focuswin->width, focuswin->height);
+    maximize_helper(focuswin,mon_x,mon_y,mon_width,mon_height);
     raise_current_window();
-    focuswin->maxed = true;
     xcb_flush(conn);
 }
 
