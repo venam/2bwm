@@ -201,6 +201,7 @@ static struct client *findclient(const xcb_drawable_t *win);
 static void setfocus(struct client *client);
 static void resizelim(struct client *client);
 static void resize(xcb_drawable_t win, const uint16_t width, const uint16_t height);
+static void moveresize(xcb_drawable_t win, const uint16_t x, const uint16_t y,const uint16_t width, const uint16_t height);
 static void mousemove(const int16_t rel_x,const int16_t rel_y);
 static void mouseresize(struct client *client,const int16_t rel_x,const int16_t rel_y);
 static void setborders(struct client *client,const bool isitfocused);
@@ -545,11 +546,26 @@ void fitonscreen(struct client *client)
     bool willmove,willresize;
     willmove = willresize = client->vertmaxed = client->hormaxed = false;
 
+    getmonsize(1, &mon_x, &mon_y, &mon_width, &mon_height,client);
     if (client->maxed) {
         client->maxed = false;
         setborders(client,false);
     }
-    getmonsize(1, &mon_x, &mon_y, &mon_width, &mon_height,client);
+    else { /* not maxed but look as if it was maxed, then make it maxed */
+        if (client->width==mon_width && client->height==mon_height) {
+            client->x      = 0;                     client->y      = 0;
+            client->width -= conf.borderwidth*2;    client->height-= conf.borderwidth*2;
+            saveorigsize(client);
+            uint32_t values[4];
+            values[0] = 0; 
+            xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
+            client->x = mon_x;             client->y = mon_y;
+            client->width = mon_width;     client->height = mon_height;
+            moveresize(client->id, client->x, client->y, client->width, client->height);
+            client->maxed = true;
+            return;
+        }
+    }
     if (client->x > mon_x + mon_width || client->y > mon_y + mon_height ||client->x < mon_x||client->y < mon_y) {
         willmove = true;
         if (client->x > mon_x + mon_width) /* Is it outside the physical monitor? */
@@ -626,7 +642,7 @@ void newwin(xcb_generic_event_t *ev)// Set position, geometry and attributes of 
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,ATOM[wm_state], ATOM[wm_state], 32, 2, data);
     centerpointer(e->window,client);
     updateclientlist();
-    setborders(client,true);
+    if (!client->maxed) setborders(client,true);
 }
 
 struct client *setupwin(xcb_window_t win)
@@ -1320,8 +1336,7 @@ void unmax(struct client *client)
     values[0] = client->x;            values[1] = client->y;
     values[2] = client->width;        values[3] = client->height;
     client->maxed   = client->hormaxed= 0;
-    mask = XCB_CONFIG_WINDOW_X|XCB_CONFIG_WINDOW_Y|XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT;
-    xcb_configure_window(conn, client->id, mask, values);
+    moveresize(client->id, client->x, client->y, client->width, client->height);
     centerpointer(client->id,client);
     setborders(client,true);
 }
@@ -1345,10 +1360,7 @@ void maximize(const Arg *arg)
     xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
     focuswin->x = mon_x;             focuswin->y = mon_y;
     focuswin->width = mon_width;    focuswin->height = mon_height;
-    values[0] = focuswin->x;                 values[1] = focuswin->y;
-    values[2] = focuswin->width;             values[3] = focuswin->height;
-    xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_X|XCB_CONFIG_WINDOW_Y
-                         |XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT, values);
+    moveresize(focuswin->id, focuswin->x, focuswin->y, focuswin->width, focuswin->height);
     raise_current_window();
     focuswin->maxed = true;
     xcb_flush(conn);
@@ -1429,9 +1441,7 @@ void maxhalf(const Arg *arg)
             else           focuswin->y = mon_y+mon_height-(focuswin->height+conf.borderwidth*2);
         }
     }
-    values[0] = focuswin->width;        values[1] = focuswin->height;
-    xcb_configure_window(conn, focuswin->id, XCB_CONFIG_WINDOW_WIDTH|XCB_CONFIG_WINDOW_HEIGHT, values);
-    movewindow(focuswin->id, focuswin->x, focuswin->y);
+    moveresize(focuswin->id, focuswin->x, focuswin->y, focuswin->width, focuswin->height);
     focuswin->verthor = true;
     noborder(&temp, focuswin,false);
     raise_current_window();
