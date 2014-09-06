@@ -1,6 +1,6 @@
 ///---User configurable stuff---///
 ///---Modifiers---///
-#define MOD             XCB_MOD_MASK_4       /* Super/Windows key  or check xmodmap(1) with -pm*/
+#define MOD             XCB_MOD_MASK_4       /* Super/Windows key  or check xmodmap(1) with -pm  defined in /usr/include/xcb/xproto.h */
 ///--Speed---///
 /* Move this many pixels when moving or resizing with keyboard unless the window has hints saying otherwise.
  *0)move step slow   1)move step fast
@@ -20,6 +20,9 @@ static const uint8_t offsets[] = {0,0,0,0};
  *4)fixedunkilcol    5)outerbordercol
  *6)emptycol         */
 static const char *colors[] = {"#35586c","#333333","#7a8c5c","#ff6666","#cc9933","#0d131a","#000000"};
+/*
+ * If you are using a composition manager enable the COMPTON flag in the Makefile
+ */
 /* if this is set to true the inner border and outer borders colors will be swapped */
 static const bool inverted_colors = true;
 ///---Cursor---///
@@ -173,13 +176,14 @@ static key keys[] = {
     {  MOD ,              XK_w,          start,             {.com = menucmd}},
     {  MOD |SHIFT,        XK_w,          start,             {.com = gmrun}},
     // Exit or restart 2bwm
-    {  MOD |CONTROL,      XK_q,          twobwm_exit,         {.i=0}},
-    {  MOD |CONTROL,      XK_r,          twobwm_restart,      {.i=0}},
-    {  MOD ,              XK_space,      halfandcentered,    {.i=0}},
+    {  MOD |CONTROL,      XK_q,          twobwm_exit,       {.i=0}},
+    {  MOD |CONTROL,      XK_r,          twobwm_restart,    {.i=0}},
+    {  MOD ,              XK_space,      halfandcentered,   {.i=0}},
     // Fake clicks using xdotool
     {  MOD |CONTROL,      XK_Up,         start,             {.com = click1}},
     {  MOD |CONTROL,      XK_Down,       start,             {.com = click2}},
-    {  MOD |CONTROL,      XK_Right,      start,             {.com = click3}},
+	{  MOD |CONTROL,      XK_Right,      start,             {.com = click3}},
+
     // Change current workspace
        DESKTOPCHANGE(     XK_1,                             0)
        DESKTOPCHANGE(     XK_2,                             1)

@@ -1,11 +1,11 @@
 VERSION=2014-8
 
 RM=/bin/rm
-PREFIX=/usr/local
-LIB_SUFFIX=lib
-MANPREFIX=$(PREFIX)/share/man
-TWOBWM_PATH=${PREFIX}/bin/2bwm
-X11_INCLUDE=/usr/local/include
+PREFIX?=/usr/local
+LIB_SUFFIX?=lib
+MANPREFIX?=$(PREFIX)/share/man
+TWOBWM_PATH?=${PREFIX}/bin/2bwm
+X11_INCLUDE?=/usr/local/include
 
 #CC=clang
 DIST=2bwm-$(VERSION)
