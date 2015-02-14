@@ -7,7 +7,7 @@
  *2)mouse slow       3)mouse fast     */
 static const uint16_t movements[] = {20,40,15,400};
 /* resize by line like in mcwm -- jmbi */
-static const bool     resize_by_line          = true;
+static const bool     resize_by_line          = false;
 /* the ratio used when resizing and keeping the aspect */
 static const float    resize_keep_aspect_ratio= 1.03;
 ///---Offsets---///
@@ -24,7 +24,7 @@ static const char *colors[] = {"#35586c","#333333","#7a8c5c","#ff6666","#cc9933"
  * If you are using a composition manager enable the COMPTON flag in the Makefile
  */
 /* if this is set to true the inner border and outer borders colors will be swapped */
-static const bool inverted_colors = true;
+static const bool inverted_colors = false;
 ///---Cursor---///
 /* default position of the cursor:
  * correct values are:
@@ -35,17 +35,21 @@ static const bool inverted_colors = true;
 /*0) Outer border size. If you put this negative it will be a square.
  *1) Full borderwidth    2) Magnet border size    
  *3) Resize border size  */
-static const uint8_t borders[] = {3,5,5,4};
+static const uint8_t borders[] = {3,9,7,8};
 /* Windows that won't have a border.*/
 #define LOOK_INTO "WM_NAME"
-static const char *ignore_names[] = {"bar", "xclock"};
+static const char *ignore_names[] = {"xclock"};
 ///--Menus and Programs---///
 static const char *menucmd[]   = { "/usr/bin/my_menu.sh", NULL };
-static const char *gmrun[]     = { "/usr/bin/gmrun",NULL};
+static const char *gmrun[]     = { "/usr/bin/my_menu2.sh",NULL};
 static const char *terminal[]  = { "urxvtc", NULL };
 static const char *click1[]    = { "xdotool","click", "1", NULL };
 static const char *click2[]    = { "xdotool","click", "2", NULL };
 static const char *click3[]    = { "xdotool","click", "3", NULL };
+static const char *vol_up[]    = { "amixer", "set", "Master", "unmute", "3%+", "-q", NULL };
+static const char *vol_down[]  = { "amixer", "set", "Master", "unmute", "3%-", "-q", NULL };
+static const char *vol_mute[]  = { "amixer", "set", "Master", "mute", "-q", NULL };
+
 ///--Custom foo---///
 static void halfandcentered(const Arg *arg)
 {
@@ -183,6 +187,12 @@ static key keys[] = {
     {  MOD |CONTROL,      XK_Up,         start,             {.com = click1}},
     {  MOD |CONTROL,      XK_Down,       start,             {.com = click2}},
 	{  MOD |CONTROL,      XK_Right,      start,             {.com = click3}},
+	{  MOD ,              XK_KP_Add,start,             {.com = vol_up}},
+	{  MOD ,              XK_KP_Divide,  start,             {.com = vol_down}},
+	{  MOD ,              XK_KP_Subtract,start,             {.com = vol_mute}},
+//    {  MOD |CONTROL,      XK_Up,         cursor_press,        {.i = 1}},
+//    {  MOD |CONTROL,      XK_Down,       cursor_press,        {.i = 2}},
+//    {  MOD |CONTROL,      XK_Right,      cursor_press,        {.i = 3}},
 
     // Change current workspace
        DESKTOPCHANGE(     XK_1,                             0)

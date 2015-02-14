@@ -1275,59 +1275,77 @@ void setborders(struct client *client,const bool isitfocused)
 {
     if (client->maxed || client->ignore_borders) return;
     uint32_t values[1];  /* this is the color maintainer */
-    uint16_t half = 0;
     bool inv = inverted_colors;
 
     values[0] = conf.borderwidth; /* Set border width. */
     xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);        
+
     if (top_win!=0 &&client->id ==top_win) inv = !inv;
-    half = conf.outer_border;
+	uint16_t ipadding = conf.borderwidth - conf.outer_border;
+
     xcb_rectangle_t rect_inner[] = {
-        { client->width,0, conf.borderwidth-half,client->height+conf.borderwidth-half},
-        { client->width+conf.borderwidth+half,0, conf.borderwidth-half,client->height+conf.borderwidth-half},
-        { 0,client->height,client->width+conf.borderwidth-half,conf.borderwidth-half},
-        { 0, client->height+conf.borderwidth+half,client->width+conf.borderwidth-half,conf.borderwidth-half},
-        { client->width+conf.borderwidth+half,conf.borderwidth+client->height+half,conf.borderwidth,conf.borderwidth }
+		{ client->width+(ipadding/2), 0, (ipadding/2) ,client->height+ipadding-1},
+		{ client->width+conf.borderwidth+conf.outer_border,0, (ipadding/2),client->height+ipadding},
+		{ 0,client->height+(ipadding/2),client->width+ipadding,(ipadding/2)},
+		{ 0, client->height+conf.borderwidth+conf.outer_border,client->width+ipadding,(ipadding/2)},
+		{ client->width+conf.borderwidth+conf.outer_border,client->height+conf.borderwidth+conf.outer_border,conf.borderwidth,(ipadding/2.0) },
+		{ client->width+conf.borderwidth+conf.outer_border,client->height+conf.borderwidth+conf.outer_border,(ipadding/2.0),conf.borderwidth },
+		{ client->width+conf.borderwidth+conf.outer_border,client->height+(ipadding/2),conf.borderwidth,(ipadding/2) },
+		{ client->width+(ipadding/2),client->height+conf.borderwidth+conf.outer_border,(ipadding/2),conf.borderwidth },
     };
     xcb_rectangle_t rect_outer[] = {
-        {client->width+conf.borderwidth-half,0,half,client->height+conf.borderwidth*2},
-        {client->width+conf.borderwidth,0,half,client->height+conf.borderwidth*2},
-        {0,client->height+conf.borderwidth-half,client->width+conf.borderwidth*2,half},
-        {0,client->height+conf.borderwidth,client->width+conf.borderwidth*2,half},
-        {1,1,1,1}
+		{0,0,client->width+conf.borderwidth*2, client->height+conf.borderwidth*2},
     };
     xcb_pixmap_t pmap = xcb_generate_id(conn);
     /* my test have shown that drawing the pixmap directly on the root window is faster then drawing it on the window directly */
     xcb_create_pixmap(conn, screen->root_depth, pmap, screen->root, client->width+(conf.borderwidth*2), client->height+(conf.borderwidth*2));
     xcb_gcontext_t gc = xcb_generate_id(conn);
     xcb_create_gc(conn, gc, pmap, 0, NULL);
-    if (inv) {
-        xcb_rectangle_t fake_rect[5];
-        for (uint8_t i=0;i<5;i++) {
-            fake_rect[i]  = rect_outer[i];
-            rect_outer[i] = rect_inner[i];
-            rect_inner[i] = fake_rect[i];
-        }
-    }
-    values[0]  = conf.outer_border_col;
-    if (client->unkillable || client->fixed) {
-        if (client->unkillable && client->fixed)
-            values[0]  = conf.fixed_unkil_col;
-        else
-            if (client->fixed)
-                values[0]  = conf.fixedcol;
-            else
-                values[0]  = conf.unkillcol;
-    }
+	values[0] = XCB_CAP_STYLE_ROUND;
+	xcb_change_gc(conn, gc, XCB_GC_CAP_STYLE, &values[0]);
+	values[0] = XCB_JOIN_STYLE_ROUND;
+	xcb_change_gc(conn, gc, XCB_GC_JOIN_STYLE, &values[0]);
+
+	if (!inv) {
+		values[0]   = conf.focuscol;
+		if (!isitfocused)  values[0]  = conf.unfocuscol;
+	}
+	else {
+		values[0]  = conf.outer_border_col;
+		if (client->unkillable || client->fixed) {
+			if (client->unkillable && client->fixed)
+				values[0]  = conf.fixed_unkil_col;
+			else
+				if (client->fixed)
+					values[0]  = conf.fixedcol;
+				else
+					values[0]  = conf.unkillcol;
+		}
+	}
     xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, &values[0]);
-    xcb_poly_fill_rectangle(conn, pmap, gc, 5, rect_outer);
+    xcb_poly_fill_rectangle(conn, pmap, gc, 1, rect_outer);
     
-    values[0]   = conf.focuscol;
-    if (!isitfocused)  values[0]  = conf.unfocuscol;
+	if (!inv) {
+		values[0]  = conf.outer_border_col;
+		if (client->unkillable || client->fixed) {
+			if (client->unkillable && client->fixed)
+				values[0]  = conf.fixed_unkil_col;
+			else
+				if (client->fixed)
+					values[0]  = conf.fixedcol;
+				else
+					values[0]  = conf.unkillcol;
+		}
+	}
+	else {
+		values[0]   = conf.focuscol;
+		if (!isitfocused)  values[0]  = conf.unfocuscol;
+	}
     xcb_change_gc(conn, gc, XCB_GC_FOREGROUND, &values[0]);
-    xcb_poly_fill_rectangle(conn, pmap, gc, 5, rect_inner);
+    xcb_poly_fill_rectangle(conn, pmap, gc, 8, rect_inner);
     values[0] = pmap;
     xcb_change_window_attributes(conn,client->id, XCB_CW_BORDER_PIXMAP, &values[0]);
+
     /* free the memory we allocated for the pixmap */
     xcb_free_pixmap(conn,pmap);
     xcb_free_gc(conn,gc);
