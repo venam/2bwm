@@ -2,7 +2,7 @@
  * over the XCB library and derived from mcwm written by Michael Cardell.
  * Heavily modified version of http://www.hack.org/mc/hacks/mcwm/
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at the domain hack.org.
- * Copyright (c) 2014 Patrick Louis, patrick at the domain iotek dot org.
+ * Copyright (c) 2014, 2015 Patrick Louis, patrick at the domain iotek dot org.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,77 +19,19 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <signal.h>
-#include <sys/types.h>
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <X11/keysym.h>
 #include "list.h"
+#include "definitions.h"
+#include "types.h"
 
 ///---Internal Constants---///
-enum {TWOBWM_MOVE,TWOBWM_RESIZE};
-#define BUTTONMASK      XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE
-#define NET_WM_FIXED    0xffffffff  // Value in WM hint which means this window is fixed on all workspaces.
-#define TWOBWM_NOWS     0xfffffffe  // This means we didn't get any window hint at all.
-#define LENGTH(x)       (sizeof(x)/sizeof(*x))
-#define MIN(X, Y)       ((X) < (Y) ? (X) : (Y))
-#define CLEANMASK(mask) (mask & ~(numlockmask|XCB_MOD_MASK_LOCK))
-#define CONTROL         XCB_MOD_MASK_CONTROL /* Control key */
-#define ALT             XCB_MOD_MASK_1       /* ALT key */
-#define SHIFT           XCB_MOD_MASK_SHIFT   /* Shift key */
-#define WORKSPACES      10
-enum {BOTTOM_RIGHT, BOTTOM_LEFT, TOP_RIGHT, TOP_LEFT, MIDDLE};
-
 static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
-///---Types---///
-struct monitor {
-    xcb_randr_output_t id;
-    char *name;
-    int16_t y,x;                    // X and Y.
-    uint16_t width,height;          // Width/Height in pixels.
-    struct item *item;              // Pointer to our place in output list.
-};
-typedef union {
-    const char** com;
-    const int8_t i;
-} Arg;
-typedef struct {
-    unsigned int mod;
-    xcb_keysym_t keysym;
-    void (*func)(const Arg *);
-    const Arg arg;
-} key;
-typedef struct {
-    unsigned int mask, button;
-    void (*func)(const Arg *);
-    const Arg arg;
-} Button;
-struct sizepos {
-    int16_t x, y;
-    uint16_t width,height;
-};
-struct client {                     // Everything we know about a window.
-    xcb_drawable_t id;              // ID of this window.
-    bool usercoord;                 // X,Y was set by -geom.
-    int16_t x, y;                   // X/Y coordinate.
-    uint16_t width,height;          // Width,Height in pixels.
-    struct sizepos origsize;        // Original size if we're currently maxed.
-    uint16_t max_width, max_height,min_width, min_height, width_inc, height_inc,base_width, base_height;
-    bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic;
-    struct monitor *monitor;        // The physical output this window is on.
-    struct item *winitem;           // Pointer to our place in global windows list.
-    struct item *wsitem[WORKSPACES];// Pointer to our place in every workspace window list.
-};
-struct winconf {                    // Window configuration data.
-    int16_t      x, y;
-    uint16_t     width,height;
-    uint8_t      stackmode;
-    xcb_window_t sibling;
-};
 ///---Globals---///
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 static unsigned int numlockmask = 0;
@@ -105,14 +47,6 @@ struct item *winlist = NULL;        // Global list of all client windows.
 struct item *monlist = NULL;        // List of all physical monitor outputs.
 struct item *wslist[WORKSPACES];
 ///---Global configuration.---///
-struct conf {
-    int8_t borderwidth;             // Do we draw borders for non-focused window? If so, how large?
-    int8_t outer_border;            // The size of the outer border
-    uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
-} conf;
-enum { atom_desktop, atom_current_desktop, atom_unkillable, wm_delete_window, wm_change_state, wm_state,
-    wm_protocols, atom_nb_workspace, atom_focus, atom_client_list, atom_client_list_st, wm_hidden, NB_ATOMS
-};
 const char *atomnames[NB_ATOMS][1] = { 
     {"_NET_WM_DESKTOP"}, {"_NET_CURRENT_DESKTOP"}, {"_NET_UNKILLABLE"}, {"WM_DELETE_WINDOW"}, {"WM_CHANGE_STATE"}, {"WM_STATE"},
     {"WM_PROTOCOLS"}, {"_NET_NUMBER_OF_DESKTOPS"}, {"_NET_ACTIVE_WINDOW"}, {"_NET_CLIENT_LIST"}, {"_NET_CLIENT_LIST_STACKING"}, {"_NET_WM_STATE_HIDDEN"}
@@ -310,23 +244,20 @@ uint32_t getwmdesktop(xcb_drawable_t win)
 {                                   // Get EWWM hint so we might know what workspace window win should be visible on.
                                     // Returns either workspace, NET_WM_FIXED if this window should be
                                     // visible on all workspaces or TWOBWM_NOWS if we didn't find any hints.
-    xcb_get_property_reply_t *reply;
-    uint32_t wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_desktop],
         XCB_GET_PROPERTY_TYPE_ANY, 0, sizeof(uint32_t));
-    reply = xcb_get_property_reply(conn, cookie, NULL);
+    xcb_get_property_reply_t *reply = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL==reply || 0 == xcb_get_property_value_length(reply)) { /* 0 if we didn't find it. */
         if(NULL!=reply) free(reply);
         return TWOBWM_NOWS;
     }
-    wsp = *(uint32_t *)xcb_get_property_value(reply);
+    uint32_t wsp = *(uint32_t *)xcb_get_property_value(reply);
     if(NULL!=reply)free(reply);
     return wsp;
 }
 
 bool get_unkil_state(xcb_drawable_t win)
 {                                   // check if the window is unkillable, if yes return true
-    uint8_t wsp;
     xcb_get_property_cookie_t cookie = xcb_get_property(conn, false, win, ATOM[atom_unkillable],
         XCB_GET_PROPERTY_TYPE_ANY, 0,sizeof(uint8_t));
     xcb_get_property_reply_t *reply  = xcb_get_property_reply(conn, cookie, NULL);
@@ -334,7 +265,7 @@ bool get_unkil_state(xcb_drawable_t win)
         if(NULL!=reply ) free(reply);
         return false;
     }
-    wsp = *(uint8_t *) xcb_get_property_value(reply);
+    uint8_t wsp = *(uint8_t *) xcb_get_property_value(reply);
     if(NULL!=reply)free(reply);
     if (wsp == 1) return true;
     else          return false;
@@ -1014,7 +945,7 @@ void focusnext_helper(bool arg)
         }
     }
     else {
-        if (arg) {
+        if (arg == TWOBWM_FOCUS_NEXT) {
             if (NULL == focuswin->wsitem[curws]->prev) {
                 /* We were at the head of list. Focusing on last window in list unless we were already there.*/ 
                 client = wslist[curws]->data;
@@ -1162,13 +1093,13 @@ void resizestep(const Arg *arg)
     if (focuswin->width_inc >7 && focuswin->height_inc>7) { /* we were given a resize hint by the window so use it */
         stepx = focuswin->width_inc;    stepy = focuswin->height_inc;
     }
-    if      (cases ==0)
+    if      (cases == TWOBWM_RESIZE_LEFT)
         focuswin->width = focuswin->width - stepx;
-    else if (cases ==1)
+    else if (cases == TWOBWM_RESIZE_DOWN)
         focuswin->height = focuswin->height + stepy;
-    else if (cases ==2)
+    else if (cases == TWOBWM_RESIZE_UP)
         focuswin->height = focuswin->height - stepy;
-    else if (cases ==3)
+    else if (cases == TWOBWM_RESIZE_RIGHT)
         focuswin->width = focuswin->width + stepx;
     if (focuswin->vertmaxed) focuswin->vertmaxed = false;
     if (focuswin->hormaxed)  focuswin->hormaxed  = false;
@@ -1181,7 +1112,7 @@ void resizestep(const Arg *arg)
 void resizestep_aspect(const Arg *arg)
 {                                   // Resize window and keep it's aspect ratio(exponentially grow), round the result (+0.5)
     if (NULL == focuswin||focuswin->maxed) return;
-    if (arg->i>0) {
+    if (arg->i == TWOBWM_RESIZE_KEEP_ASPECT_SHRINK) {
         focuswin->width  = (focuswin->width/resize_keep_aspect_ratio) +0.5;
         focuswin->height = (focuswin->height/resize_keep_aspect_ratio)+0.5;
     }
@@ -1257,13 +1188,13 @@ void movestep(const Arg *arg)
     uint8_t step,cases=arg->i;
     cases = cases%4;
     arg->i<4? (step = movements[1]) : (step = movements[0]);
-    if      (cases == 0)
+    if      (cases == TWOBWM_MOVE_LEFT)
         focuswin->x = focuswin->x - step;
-    else if (cases == 1)
+    else if (cases == TWOBWM_MOVE_DOWN)
         focuswin->y = focuswin->y + step;
-    else if (cases == 2)
+    else if (cases == TWOBWM_MOVE_UP)
         focuswin->y = focuswin->y - step;
-    else if (cases == 3)
+    else if (cases == TWOBWM_MOVE_RIGHT)
         focuswin->x = focuswin->x + step;
     raise_current_window();
     movelim(focuswin);
@@ -1386,7 +1317,7 @@ void maxvert_hor(const Arg *arg)
     saveorigsize(focuswin);
     noborder(&temp, focuswin,true);
 
-    if (arg->i==1) {
+    if (arg->i==TWOBWM_MAXIMIZE_VERTICALLY) {
         focuswin->y = mon_y;
         /* Compute new height considering height increments and screen height. */
         focuswin->height = mon_height - (conf.borderwidth * 2);
@@ -1396,7 +1327,7 @@ void maxvert_hor(const Arg *arg)
                              | XCB_CONFIG_WINDOW_HEIGHT, values);
         focuswin->vertmaxed = true;
     }
-    else if (arg->i==0) {
+    else if (arg->i==TWOBWM_MAXIMIZE_HORIZONTALLY) {
         focuswin->x = mon_x;
         focuswin->width = mon_width - (conf.borderwidth * 2);
         values[0] = focuswin->x;        values[1] = focuswin->width;
@@ -1418,30 +1349,30 @@ void maxhalf(const Arg *arg)
     uint16_t mon_width, mon_height;
     getmonsize(1, &mon_x,&mon_y,&mon_width,&mon_height,focuswin);
     noborder(&temp, focuswin,true);
-    if (arg->i>0) {
-        if (arg->i>2) { /* in folding mode */
-            if (arg->i>3) focuswin->height = focuswin->height/2 - (conf.borderwidth);
-            else          focuswin->height = focuswin->height*2 + (2*conf.borderwidth);
+    if (arg->i>4) {
+        if (arg->i>6) { /* in folding mode */
+            if (arg->i == TWOBWM_MAXHALF_FOLD_VERTICAL) focuswin->height = focuswin->height/2 - (conf.borderwidth);
+            else focuswin->height = focuswin->height*2 + (2*conf.borderwidth);
         }
         else {
             focuswin->y       =  mon_y;
             focuswin->height  =  mon_height - (conf.borderwidth * 2);
             focuswin->width   = ((float)(mon_width)/2)- (conf.borderwidth * 2);
-            if (arg->i>1) focuswin->x = mon_x;
-            else          focuswin->x = mon_x+mon_width -(focuswin->width+conf.borderwidth*2);
+            if (arg->i== TWOBWM_MAXHALF_VERTICAL_LEFT) focuswin->x = mon_x;
+            else focuswin->x = mon_x+mon_width -(focuswin->width+conf.borderwidth*2);
         }
     }
     else {
-        if (arg->i<-2) { /* in folding mode */
-            if (arg->i<-3) focuswin->width = focuswin->width/2 -conf.borderwidth;
-            else           focuswin->width = focuswin->width*2 +(2*conf.borderwidth);
+        if (arg->i<2) { /* in folding mode */
+            if (arg->i==TWOBWM_MAXHALF_FOLD_HORIZONTAL) focuswin->width = focuswin->width/2 -conf.borderwidth;
+            else focuswin->width = focuswin->width*2 +(2*conf.borderwidth); //unfold
         }
         else {
             focuswin->x     =  mon_x;
             focuswin->width =  mon_width - (conf.borderwidth * 2);
             focuswin->height = ((float)(mon_height)/2)- (conf.borderwidth * 2);
-            if (arg->i<-1) focuswin->y = mon_y;
-            else           focuswin->y = mon_y+mon_height-(focuswin->height+conf.borderwidth*2);
+            if (arg->i == TWOBWM_MAXHALF_HORIZONTAL_TOP) focuswin->y = mon_y;
+            else focuswin->y = mon_y+mon_height-(focuswin->height+conf.borderwidth*2);
         }
     }
     moveresize(focuswin->id, focuswin->x, focuswin->y, focuswin->width, focuswin->height);
@@ -1494,25 +1425,25 @@ void teleport(const Arg *arg)
     uint16_t tmp_x = focuswin->x;  uint16_t tmp_y=  focuswin->y;
     focuswin->x = mon_x; focuswin->y = mon_y;
 
-    if (arg->i==0) { /* center */
+    if (arg->i==TWOBWM_TELEPORT_CENTER) { /* center */
         focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x;
         focuswin->y  += mon_height - (focuswin->height + conf.borderwidth* 2)+ mon_y;
         focuswin->y  = focuswin->y /2;
         focuswin->x  = focuswin->x /2;
     }
     else {
-        if (arg->i>0) { /* top-left */
-            if (arg->i<2) /* bottom-left */
+        if (arg->i>3) { /* top-left */
+            if (arg->i == TWOBWM_TELEPORT_BOTTOM_LEFT) /* bottom-left */
                 focuswin->y += mon_height - (focuswin->height + conf.borderwidth* 2);
-            else if (arg->i>2) { /* center y */
+            else if (arg->i == TWOBWM_TELEPORT_CENTER_Y) { /* center y */
                 focuswin->x  = tmp_x;
                 focuswin->y  +=mon_height - (focuswin->height + conf.borderwidth* 2)+ mon_y;
                 focuswin->y  = focuswin->y /2;
             }
         }
         else {
-            if (arg->i<-1) /*top-right */
-                if (arg->i==-3) { /* center x */
+            if (arg->i<2) /*top-right */
+                if (arg->i==TWOBWM_TELEPORT_CENTER_X) { /* center x */
                     focuswin->y  = tmp_y;
                     focuswin->x  += mon_width - (focuswin->width + conf.borderwidth * 2) +mon_x;
                     focuswin->x  = focuswin->x /2;
@@ -1561,8 +1492,8 @@ void changescreen(const Arg *arg)
 {
     if (NULL == focuswin || NULL == focuswin->monitor) return;
     struct item *item;
-    if (arg->i>0) item = focuswin->monitor->item->next;
-    else          item = focuswin->monitor->item->prev;
+    if (arg->i == TWOBWM_NEXT_SCREEN) item = focuswin->monitor->item->next;
+    else item = focuswin->monitor->item->prev;
     if (NULL == item) return;
 
     float xpercentage  = (float)(focuswin->x-focuswin->monitor->x)/(focuswin->monitor->width);
@@ -1581,13 +1512,13 @@ void cursor_move(const Arg *arg)
 {                                   // Function to make the cursor move with the keyboard
     uint16_t speed; uint8_t cases=arg->i%4;
     arg->i<4? (speed = movements[3]):(speed = movements[2]);
-    if      (cases==0)
+    if      (cases == TWOBWM_CURSOR_UP)
         xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, 0, -speed);
-    else if (cases==1)
+    else if (cases == TWOBWM_CURSOR_DOWN)
         xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, 0, speed);
-    else if (cases==2)
+    else if (cases == TWOBWM_CURSOR_RIGHT)
         xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, speed, 0);
-    else if (cases==3)
+    else if (cases == TWOBWM_CURSOR_LEFT)
         xcb_warp_pointer(conn, XCB_NONE, XCB_NONE, 0, 0, 0, 0, -speed, 0);
     xcb_flush(conn);
 }
