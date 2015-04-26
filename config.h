@@ -50,9 +50,9 @@ static const char *click3[]    = { "xdotool","click", "3", NULL };
 ///--Custom foo---///
 static void halfandcentered(const Arg *arg)
 {
-	Arg arg2 = {.i=2};
+	Arg arg2 = {.i=TWOBWM_MAXHALF_VERTICAL_LEFT};
 	maxhalf(&arg2);
-	Arg arg3 = {.i=0};
+	Arg arg3 = {.i=TWOBWM_TELEPORT_CENTER};
 	teleport(&arg3);
 }
 ///---Shortcuts---///
