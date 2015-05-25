@@ -174,7 +174,7 @@ Also available through pkgsrc-wip
 Gentoo/Funtoo
 -------------
 
-Here's an ebuild by crshd [2bwm](https://github.com/nixers-projects/UnixHub-Portage/tree/master/x11-wm/2bwm)
+Here's an ebuild by crshd [2bwm](https://github.com/nixers-projects/uh-portage/tree/master/x11-wm/2bwm)
 
 
 OpenBSD
