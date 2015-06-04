@@ -159,17 +159,9 @@ Available through z3bra's collection:
 Using `pkgsrc`
 -------------
 
-Available through the wip ports of yrmt:
-[2bwm](https://github.com/yrmt/wip/tree/master/2bwm)
-
-    $ cd ${PKGSRC_ROOT}/wm
-    $ curl -s http://pkgsrc.saveosx.org/wip/2bwm.tar.gz | tar xzf -
-    $ cd 2bwm
+    $ cd /usr/pkgsrc/wm/2bwm
     $ make
     # make install
-
-Also available through pkgsrc-wip
-
 
 Gentoo/Funtoo
 -------------
