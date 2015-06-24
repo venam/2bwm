@@ -123,6 +123,7 @@ int findhidden(void)
             state = get_wm_state(children[i]);
             if (state == XCB_ICCCM_WM_STATE_ICONIC)
             {
+                uint8_t rc = 1;
                 /*
                  * Example names:
                  *
@@ -131,8 +132,18 @@ int findhidden(void)
                  * _NET_WM_NAME(UTF8_STRING) = 0x75, 0x72, 0x78, 0x76,
                  * 0x74 WM_NAME(STRING) = "urxvt"
                  */
-                cookie = xcb_icccm_get_wm_icon_name(conn, children[i]);
-                uint8_t rc = xcb_icccm_get_wm_icon_name_reply(conn, cookie, &prop, &error);
+                cookie = xcb_icccm_get_wm_name(conn, children[i]);
+                rc = xcb_icccm_get_wm_name_reply(conn, cookie, &prop, &error);
+
+                if (1 != rc)
+                {
+                   /*
+                    * get wm name request failed. Try to grab
+                    * the icon name just in case that works
+                    */
+                   cookie = xcb_icccm_get_wm_name(conn, children[i]);
+                   rc = xcb_icccm_get_wm_name_reply(conn, cookie, &prop, &error);
+                }
 
                 if (1 == rc)
                 {
