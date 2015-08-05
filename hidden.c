@@ -145,8 +145,8 @@ int findhidden(void)
                     * get wm name request failed. Try to grab
                     * the icon name just in case that works
                     */
-                   cookie = xcb_icccm_get_wm_name(conn, children[i]);
-                   rc = xcb_icccm_get_wm_name_reply(conn, cookie, &prop, &error);
+                   cookie = xcb_icccm_get_wm_icon_name(conn, children[i]);
+                   rc = xcb_icccm_get_wm_icon_name_reply(conn, cookie, &prop, &error);
                 }
 
                 if (1 == rc)
