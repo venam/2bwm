@@ -32,6 +32,7 @@ xcb_atom_t wm_state;
 xcb_atom_t wm_icon_name;
 
 bool printcommand = false;
+bool iconname     = false;
 
 static uint32_t get_wm_state(xcb_drawable_t win);
 static int findhidden(void);
@@ -123,6 +124,7 @@ int findhidden(void)
             state = get_wm_state(children[i]);
             if (state == XCB_ICCCM_WM_STATE_ICONIC)
             {
+                uint8_t rc = 1;
                 /*
                  * Example names:
                  *
@@ -131,8 +133,21 @@ int findhidden(void)
                  * _NET_WM_NAME(UTF8_STRING) = 0x75, 0x72, 0x78, 0x76,
                  * 0x74 WM_NAME(STRING) = "urxvt"
                  */
-                cookie = xcb_icccm_get_wm_icon_name(conn, children[i]);
-                uint8_t rc = xcb_icccm_get_wm_icon_name_reply(conn, cookie, &prop, &error);
+                if (false == iconname)
+                {
+                   cookie = xcb_icccm_get_wm_name(conn, children[i]);
+                   rc = xcb_icccm_get_wm_name_reply(conn, cookie, &prop, &error);
+                }
+
+                if ((true == iconname) || (1 != rc))
+                {
+                   /*
+                    * get wm name request failed. Try to grab
+                    * the icon name just in case that works
+                    */
+                   cookie = xcb_icccm_get_wm_icon_name(conn, children[i]);
+                   rc = xcb_icccm_get_wm_icon_name_reply(conn, cookie, &prop, &error);
+                }
 
                 if (1 == rc)
                 {
@@ -232,8 +247,9 @@ xcb_atom_t getatom(char *atom_name)
 
 void printhelp(void)
 {
-    printf("hidden: Usage: hidden [-c]\n");
+    printf("hidden: Usage: hidden [-c] [-i]\n");
     printf("  -c print 9menu/xdotool compatible output.\n");
+    printf("  -i print icon name instead of window name.\n");
 }
 
 int main(int argc, char **argv)
@@ -242,7 +258,7 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        ch = getopt(argc, argv, "c");
+        ch = getopt(argc, argv, "ci");
         if (-1 == ch)
         {
             /* No more options, break out of while loop. */
@@ -252,6 +268,10 @@ int main(int argc, char **argv)
         {
         case 'c':
             printcommand = true;
+            break;
+
+        case 'i':
+            iconname = true;
             break;
 
         default:
