@@ -320,6 +320,9 @@ Authors:
 `Venam | Patrick Louis`  
 Big thanks for the help of the following persons:
 
+* nifisher
+* dcat
+* bidulock
 * Yrmt
 * maxrp
 * Z3bra
