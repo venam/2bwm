@@ -201,7 +201,7 @@ static void resize(xcb_drawable_t win, const uint16_t width, const uint16_t heig
 static void moveresize(xcb_drawable_t win, const uint16_t x, const uint16_t y,const uint16_t width, const uint16_t height);
 static void mousemove(const int16_t rel_x,const int16_t rel_y);
 static void mouseresize(struct client *client,const int16_t rel_x,const int16_t rel_y);
-static void setborders(struct client *client,const bool isitfocused);
+static inline void setborders(struct client *client,const bool isitfocused);
 static void unmax(struct client *client);
 static bool getpointer(const xcb_drawable_t *win, int16_t *x,int16_t *y);
 static bool getgeom(const xcb_drawable_t *win, int16_t *x, int16_t *y, uint16_t *width,uint16_t *height);
@@ -1271,7 +1271,7 @@ void movestep(const Arg *arg)
     xcb_flush(conn);
 }
 
-void setborders(struct client *client,const bool isitfocused)
+static inline void setborders(struct client *client,const bool isitfocused)
 {
     if (client->maxed || client->ignore_borders) return;
     uint32_t values[1];  /* this is the color maintainer */
