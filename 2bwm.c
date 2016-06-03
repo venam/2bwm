@@ -275,7 +275,7 @@ updateclientlist(void)
 	xcb_delete_property(conn, screen->root, ATOM[atom_client_list]);
 	xcb_delete_property(conn, screen->root, ATOM[atom_client_list_st]);
 
-	if (reply != NULL) {
+	if (reply == NULL) {
 		addtoclientlist(0);
 		return;
 	}
@@ -1626,6 +1626,7 @@ setfocus(struct client *client)// Set focus on window client.
 				&not_win);
 
 		xcb_flush(conn);
+		return;
 	}
 
 	/* Don't bother focusing on the root window or on the same window
