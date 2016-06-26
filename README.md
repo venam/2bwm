@@ -317,7 +317,7 @@ TODO:
 
 Authors:
 =======
-`Venam | Patrick Louis`  
+`venam`  
 Big thanks for the help of the following persons:
 
 * nifisher
