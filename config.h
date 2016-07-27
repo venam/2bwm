@@ -47,6 +47,11 @@ static const char *terminal[]  = { "urxvtc", NULL };
 static const char *click1[]    = { "xdotool","click", "1", NULL };
 static const char *click2[]    = { "xdotool","click", "2", NULL };
 static const char *click3[]    = { "xdotool","click", "3", NULL };
+/* Example
+static const char *vol_up[]    = { "amixer", "set", "Master", "unmute", "3%+", "-q", NULL };
+static const char *vol_down[]  = { "amixer", "set", "Master", "unmute", "3%-", "-q", NULL };
+static const char *vol_mute[]  = { "amixer", "set", "Master", "mute", "-q", NULL };
+*/
 ///--Custom foo---///
 static void halfandcentered(const Arg *arg)
 {
@@ -195,6 +200,12 @@ static key keys[] = {
     {  MOD |CONTROL,      XK_Up,         start,             {.com = click1}},
     {  MOD |CONTROL,      XK_Down,       start,             {.com = click2}},
 	{  MOD |CONTROL,      XK_Right,      start,             {.com = click3}},
+/* example
+    {  0x000000,          0x1008ff13, start,             {.com = vol_up}},
+    {  0x000000,          0x1008ff11,  start,             {.com = vol_down}},
+    {  0x000000,          0x1008ff15, start,             {.com = vol_mute}},
+*/
+
 
     // Change current workspace
        DESKTOPCHANGE(     XK_1,                             0)

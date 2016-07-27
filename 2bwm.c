@@ -2287,8 +2287,6 @@ void
 teleport(const Arg *arg)
 {
 	int16_t pointx, pointy, mon_x, mon_y, temp = 0;
-	uint16_t tmp_x = focuswin->x;
-	uint16_t tmp_y = focuswin->y;
 	uint16_t mon_width, mon_height;
 
 	if (NULL == focuswin|| NULL == wslist[curws]|| focuswin->maxed)
@@ -2296,6 +2294,8 @@ teleport(const Arg *arg)
 
 	if (!getpointer(&focuswin->id, &pointx, &pointy))
 		return;
+	uint16_t tmp_x = focuswin->x;
+	uint16_t tmp_y = focuswin->y;
 
 	getmonsize(1, &mon_x, &mon_y, &mon_width, &mon_height,focuswin);
 	noborder(&temp, focuswin,true);
