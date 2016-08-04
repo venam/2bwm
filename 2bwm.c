@@ -1502,12 +1502,8 @@ focusnext_helper(bool arg)
 	/* If we currently have no focus focus first in list. */
 	if (NULL == focuswin || NULL == focuswin->wsitem[curws]) {
 		cl  = wslist[curws]->data;
-
-		while (cl->iconic==true) {
+		while (cl->iconic==true && cl->wsitem[curws]->next!=NULL)
 			cl = cl->wsitem[curws]->next->data;
-			if (cl->wsitem[curws]->next== NULL)
-				break;
-		}
 	} else {
 		if (arg == TWOBWM_FOCUS_NEXT) {
 			if (NULL == focuswin->wsitem[curws]->prev) {
@@ -1574,7 +1570,7 @@ focusnext_helper(bool arg)
 		}
 	}
 	/* if NULL focuswin */
-	if (NULL != cl && focuswin != cl) {
+	if (NULL != cl && focuswin != cl && cl->iconic==false) {
 		raisewindow(cl->id);
 		centerpointer(cl->id,cl);
 		setfocus(cl);
