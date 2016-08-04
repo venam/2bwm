@@ -297,6 +297,9 @@ Checkout z3bra's 2bwm fork at http://git.z3bra.org/cgit.cgi/2bwm
 TODO:
 =====
 
+* Use the `xcb_ewmh.h` functions instead of that ugly hardcoded ATOM enum for
+  example instead of the `ATOM[atom_client_list]` we could use `xcb_ewmh_set_client_list`
+
 * Toggable sticky workspace per monitor
 
 * Extended Window Manager Hints (EWMH)
