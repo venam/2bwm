@@ -159,22 +159,14 @@ Available through z3bra's collection:
 Using `pkgsrc`
 -------------
 
-Available through the wip ports of yrmt:
-[2bwm](https://github.com/yrmt/wip/tree/master/2bwm)
-
-    $ cd ${PKGSRC_ROOT}/wm
-    $ curl -s http://pkgsrc.saveosx.org/wip/2bwm.tar.gz | tar xzf -
-    $ cd 2bwm
+    $ cd /usr/pkgsrc/wm/2bwm
     $ make
     # make install
-
-Also available through pkgsrc-wip
-
 
 Gentoo/Funtoo
 -------------
 
-Here's an ebuild by crshd [2bwm](https://github.com/nixers-projects/UnixHub-Portage/tree/master/x11-wm/2bwm)
+Here's an ebuild by crshd [2bwm](https://github.com/nixers-projects/uh-portage/tree/master/x11-wm/2bwm)
 
 
 OpenBSD
@@ -328,6 +320,9 @@ Authors:
 `Venam | Patrick Louis`  
 Big thanks for the help of the following persons:
 
+* nifisher
+* dcat
+* bidulock
 * Yrmt
 * maxrp
 * Z3bra
