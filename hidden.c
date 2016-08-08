@@ -1,5 +1,5 @@
 /*
- * hidden - A small program to listen all windows with WM_STATE set to
+ * hidden - A small program to listen all windows with _NET_WM_STATE set to
  * Iconic.
  *
  * Copyright (c) 2012 Michael Cardell Widerkrantz, mc at the domain
@@ -281,7 +281,7 @@ int main(int argc, char **argv)
     } /* while 1 */
 
     init();
-    wm_state = getatom("WM_STATE");
+    wm_state = getatom("_NET_WM_STATE");
     findhidden();
     cleanup();
     exit(0);
