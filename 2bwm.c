@@ -2559,6 +2559,15 @@ configurerequest(xcb_generic_event_t *ev)
 			if (!client->maxed && !client->vertmaxed)
 				client->height = e->height;
 
+		
+		if (e->value_mask & XCB_CONFIG_WINDOW_X)
+		 	if (!client->maxed && !client->hormaxed)
+				client->x = e->x;
+
+		if (e->value_mask & XCB_CONFIG_WINDOW_Y)
+		 	if (!client->maxed && !client->vertmaxed)
+			client->y = e->y;
+
 		/* XXX Do we really need to pass on sibling and stack mode
 		 * configuration? Do we want to? */
 		if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING) {
@@ -2576,6 +2585,7 @@ configurerequest(xcb_generic_event_t *ev)
 		/* Check if window fits on screen after resizing. */
 		if (!client->maxed) {
 			resizelim(client);
+			movelim(client);
 			fitonscreen(client);
 		}
 
