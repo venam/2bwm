@@ -31,7 +31,6 @@
 #include "types.h"
 
 ///---Internal Constants---///
-static const uint8_t _WORKSPACES = WORKSPACES;// Number of workspaces.
 ///---Globals---///
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 static unsigned int numlockmask = 0;
@@ -465,10 +464,7 @@ changeworkspace_helper(const uint32_t ws)
 	struct client *client;
 	struct item *item;
 
-	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
-			ewmh->_NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1,
-			&ws
-	);
+	xcb_ewmh_set_current_desktop(ewmh, 0, ws);
 
 	if (ws == curws)
 		return;
@@ -3112,14 +3108,8 @@ setup(int scrno)
 	if (error)
 		return false;
 
-	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
-			ewmh->_NET_CURRENT_DESKTOP, XCB_ATOM_CARDINAL, 32, 1,
-			&curws
-	);
-	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, screen->root,
-			ewmh->_NET_NUMBER_OF_DESKTOPS, XCB_ATOM_CARDINAL, 32, 1,
-			&_WORKSPACES
-	);
+	xcb_ewmh_set_current_desktop(ewmh, 0, curws);
+	xcb_ewmh_set_number_of_desktops(ewmh, 0, WORKSPACES);
 
 	grabkeys();
 	/* set events */
