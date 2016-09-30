@@ -896,7 +896,8 @@ setupwin(xcb_window_t win)
 		for (i = 0; i < win_type.atoms_len; i++) {
 			a = win_type.atoms[i];
 			if (a == ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR || a
-					== ewmh->_NET_WM_WINDOW_TYPE_DOCK ) {
+					== ewmh->_NET_WM_WINDOW_TYPE_DOCK || a
+					== ewmh->_NET_WM_WINDOW_TYPE_DESKTOP ) {
 				xcb_ewmh_get_atoms_reply_wipe(&win_type);
 				xcb_map_window(conn,win);
 				return NULL;
@@ -3070,7 +3071,7 @@ setup(int scrno)
 		ewmh->_NET_WM_STATE,               ewmh->_NET_WM_NAME,
 		ewmh->_NET_SUPPORTING_WM_CHECK ,   ewmh->_NET_WM_STATE_HIDDEN,
 		ewmh->_NET_WM_ICON_NAME,           ewmh->_NET_WM_WINDOW_TYPE,
-		ewmh->_NET_WM_WINDOW_TYPE_DOCK,
+		ewmh->_NET_WM_WINDOW_TYPE_DOCK,    ewmh->_NET_WM_WINDOW_TYPE_DESKTOP,
 		ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR, ewmh->_NET_WM_PID,
 		ewmh->_NET_CLIENT_LIST,            ewmh->_NET_CLIENT_LIST_STACKING,
 		ewmh->WM_PROTOCOLS,                ewmh->_NET_WM_STATE,
