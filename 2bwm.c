@@ -464,11 +464,11 @@ changeworkspace_helper(const uint32_t ws)
 	struct client *client;
 	struct item *item;
 
-	xcb_ewmh_set_current_desktop(ewmh, 0, ws);
 
 	if (ws == curws)
 		return;
 
+	xcb_ewmh_set_current_desktop(ewmh, 0, ws);
 	for (item=wslist[curws]; item != NULL; item = item->next) {
 		/* Go through list of current ws.
 		 * Unmap everything that isn't fixed. */
@@ -1020,8 +1020,8 @@ grabkeys(void)
 		for (m=0; m<LENGTH(modifiers); m++)
 			xcb_grab_key(conn, 1, screen->root, keys[i].mod
 					| modifiers[m], keycode[k],
-					XCB_GRAB_MODE_ASYNC,
-					XCB_GRAB_MODE_ASYNC
+					XCB_GRAB_MODE_ASYNC,//pointer mode
+					XCB_GRAB_MODE_ASYNC //keyboard mode
 			);
 	free(keycode); // allocated in xcb_get_keycodes()
 	}
@@ -2973,6 +2973,10 @@ run(void)
 			free(ev);
 		}
 	}
+	if (sigcode == SIGHUP) {
+		sigcode = 0;
+		twobwm_restart();
+	}
 }
 
 /* Get a defined atom from the X server. */
@@ -3150,9 +3154,24 @@ main(void)
 	int scrno;
 
 	/* Install signal handlers. */
-	signal(SIGCHLD, SIG_IGN);
-	signal(SIGINT, sigcatch);
-	signal(SIGTERM, sigcatch);
+	struct sigaction sa;
+	struct sigaction sa_chld;
+	sa.sa_handler = SIG_IGN;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_NOCLDSTOP;
+	//could not initialize signal handler
+	if (sigaction(SIGCHLD, &sa, NULL) == -1)
+		exit(-1);
+	sa.sa_handler = sigcatch;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART; /* Restart functions if
+								 interrupted by handler */
+	if (sigaction(SIGINT, &sa, NULL) == -1)
+		exit(-1);
+	if (sigaction(SIGHUP, &sa, NULL) == -1)
+		exit(-1);
+	if (sigaction(SIGTERM, &sa, NULL) == -1)
+		exit(-1);
 	atexit(cleanup);
 
 	if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno)))

@@ -224,6 +224,21 @@ dzen2
 If you set up a bar don't forget to add the space at the bottom or at the top
 of the screen in the configs.
 Also, if you want to know the current workspace you can use `xprop -root _NET_CURRENT_DESKTOP| sed -e 's/_NET_CURRENT_DESKTOP(CARDINAL) = //'`
+.SH SIGNALS
+.IP \(bu 2
+SIGINT - SIGTERM
+.RS
+Cleanup and exit (with the signal number as exit code)
+.RE
+.PP
+.IP \(bu 2
+SIGHUP
+.RS
+Cleanup and restart
+
+.SH RETURN VALUE
+0 on success anything else on error or on signal received.
+
 .SH ENVIRONMENT
 .B 2bwm\fP obeys the $DISPLAY variable.
 
