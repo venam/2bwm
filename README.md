@@ -112,19 +112,18 @@ panels should work. The following were tested and work with 2bwm:
 Panels
 ------
 
-* cairo-dock
-* fbpanel
-* hpanel
-* lxpanel
-* tint2
-* xfce4-panel
+* [cairo-dock](http://www.glx-dock.org)
+* [fbpanel](http://aanatoly.github.io/fbpanel/)
+* [hpanel](http://freecode.com/projects/hpanel)
+* [lxpanel](https://wiki.lxde.org/en/LXPanel)
+* [tint2](https://gitlab.com/o9000/tint2)
+* [xfce4-panel](http://docs.xfce.org/xfce/xfce4-panel/start)
 
 Bars
 ----
 
-* bar
-* dzen2
-
+* [bar](https://github.com/LemonBoy/bar)
+* [dzen2](https://github.com/robm/dzen)
 
 Installation
 ============
