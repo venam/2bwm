@@ -245,6 +245,10 @@ Cleanup and restart
 .SH ERRORS AND TROUBLESHOOTING
 .SS No borders appear when using URxvt
 This might be due to you .Xressources. If you have `URxvt.depth: 32` comment it.
+.SS Race Condition
+There is currently a race condition when switching worskpaces really
+fast. This may be due to the asynchronous nature of the X11 protocol. A
+fix was tried using locks without much luck (using atomic variables.)
 .SS White java windows
 If you experience problems with java GUI you can refer to http://awesome.naquadah.org/wiki/Problems_with_Java most probably adding _JAVA_AWT_WM_NONREPARENTING=1 to the environment variable will resolve the problem.
 (export _JAVA_AWT_WM_NONREPARENTING=1)
