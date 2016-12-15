@@ -220,6 +220,20 @@ To show hidden windows you can use the hidden tool:
 
     hidden -c|xargs 9menu -popup -label Iconics -font "terminus12-10"
 
+Xresources configuration
+------------------------
+
+These are the values 2bwm will try loading from Xresources at startup:
+
+    twobwm.border_width: number
+    twobwm.outer_border: number
+    twobwm.focus_color: #RRGGBB
+    twobwm.unfocus_color: #RRGGBB
+    twobwm.fixed_color: #RRGGBB
+    twobwm.unkill_color: #RRGGBB
+    twobwm.outer_border_color: #RRGGBB
+    twobwm.fixed_unkill_color: #RRGGBB
+
 mplayer borders aren't set on startup
 -------------------------------------
 
