@@ -15,7 +15,7 @@ CFLAGS+=-Os -s -I${X11_INCLUDE} \
 		-DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
 
 LDFLAGS+=-L${PREFIX}/${LIB_SUFFIX} -lxcb -lxcb-randr -lxcb-keysyms \
-		 -lxcb-icccm -lxcb-ewmh
+		 -lxcb-icccm -lxcb-ewmh -lxcb-xrm
 TARGETS=2bwm hidden
 OBJS=2bwm.o
 
