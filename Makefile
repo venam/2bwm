@@ -12,7 +12,7 @@ DIST=2bwm-$(VERSION)
 SRC=2bwm.c list.h hidden.c config.h
 DISTFILES=Makefile README.md TODO 2bwm.man $(SRC)
 CFLAGS+=-Os -s -I${X11_INCLUDE} \
-		-DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
+		-DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
 
 LDFLAGS+=-L${PREFIX}/${LIB_SUFFIX} -lxcb -lxcb-randr -lxcb-keysyms \
 		 -lxcb-icccm -lxcb-ewmh -lxcb-xrm

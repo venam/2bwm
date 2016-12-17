@@ -233,6 +233,11 @@ These are the values 2bwm will try loading from Xresources at startup:
     twobwm.unkill_color: #RRGGBB
     twobwm.outer_border_color: #RRGGBB
     twobwm.fixed_unkill_color: #RRGGBB
+    twobwm.inverted_colors: true|false
+    twobwm.enable_compton: true|false
+
+**Note**: set `enable_compton` option to true in case you're using a
+composition manager.
 
 mplayer borders aren't set on startup
 -------------------------------------

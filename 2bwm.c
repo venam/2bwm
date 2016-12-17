@@ -2646,15 +2646,18 @@ create_back_win(void)
 			values
 	);
 
-#ifndef COMPTON
-	values[0] = 1;
-	xcb_change_window_attributes(conn, temp_win.id,
-			XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
-#else
-	values[0] = conf.unfocuscol;
-	xcb_change_window_attributes(conn, temp_win.id,
-			XCB_CW_BACK_PIXEL, values);
-#endif
+  if (conf.enable_compton)
+  {
+    values[0] = 1;
+    xcb_change_window_attributes(conn, temp_win.id,
+        XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
+  }
+  else
+  {
+    values[0] = conf.unfocuscol;
+    xcb_change_window_attributes(conn, temp_win.id,
+        XCB_CW_BACK_PIXEL, values);
+  }
 
 	temp_win.x              = focuswin->x;
 	temp_win.y              = focuswin->y;
@@ -3097,6 +3100,8 @@ setup(int scrno)
   conf.outer_border_col = getcolor(colors[5]);
   conf.fixed_unkil_col  = getcolor(colors[4]);
   conf.empty_col        = getcolor(colors[6]);
+  conf.inverted_colors  = inverted_colors;
+  conf.enable_compton   = false;
 
   if (db != NULL)
   {
@@ -3125,6 +3130,12 @@ setup(int scrno)
 
     if (xcb_xrm_resource_get_string(db, "twobwm.fixed_unkill_color", NULL, &value) >= 0)
       conf.fixed_unkil_col = getcolor(value);
+
+    if (xcb_xrm_resource_get_string(db, "twobwm.inverted_colors", NULL, &value) >= 0)
+      conf.inverted_colors = strcmp(value, "true") == 0;
+
+    if (xcb_xrm_resource_get_string(db, "twobwm.enable_compton", NULL, &value) >= 0)
+      conf.enable_compton = strcmp(value, "true") == 0;
   }
 
   xcb_xrm_database_free(db);
