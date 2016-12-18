@@ -1900,7 +1900,7 @@ setborders(struct client *client,const bool isitfocused)
 {
 	uint32_t values[1];  /* this is the color maintainer */
 	uint16_t half = 0;
-	bool inv = inverted_colors;
+	bool inv = conf.inverted_colors;
 
 	if (client->maxed || client->ignore_borders)
 		return;
