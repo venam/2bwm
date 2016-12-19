@@ -3087,58 +3087,58 @@ setup(int scrno)
 	};
 
 	xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
-  
-  xcb_xrm_database_t* db = xcb_xrm_database_from_default(conn);
 
-  // Load the default config anyway.
-  conf.borderwidth      = borders[1];
-  conf.outer_border     = borders[0];
-  conf.focuscol         = getcolor(colors[0]);
-  conf.unfocuscol       = getcolor(colors[1]);
-  conf.fixedcol         = getcolor(colors[2]);
-  conf.unkillcol        = getcolor(colors[3]);
-  conf.outer_border_col = getcolor(colors[5]);
-  conf.fixed_unkil_col  = getcolor(colors[4]);
-  conf.empty_col        = getcolor(colors[6]);
-  conf.inverted_colors  = inverted_colors;
-  conf.enable_compton   = false;
+	xcb_xrm_database_t* db = xcb_xrm_database_from_default(conn);
 
-  if (db != NULL)
-  {
-    char* value;
+	// Load the default config anyway.
+	conf.borderwidth			= borders[1];
+	conf.outer_border		 = borders[0];
+	conf.focuscol				 = getcolor(colors[0]);
+	conf.unfocuscol			 = getcolor(colors[1]);
+	conf.fixedcol				 = getcolor(colors[2]);
+	conf.unkillcol				= getcolor(colors[3]);
+	conf.outer_border_col = getcolor(colors[5]);
+	conf.fixed_unkil_col	= getcolor(colors[4]);
+	conf.empty_col				= getcolor(colors[6]);
+	conf.inverted_colors	= inverted_colors;
+	conf.enable_compton	 = false;
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.border_width", NULL, &value) >= 0)
-      conf.borderwidth = atoi(value);
+	if (db != NULL)
+	{
+		char* value;
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.outer_border", NULL, &value) >= 0)
-      conf.outer_border = atoi(value);
+		if (xcb_xrm_resource_get_string(db, "twobwm.border_width", NULL, &value) >= 0)
+			conf.borderwidth = atoi(value);
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.focus_color", NULL, &value) >= 0)
-      conf.focuscol = getcolor(value);
+		if (xcb_xrm_resource_get_string(db, "twobwm.outer_border", NULL, &value) >= 0)
+			conf.outer_border = atoi(value);
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.unfocus_color", NULL, &value) >= 0)
-      conf.unfocuscol = getcolor(value);
+		if (xcb_xrm_resource_get_string(db, "twobwm.focus_color", NULL, &value) >= 0)
+			conf.focuscol = getcolor(value);
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.fixed_color", NULL, &value) >= 0)
-      conf.fixedcol = getcolor(value);
+		if (xcb_xrm_resource_get_string(db, "twobwm.unfocus_color", NULL, &value) >= 0)
+			conf.unfocuscol = getcolor(value);
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.unkill_color", NULL, &value) >= 0)
-      conf.unkillcol = getcolor(value);
+		if (xcb_xrm_resource_get_string(db, "twobwm.fixed_color", NULL, &value) >= 0)
+			conf.fixedcol = getcolor(value);
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.outer_border_color", NULL, &value) >= 0)
-      conf.outer_border_col = getcolor(value);
+		if (xcb_xrm_resource_get_string(db, "twobwm.unkill_color", NULL, &value) >= 0)
+			conf.unkillcol = getcolor(value);
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.fixed_unkill_color", NULL, &value) >= 0)
-      conf.fixed_unkil_col = getcolor(value);
+		if (xcb_xrm_resource_get_string(db, "twobwm.outer_border_color", NULL, &value) >= 0)
+			conf.outer_border_col = getcolor(value);
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.inverted_colors", NULL, &value) >= 0)
-      conf.inverted_colors = strcmp(value, "true") == 0;
+		if (xcb_xrm_resource_get_string(db, "twobwm.fixed_unkill_color", NULL, &value) >= 0)
+			conf.fixed_unkil_col = getcolor(value);
 
-    if (xcb_xrm_resource_get_string(db, "twobwm.enable_compton", NULL, &value) >= 0)
-      conf.enable_compton = strcmp(value, "true") == 0;
-  }
+		if (xcb_xrm_resource_get_string(db, "twobwm.inverted_colors", NULL, &value) >= 0)
+			conf.inverted_colors = strcmp(value, "true") == 0;
 
-  xcb_xrm_database_free(db);
+		if (xcb_xrm_resource_get_string(db, "twobwm.enable_compton", NULL, &value) >= 0)
+			conf.enable_compton = strcmp(value, "true") == 0;
+	}
+
+	xcb_xrm_database_free(db);
 
 	for (i=0; i<NB_ATOMS; i++)
 		ATOM[i] = getatom(atomnames[i][0]);
