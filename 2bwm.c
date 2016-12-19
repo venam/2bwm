@@ -2646,18 +2646,18 @@ create_back_win(void)
 			values
 	);
 
-  if (conf.enable_compton)
-  {
-    values[0] = 1;
-    xcb_change_window_attributes(conn, temp_win.id,
-        XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
-  }
-  else
-  {
-    values[0] = conf.unfocuscol;
-    xcb_change_window_attributes(conn, temp_win.id,
-        XCB_CW_BACK_PIXEL, values);
-  }
+	if (conf.enable_compton)
+	{
+		values[0] = 1;
+		xcb_change_window_attributes(conn, temp_win.id,
+				XCB_BACK_PIXMAP_PARENT_RELATIVE, values);
+	}
+	else
+	{
+		values[0] = conf.unfocuscol;
+		xcb_change_window_attributes(conn, temp_win.id,
+				XCB_CW_BACK_PIXEL, values);
+	}
 
 	temp_win.x              = focuswin->x;
 	temp_win.y              = focuswin->y;
