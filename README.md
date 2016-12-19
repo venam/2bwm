@@ -128,6 +128,33 @@ Bars
 Installation
 ============
 
+2bwm depends on the XCB libraries, and some of them are
+quite new, so most systems won't have them installed by default.
+Here's a (non-exhaustive) list of the dependencies:
+
++ xcb-randr
++ xcb-keysyms
++ xcb-icccm
++ xcb-ewmh
++ xcb-xrm (this one is quite new)
+
+If your system doesn't provide the above, or lacks some of them, you
+can download them [here](https://xcb.freedesktop.org/dist/).
+
+**Note**: `xcb-xrm` is not oficial yet,
+[here's the link](https://github.com/Airblader/xcb-util-xrm) to the repo.
+Archlinux and Voidlinux have it in their repositories.
+
+To build and install `xcb-xrm`, clone it and do the following commands:
+
+    cd xcb-util-xrm
+    git submodule update --init
+    ./autogen.sh --prefix=/usr
+    make
+    sudo make install
+
+Install it from your system's repositories in case it's available.
+
 Archlinux
 ---------
 
