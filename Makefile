@@ -11,11 +11,11 @@ X11_INCLUDE?=/usr/local/include
 DIST=2bwm-$(VERSION)
 SRC=2bwm.c list.h hidden.c config.h
 DISTFILES=Makefile README.md TODO 2bwm.man $(SRC)
-CFLAGS+=-std=c99 -O3 -finline-functions -s -I${X11_INCLUDE} \
-		-DNCOMPTON -DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
+CFLAGS+=-O3 -s -I${X11_INCLUDE} \
+		-DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
 
 LDFLAGS+=-L${PREFIX}/${LIB_SUFFIX} -lxcb -lxcb-randr -lxcb-keysyms \
-		 -lxcb-icccm -lxcb-ewmh
+		 -lxcb-icccm -lxcb-ewmh -lxcb-xrm
 TARGETS=2bwm hidden
 OBJS=2bwm.o
 

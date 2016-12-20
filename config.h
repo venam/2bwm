@@ -20,10 +20,6 @@ static const uint8_t offsets[] = {0,0,0,0};
  *4)fixedunkilcol    5)outerbordercol
  *6)emptycol         */
 static const char *colors[] = {"#35586c","#333333","#7a8c5c","#ff6666","#cc9933","#0d131a","#000000"};
-/*
- * If you are using a composition manager enable the COMPTON flag in the Makefile
- * (By changing -DNCOMPTON to -DCOMPTON)
- */
 /* if this is set to true the inner border and outer borders colors will be swapped */
 static const bool inverted_colors = false;
 ///---Cursor---///
@@ -50,6 +46,9 @@ static const char *click3[]    = { "xdotool","click", "3", NULL };
 static const char *vol_up[]    = { "amixer", "set", "Master", "unmute", "3%+", "-q", NULL };
 static const char *vol_down[]  = { "amixer", "set", "Master", "unmute", "3%-", "-q", NULL };
 static const char *vol_mute[]  = { "amixer", "set", "Master", "mute", "-q", NULL };
+static const char *vol_up2[]    = { "amixer", "-c", "1", "set", "Speaker", "unmute", "3%+", "-q", NULL };
+static const char *vol_down2[]  = { "amixer", "-c", "1", "set", "Speaker", "unmute", "3%-", "-q", NULL };
+static const char *vol_mute2[]  = { "amixer", "-c", "1", "set", "Speaker", "mute", "-q", NULL };
 
 ///--Custom foo---///
 static void halfandcentered(const Arg *arg)
@@ -62,6 +61,17 @@ static void halfandcentered(const Arg *arg)
 ///---Shortcuts---///
 /* Check /usr/include/X11/keysymdef.h for the list of all keys
  * 0x000000 is for no modkey
+ * If you are having trouble finding the right keycode use the `xev` to get it
+ * For example:
+ * KeyRelease event, serial 40, synthetic NO, window 0x1e00001,
+ *  root 0x98, subw 0x0, time 211120530, (128,73), root:(855,214),
+ *  state 0x10, keycode 171 (keysym 0x1008ff17, XF86AudioNext), same_screen YES,
+ *  XLookupString gives 0 bytes: 
+ *  XFilterEvent returns: False
+ *
+ *  The keycode here is keysym 0x1008ff17, so use  0x1008ff17
+ *
+ *
  * For AZERTY keyboards XK_1...0 should be replaced by :
  *      DESKTOPCHANGE(     XK_ampersand,                     0)
  *      DESKTOPCHANGE(     XK_eacute,                        1)
@@ -188,9 +198,12 @@ static key keys[] = {
     {  MOD |CONTROL,      XK_Up,         start,             {.com = click1}},
     {  MOD |CONTROL,      XK_Down,       start,             {.com = click2}},
 	{  MOD |CONTROL,      XK_Right,      start,             {.com = click3}},
-	{  0x000000,          0x1008ff13, start,             {.com = vol_up}},
-	{  0x000000,          0x1008ff11,  start,             {.com = vol_down}},
-	{  0x000000,          0x1008ff15, start,             {.com = vol_mute}},
+	{  SHIFT,             0x1008ff13,    start,             {.com = vol_up}},
+	{  SHIFT,             0x1008ff11,    start,             {.com = vol_down}},
+	{  SHIFT,             0x1008ff15,    start,             {.com = vol_mute}},
+	{  0x000000,          0x1008ff13,    start,             {.com = vol_up2}},
+	{  0x000000,          0x1008ff11,    start,             {.com = vol_down2}},
+	{  0x000000,          0x1008ff15,    start,             {.com = vol_mute2}},
 //    {  MOD |CONTROL,      XK_Up,         cursor_press,        {.i = 1}},
 //    {  MOD |CONTROL,      XK_Down,       cursor_press,        {.i = 2}},
 //    {  MOD |CONTROL,      XK_Right,      cursor_press,        {.i = 3}},
