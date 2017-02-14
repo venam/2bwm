@@ -320,29 +320,28 @@ it.
 ### GET IT ###
 Checkout the `devel` branch of the repo.
 
-Windows groups
+One border inside the other
 --------------
 
 ### CURRENT STATE ###
-Require testing
+Working
 
 ### DESCRIPTION ###
-Replaces workspaces by groups with a single keystroke. You can then set the
-state of each group independently (shown/hidden) meaning that you can have
-multiple groups shown at the same time
+Make the status border appear "within" the other border. This makes it look as if there were three borders.
 
-Here is a small gif to explain this behavior:
-
-![2bwm groups](http://blog.z3bra.org/img/2014-05-27-groups.gif)
 
 ### GET IT ###
-Checkout z3bra's 2bwm fork at http://git.z3bra.org/cgit.cgi/2bwm
+Checkout the `3bwm` branch of the repo
 
 
 TODO:
 =====
 
 * Fix the race condition bug that happens when switching workspaces too fast.
+
+* Fix the mapping issue with mplayer (doesn't have the issue when using -vo gl)
+
+* Bug related to gtkfilechooser dialog in telegram-desktop - needs more information to debug
 
 * Use the `xcb_ewmh.h` functions instead of that ugly hardcoded ATOM enum for
   example instead of the `ATOM[atom_client_list]` we could use `xcb_ewmh_set_client_list`

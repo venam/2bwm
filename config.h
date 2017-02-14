@@ -37,17 +37,17 @@ static const uint8_t borders[] = {3,5,5,4};
 #define LOOK_INTO "WM_NAME"
 static const char *ignore_names[] = {"bar", "xclock"};
 ///--Menus and Programs---///
-static const char *menucmd[]   = { "/usr/bin/gmrun", NULL };
-static const char *gmrun[]     = { "/usr/bin/gmrun",NULL};
-static const char *terminal[]  = { "urxvt", NULL };
+static const char *menucmd[]   = { "my_menu.sh", NULL };
+static const char *gmrun[]     = { "my_menu2.sh",NULL};
+static const char *terminal[]  = { "urxvtc", NULL };
 static const char *click1[]    = { "xdotool","click", "1", NULL };
 static const char *click2[]    = { "xdotool","click", "2", NULL };
 static const char *click3[]    = { "xdotool","click", "3", NULL };
-/* Example
-static const char *vol_up[]    = { "amixer", "set", "Master", "unmute", "3%+", "-q", NULL };
-static const char *vol_down[]  = { "amixer", "set", "Master", "unmute", "3%-", "-q", NULL };
+static const char *vol_up[]    = { "pamixer", "-u", "-i", "3", "--allow-boost", NULL };
+static const char *vol_down[]  = { "pamixer", "-u", "-d", "3", "--allow-boost", NULL };
 static const char *vol_mute[]  = { "amixer", "set", "Master", "mute", "-q", NULL };
-*/
+static const char *bright_up[]  = { "light", "-A", "5", NULL };
+static const char *bright_down[]  = { "light", "-U", "5", NULL };
 ///--Custom foo---///
 static void halfandcentered(const Arg *arg)
 {
@@ -167,7 +167,7 @@ static key keys[] = {
     {  MOD |SHIFT ,       XK_v,          sendtonextworkspace,{}},
     {  MOD |SHIFT ,       XK_c,          sendtoprevworkspace,{}},
     // Iconify the window
-    {  MOD ,              XK_i,          hide,              {}},
+    //{  MOD ,              XK_i,          hide,              {}},
     // Make the window unkillable
     {  MOD ,              XK_a,          unkillable,        {}},
     // Make the window appear always on top
@@ -196,13 +196,11 @@ static key keys[] = {
     {  MOD |CONTROL,      XK_Up,         start,             {.com = click1}},
     {  MOD |CONTROL,      XK_Down,       start,             {.com = click2}},
 	{  MOD |CONTROL,      XK_Right,      start,             {.com = click3}},
-/* example
     {  0x000000,          0x1008ff13, start,             {.com = vol_up}},
     {  0x000000,          0x1008ff11,  start,             {.com = vol_down}},
     {  0x000000,          0x1008ff15, start,             {.com = vol_mute}},
-*/
-
-
+    {  0x000000,          0x1008ff02, start,             {.com = bright_up}},
+    {  0x000000,          0x1008ff03,  start,             {.com = bright_down}},
     // Change current workspace
        DESKTOPCHANGE(     XK_1,                             0)
        DESKTOPCHANGE(     XK_2,                             1)
@@ -218,7 +216,7 @@ static key keys[] = {
 static Button buttons[] = {
     {  MOD        ,XCB_BUTTON_INDEX_1,     mousemotion,   {.i=TWOBWM_MOVE}},
     {  MOD        ,XCB_BUTTON_INDEX_3,     mousemotion,   {.i=TWOBWM_RESIZE}},
-    {  MOD|CONTROL,XCB_BUTTON_INDEX_3,     start,         {.com = menucmd}},
+//    {  MOD|CONTROL,XCB_BUTTON_INDEX_3,     start,         {.com = menucmd}},
     {  MOD|SHIFT,  XCB_BUTTON_INDEX_1,     changeworkspace, {.i=0}},
     {  MOD|SHIFT,  XCB_BUTTON_INDEX_3,     changeworkspace, {.i=1}},
     {  MOD|ALT,    XCB_BUTTON_INDEX_1,     changescreen,    {.i=1}},
