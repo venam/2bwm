@@ -56,6 +56,7 @@ xcb_atom_t ATOM[NB_ATOMS];
 ///---Functions prototypes---///
 static void run(void);
 static bool setup(int);
+static void install_sig_handlers(void);
 static void start(const Arg *);
 static void mousemotion(const Arg *);
 static void cursor_move(const Arg *);
@@ -211,12 +212,6 @@ void
 twobwm_exit()
 {
 	exit(EXIT_SUCCESS);
-}
-
-void
-sigcatch(const int sig)
-{
-	sigcode = sig;
 }
 
 void
@@ -3057,20 +3052,9 @@ setup(int scrno)
 	if (!screen)
 		return false;
 
-	xcb_window_t cwin = xcb_generate_id(conn);
-
-	xcb_create_window(conn, XCB_COPY_FROM_PARENT, cwin, screen->root, 0, 0,
-			screen->width_in_pixels, screen->height_in_pixels, 0,
-			XCB_WINDOW_CLASS_INPUT_OUTPUT,
-			XCB_COPY_FROM_PARENT,XCB_CW_EVENT_MASK,
-			event_mask_pointer
-	);
-
 	ewmh_init();
-	xcb_ewmh_set_wm_pid(ewmh, cwin, getpid());
-	xcb_ewmh_set_wm_name(ewmh, cwin, 4, "2bwm");
-	xcb_ewmh_set_supporting_wm_check(ewmh, cwin, cwin);
-	xcb_ewmh_set_supporting_wm_check(ewmh, screen->root, cwin);
+	xcb_ewmh_set_wm_pid(ewmh, screen->root, getpid());
+	xcb_ewmh_set_wm_name(ewmh, screen->root, 4, "2bwm");
 
 	xcb_atom_t net_atoms[] = {
 		ewmh->_NET_SUPPORTED,              ewmh->_NET_WM_DESKTOP,
@@ -3195,12 +3179,15 @@ twobwm_restart(void)
 	execvp(TWOBWM_PATH, NULL);
 }
 
-int
-main(void)
+void
+sigcatch(const int sig)
 {
-	int scrno;
+	sigcode = sig;
+}
 
-	/* Install signal handlers. */
+void
+install_sig_handlers(void)
+{
 	struct sigaction sa;
 	struct sigaction sa_chld;
 	sa.sa_handler = SIG_IGN;
@@ -3211,20 +3198,22 @@ main(void)
 		exit(-1);
 	sa.sa_handler = sigcatch;
 	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART; /* Restart functions if
-								 interrupted by handler */
-	if (sigaction(SIGINT, &sa, NULL) == -1)
+	sa.sa_flags = SA_RESTART; /* Restart if interrupted by handler */
+	if ( sigaction(SIGINT, &sa, NULL) == -1
+		|| sigaction(SIGHUP, &sa, NULL) == -1
+		|| sigaction(SIGTERM, &sa, NULL) == -1)
 		exit(-1);
-	if (sigaction(SIGHUP, &sa, NULL) == -1)
-		exit(-1);
-	if (sigaction(SIGTERM, &sa, NULL) == -1)
-		exit(-1);
-	atexit(cleanup);
+}
 
+int
+main(int argc, char **argv)
+{
+	int scrno;
+	install_sig_handlers();
+	atexit(cleanup);
 	if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno)))
 		if (setup(scrno))
 			run();
-
 	/* the WM has stopped running, because sigcode is not 0 */
 	exit(sigcode);
 }
