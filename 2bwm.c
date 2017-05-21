@@ -3143,8 +3143,8 @@ setup(int scrno)
 	if (error)
 		return false;
 
-	xcb_ewmh_set_current_desktop(ewmh, 0, curws);
-	xcb_ewmh_set_number_of_desktops(ewmh, 0, WORKSPACES);
+	xcb_ewmh_set_current_desktop(ewmh, scrno, curws);
+	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
 
 	grabkeys();
 	/* set events */
