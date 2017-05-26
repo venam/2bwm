@@ -1,0 +1,6 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=2bwm
+Comment=A fast floating WM written over the XCB library and derived from mcwm.
+Exec=2bwm
+Type=Application
