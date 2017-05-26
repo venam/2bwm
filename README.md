@@ -218,6 +218,13 @@ it right from the sources
 
 Troubleshooting
 ===============
+Missing dependencies when compiling
+-----------------------------------
+If you receieve an error when compiling related to `xcb_keysyms`, `xcb_icccm` or `-lxcb-util`, you are missing the dependency `xcb-util` which is required to compile 2bwm.
+
+To install `xcb-util` on Archlinux, use:
+
+	# pacman -S xcb-util
 
 No borders appear when using URxvt
 ----------------------------------
