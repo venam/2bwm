@@ -2,7 +2,7 @@
  * over the XCB library and derived from mcwm written by Michael Cardell.
  * Heavily modified version of http://www.hack.org/mc/hacks/mcwm/
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at the domain hack.org.
- * Copyright (c) 2014, 2015 Patrick Louis, patrick at the domain iotek dot org.
+ * Copyright (c) 2014, 2015, 2017 Patrick Louis, patrick at the psychology dot wtf.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -25,9 +25,17 @@
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_xrm.h>
 #include <X11/keysym.h>
+//XXX: temporary for debug
+#include <stdio.h>
 
 //-- Macros --//
 #define LENGTH(x)       (sizeof(x)/sizeof(*x))
+// this is "usually" 396 but it might not be stable
+//#define WM_DELETE_WINDOW (getatom("WM_DELETE_WINDOW"))
+#define WM_DELETE_WINDOW 396
+// this is again "usually" 397 but it might not be stable
+//#define WM_CHANGE_STATE (getatom("WM_CHANGE_STATE"))
+#define WM_CHANGE_STATE 397
 /* Each prepocessor directive defines a single bit */
 //#define KEY_UP       (1 << 0)  /* 000001 */
 //#define KEY_RIGHT    (1 << 1)  /* 000010 */
@@ -39,7 +47,7 @@
 
 //-- Structures & Unions --//
 enum config_indices {
-	INNER_BORDER, //TODO: replace full_border
+	INNER_BORDER, //XXX: replace full_border
 	OUTER_BORDER,
 	MAGNET_BORDER,
 	RESIZE_BORDER,
@@ -95,6 +103,7 @@ static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *, int);
 static void ewmh_init(int);
 static void conf_init(void);
 static uint32_t getcolor(const char *);
+static xcb_atom_t getatom(const char *);
 //-- End of Function signatures --//
 
 //-- Load configs --//
@@ -124,7 +133,7 @@ install_sig_handlers(void)
 	sigemptyset(&sa.sa_mask);
 	// Restart if interrupted by handler
 	sa.sa_flags = SA_RESTART;
-	if ( sigaction(SIGINT, &sa, NULL) == -1
+	if (sigaction(SIGINT, &sa, NULL) == -1
 		|| sigaction(SIGHUP, &sa, NULL) == -1
 		|| sigaction(SIGTERM, &sa, NULL) == -1)
 		exit(-1);
@@ -138,16 +147,25 @@ cleanup(void)
 {
 	xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,
 			XCB_CURRENT_TIME);
-	//TODO: delallitems(wslist, NULL);
-	xcb_ewmh_connection_wipe(ewmh);
+	//XXX: delallitems(wslist, NULL);
 	xcb_flush(conn);
 
-	if (ewmh != NULL)
+	if (ewmh != NULL) {
+		xcb_ewmh_connection_wipe(ewmh);
 		free(ewmh);
+	}
 
 	xcb_disconnect(conn);
 }
 
+/* Initial window manager setup "facade":
+ * EWMH
+ * XRDB
+ * RANDR XXX:
+ * Keyboard
+ * Event mapping from everywhere to foos
+ * Windows mapping on the screen
+ */
 bool
 setup(int scrno)
 {
@@ -168,9 +186,6 @@ setup(int scrno)
 
 	ewmh_init(scrno);
 	conf_init();
-
-	//for (i=0; i<NB_ATOMS; i++)
-	//	ATOM[i] = getatom(atomnames[i][0]);
 
 	//randrbase = setuprandr();
 
@@ -259,6 +274,7 @@ conf_init(void)
 	int i = 0;
 	int j = 0;
 	char *value = NULL;
+	char *conf_name = NULL;
 
 	// Load the borders related configs
 	for (i = 0; i < LENGTH(borders); i++) {
@@ -270,10 +286,13 @@ conf_init(void)
 	}
 
 	// Load from the x resources
+	conf_name = malloc(sizeof(char)*160);
 	if (db != NULL) {
 		for (i = 0; i < LAST_CONF; i++) {
+			strcpy(conf_name, "twobwm.");
+			conf_name = strcat(conf_name, config_names[i]);
 			if (xcb_xrm_resource_get_string(db,
-				strcat("twobwm.", config_names[i]),
+				conf_name,
 				NULL, &value) >= 0) {
 				// if it's a direct int take it
 				if (i < LENGTH(borders)) {
@@ -285,7 +304,7 @@ conf_init(void)
 			}
 		}
 	}
-
+	free(conf_name);
 	xcb_xrm_database_free(db);
 }
 
@@ -300,6 +319,28 @@ getcolor(const char *hex)
 
 	rgb48 = strtol(strgroups, NULL, 16);
 	return rgb48 | 0xff000000;
+}
+
+/* Get a defined atom number from the X server. */
+xcb_atom_t
+getatom(const char *atom_name)
+{
+	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0,
+			strlen(atom_name), atom_name);
+
+	xcb_intern_atom_reply_t *rep = xcb_intern_atom_reply(conn, atom_cookie,
+			NULL);
+
+	/* XXX Note that we return 0 as an atom if anything goes wrong.
+	 * Might become interesting.*/
+
+	if (NULL == rep)
+		return 0;
+
+	xcb_atom_t atom = rep->atom;
+
+	free(rep);
+	return atom;
 }
 //-- End of Internal functions --//
 
