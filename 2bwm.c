@@ -274,7 +274,7 @@ conf_init(void)
 	int i = 0;
 	int j = 0;
 	char *value = NULL;
-	char *conf_name = NULL;
+	char conf_name[160];
 
 	// Load the borders related configs
 	for (i = 0; i < LENGTH(borders); i++) {
@@ -286,11 +286,12 @@ conf_init(void)
 	}
 
 	// Load from the x resources
-	conf_name = malloc(sizeof(char)*160);
 	if (db != NULL) {
 		for (i = 0; i < LAST_CONF; i++) {
 			strcpy(conf_name, "twobwm.");
-			conf_name = strcat(conf_name, config_names[i]);
+			if (strlen(config_names[i]) > 160)
+				continue;
+			strcat(conf_name, config_names[i]);
 			if (xcb_xrm_resource_get_string(db,
 				conf_name,
 				NULL, &value) >= 0) {
@@ -304,7 +305,6 @@ conf_init(void)
 			}
 		}
 	}
-	free(conf_name);
 	xcb_xrm_database_free(db);
 }
 
