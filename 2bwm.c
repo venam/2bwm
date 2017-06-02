@@ -92,6 +92,8 @@ int randrbase;
 int32_t conf[LAST_CONF];
 // EWHM con
 xcb_ewmh_connection_t *ewmh;
+// XCB events to function
+static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 //-- End of Important globals --//
 
 //-- Function signatures --//
@@ -99,10 +101,13 @@ static void sigcatch(const int);
 static void install_sig_handlers(void);
 static void cleanup(void);
 static bool setup(int);
+static bool screen_init(int);
 static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *, int);
-static void ewmh_init(int);
-static void conf_init(void);
+static bool ewmh_init(int);
+static bool setup_keyboard(void);
+static bool conf_init(void);
 static uint32_t getcolor(const char *);
+static void events_init(void);
 static xcb_atom_t getatom(const char *);
 //-- End of Function signatures --//
 
@@ -161,17 +166,35 @@ cleanup(void)
 /* Initial window manager setup "facade":
  * EWMH
  * XRDB
- * RANDR XXX:
  * Keyboard
+ * RANDR XXX: store separate list of clients per monitor
  * Event mapping from everywhere to foos
- * Windows mapping on the screen
+ * Map current windows available
  */
 bool
 setup(int scrno)
 {
-	unsigned int i = 0;
-	uint32_t event_mask_pointer[] = { XCB_EVENT_MASK_POINTER_MOTION };
+	if (!screen_init(scrno)
+		|| !ewmh_init(scrno)
+		|| !setup_keyboard())
+		return false;
 
+	//randrbase = setuprandr();
+	//if (!setupscreen())
+	//	return false;
+
+	// those don't fail - otherwise WTF
+	conf_init();
+	events_init();
+	//grabkeys();
+
+	return true;
+}
+
+/* initialize the global screen object */
+bool
+screen_init(int scrno)
+{
 	unsigned int values[1] = {
 		XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT
 		| XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY
@@ -184,43 +207,13 @@ setup(int scrno)
 	if (!screen)
 		return false;
 
-	ewmh_init(scrno);
-	conf_init();
+	xcb_generic_error_t *error = xcb_request_check(conn,
+			xcb_change_window_attributes_checked(conn, screen->root,
+				XCB_CW_EVENT_MASK, values));
+	xcb_flush(conn);
 
-	//randrbase = setuprandr();
-
-	//if (!setupscreen())
-	//	return false;
-
-	//if (!setup_keyboard())
-	//	return false;
-
-	//xcb_generic_error_t *error = xcb_request_check(conn,
-	//		xcb_change_window_attributes_checked(conn, screen->root,
-	//			XCB_CW_EVENT_MASK, values));
-	//xcb_flush(conn);
-
-	//if (error)
-	//	return false;
-
-
-	//grabkeys();
-	///* set events */
-	//for (i=0; i<XCB_NO_OPERATION; i++)
-	//	events[i] = NULL;
-
-	//events[XCB_CONFIGURE_REQUEST]   = configurerequest;
-	//events[XCB_DESTROY_NOTIFY]      = destroynotify;
-	//events[XCB_ENTER_NOTIFY]        = enternotify;
-	//events[XCB_KEY_PRESS]           = handle_keypress;
-	//events[XCB_MAP_REQUEST]         = newwin;
-	//events[XCB_UNMAP_NOTIFY]        = unmapnotify;
-	//events[XCB_CONFIGURE_NOTIFY]    = confignotify;
-	//events[XCB_CIRCULATE_REQUEST]   = circulaterequest;
-	//events[XCB_BUTTON_PRESS]        = buttonpress;
-	//events[XCB_CLIENT_MESSAGE]      = clientmessage;
-
-	return true;
+	if (error)
+		return false;
 }
 
 /* Get screen of display */
@@ -237,11 +230,11 @@ xcb_screen_of_display(xcb_connection_t *con, int screen)
 }
 
 /* Allocate & create the ewmh object */
-void
+bool
 ewmh_init(int scrno)
 {
 	if (!(ewmh = calloc(1, sizeof(xcb_ewmh_connection_t))))
-		exit(1);
+		return false;
 
 	xcb_intern_atom_cookie_t *cookie = xcb_ewmh_init_atoms(conn, ewmh);
 	xcb_ewmh_init_atoms_replies(ewmh, cookie, (void *)0);
@@ -267,7 +260,52 @@ ewmh_init(int scrno)
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, 10);
 }
 
-void
+//XXX: clean that up - I haven't checked it yet
+bool
+setup_keyboard(void)
+{
+	xcb_get_modifier_mapping_reply_t *reply;
+	xcb_keycode_t *modmap, *numlock;
+	unsigned int i,j,n;
+
+	reply = xcb_get_modifier_mapping_reply(conn,
+				xcb_get_modifier_mapping_unchecked(conn), NULL);
+
+	if (!reply)
+		return false;
+
+	modmap = xcb_get_modifier_mapping_keycodes(reply);
+
+	if (!modmap)
+		return false;
+
+	numlock = xcb_get_keycodes(XK_Num_Lock);
+
+	for (i=0; i<8; i++) {
+		for (j=0; j<reply->keycodes_per_modifier; j++) {
+			xcb_keycode_t keycode = modmap[i
+				* reply->keycodes_per_modifier + j];
+
+			if (keycode == XCB_NO_SYMBOL)
+				continue;
+
+			if(numlock != NULL)
+				for (n=0; numlock[n] != XCB_NO_SYMBOL; n++)
+					if (numlock[n] == keycode) {
+						numlockmask = 1 << i;
+						break;
+					}
+		}
+	}
+
+	free(reply);
+	free(numlock);
+
+	return true;
+}
+
+/* Setup the config map from the config.h or from the xrdb */
+bool
 conf_init(void)
 {
 	xcb_xrm_database_t *db = xcb_xrm_database_from_default(conn);
@@ -277,13 +315,11 @@ conf_init(void)
 	char conf_name[160];
 
 	// Load the borders related configs
-	for (i = 0; i < LENGTH(borders); i++) {
+	for (i = 0; i < LENGTH(borders); i++)
 		conf[i] = borders[i];
-	}
 	// Load the colors related configs
-	for (j = 0; i < LAST_CONF; i++, j++) {
+	for (j = 0; i < LAST_CONF; i++, j++)
 		conf[i] = getcolor(colors[j]);
-	}
 
 	// Load from the x resources
 	if (db != NULL) {
@@ -319,6 +355,25 @@ getcolor(const char *hex)
 
 	rgb48 = strtol(strgroups, NULL, 16);
 	return rgb48 | 0xff000000;
+}
+
+void
+events_init(void)
+{
+	unsigned int i = 0;
+	for (i=0; i<XCB_NO_OPERATION; i++)
+		events[i] = NULL;
+
+	//events[XCB_CONFIGURE_REQUEST]   = configurerequest;
+	//events[XCB_DESTROY_NOTIFY]      = destroynotify;
+	//events[XCB_ENTER_NOTIFY]        = enternotify;
+	//events[XCB_KEY_PRESS]           = handle_keypress;
+	//events[XCB_MAP_REQUEST]         = newwin;
+	//events[XCB_UNMAP_NOTIFY]        = unmapnotify;
+	//events[XCB_CONFIGURE_NOTIFY]    = confignotify;
+	//events[XCB_CIRCULATE_REQUEST]   = circulaterequest;
+	//events[XCB_BUTTON_PRESS]        = buttonpress;
+	//events[XCB_CLIENT_MESSAGE]      = clientmessage;
 }
 
 /* Get a defined atom number from the X server. */
