@@ -104,9 +104,9 @@ static bool setup(int);
 static bool screen_init(int);
 static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *, int);
 static bool ewmh_init(int);
-static bool setup_keyboard(void);
+static bool keyboard_init(void);
 static bool conf_init(void);
-static uint32_t getcolor(const char *);
+static uint32_t get_color(const char *);
 static void events_init(void);
 static xcb_atom_t getatom(const char *);
 //-- End of Function signatures --//
@@ -176,7 +176,7 @@ setup(int scrno)
 {
 	if (!screen_init(scrno)
 		|| !ewmh_init(scrno)
-		|| !setup_keyboard())
+		|| !keyboard_init())
 		return false;
 
 	//randrbase = setuprandr();
@@ -262,7 +262,7 @@ ewmh_init(int scrno)
 
 //XXX: clean that up - I haven't checked it yet
 bool
-setup_keyboard(void)
+keyboard_init(void)
 {
 	xcb_get_modifier_mapping_reply_t *reply;
 	xcb_keycode_t *modmap, *numlock;
@@ -319,7 +319,7 @@ conf_init(void)
 		conf[i] = borders[i];
 	// Load the colors related configs
 	for (j = 0; i < LAST_CONF; i++, j++)
-		conf[i] = getcolor(colors[j]);
+		conf[i] = get_color(colors[j]);
 
 	// Load from the x resources
 	if (db != NULL) {
@@ -336,7 +336,7 @@ conf_init(void)
 					conf[i] = atoi(value);
 				} else {
 				// otherwise convert the color code
-					conf[i] = getcolor(value);
+					conf[i] = get_color(value);
 				}
 			}
 		}
@@ -346,7 +346,7 @@ conf_init(void)
 
 /* Get the pixel values of a named colour colstr. Returns pixel values. */
 uint32_t
-getcolor(const char *hex)
+get_color(const char *hex)
 {
 	uint32_t rgb48;
 	char strgroups[7] = {
