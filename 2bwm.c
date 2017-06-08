@@ -301,7 +301,12 @@ keyboard_init(void)
 	// XCB_MOD_MASK_SHIFT (1 - iteration 0 here) nor XCB_MOD_MASK_CONTROL
 	// (4 iteration 2 here) nor XCB_MOD_MASK_LOCK (2 iteration 1 here)
 	// -- no worry about the last one, we set it by default
-	for (i=3; i<8; i++) {
+	// XCB_MOD_MASK_4 (5 - iteration 6 here) is the MOD4 key usually
+	// and XCB_MOD_MASK_1 is the ALT (2 - iteration 3 here)
+	// So overall skip everything other than:
+	// XCB_MOD_MASK_2 XCB_MOD_MASK_3 XCB_MOD_MASK_5
+	for (i=4; i<8; i++) {
+		if (i == 6) continue;
 		for (j=0; j < reply->keycodes_per_modifier; j++) {
 			// do a bit of hashmap math to calculate the
 			// position of the keycode in the modmap
