@@ -158,7 +158,7 @@ cleanup(void)
 	//XXX: delallitems(wslist, NULL);
 	xcb_flush(conn);
 
-	if (ewmh) {
+	if (ewmh != NULL) {
 		xcb_ewmh_connection_wipe(ewmh);
 		free(ewmh);
 	}
@@ -207,7 +207,7 @@ screen_init(int scrno)
 
 	// get a screen structure from the display number
 	screen = xcb_screen_of_display(conn, scrno);
-	if (!screen)
+	if (screen == NULL)
 		return false;
 
 	xcb_generic_error_t *error = xcb_request_check(conn,
@@ -215,7 +215,7 @@ screen_init(int scrno)
 				XCB_CW_EVENT_MASK, values));
 	xcb_flush(conn);
 
-	if (error)
+	if (error != NULL)
 		return false;
 	else
 		return true;
@@ -238,7 +238,8 @@ xcb_screen_of_display(xcb_connection_t *con, int screen)
 bool
 ewmh_init(int scrno)
 {
-	if (!(ewmh = calloc(1, sizeof(*ewmh))))
+	ewmh = calloc(1, sizeof(xcb_ewmh_connection_t));
+	if (ewmh == NULL)
 		return false;
 
 	xcb_intern_atom_cookie_t *cookie = xcb_ewmh_init_atoms(conn, ewmh);
@@ -281,7 +282,7 @@ keyboard_init(void)
 	// related to modifiers - It's a sort of easy way to do a hashmap
 	reply = xcb_get_modifier_mapping_reply(conn,
 				xcb_get_modifier_mapping_unchecked(conn), NULL);
-	if (!reply)
+	if (reply == NULL)
 		return false;
 
 	// Fetch all valid modifiers keys
@@ -290,7 +291,7 @@ keyboard_init(void)
 	// ...and fetch all keycodes attached to the name "numlock"
 	numlock = xcb_get_keycodes(XK_Num_Lock);
 
-	if (!numlock || !modmap)
+	if (numlock == NULL || modmap == NULL)
 		return true;
 
 	// There are 8 valid modifiers mask (you can find them in an enum
@@ -351,7 +352,7 @@ conf_init(void)
 		conf[i] = get_color(colors[j]);
 
 	// Load from the x resources
-	if (db) {
+	if (db != NULL) {
 		for (i = 0; i < LAST_CONF; i++) {
 			strcpy(conf_name, "twobwm.");
 			if (strlen(config_names[i]) > 160)
@@ -418,7 +419,7 @@ getatom(const char *atom_name)
 	// XXX Note that we return 0 as an atom if anything goes wrong.
 	// Might become interesting.*/
 
-	if (!rep)
+	if (rep == NULL)
 		return 0;
 
 	xcb_atom_t atom = rep->atom;
@@ -434,7 +435,8 @@ xcb_get_keycodes(xcb_keysym_t keysym)
 	xcb_key_symbols_t *keysyms;
 	xcb_keycode_t *keycode;
 
-	if (!(keysyms = xcb_key_symbols_alloc(conn)))
+	keysyms = xcb_key_symbols_alloc(conn);
+	if (keysyms == NULL)
 		return NULL;
 
 	keycode = xcb_key_symbols_get_keycode(keysyms, keysym);
