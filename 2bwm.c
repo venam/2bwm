@@ -29,7 +29,7 @@
 #include <stdio.h>
 
 //-- Macros --//
-#define LENGTH(x)       (sizeof(x)/sizeof(*x))
+#define LENGTH(x) (sizeof(x)/sizeof(*x))
 // this is "usually" 396 but it might not be stable
 //#define WM_DELETE_WINDOW (getatom("WM_DELETE_WINDOW"))
 #define WM_DELETE_WINDOW 396
@@ -94,6 +94,8 @@ int32_t conf[LAST_CONF];
 xcb_ewmh_connection_t *ewmh;
 // XCB events to function
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
+// holds numlock - numlock messes with the buttons
+static unsigned int numlockmask = 0;
 //-- End of Important globals --//
 
 //-- Function signatures --//
@@ -109,6 +111,7 @@ static bool conf_init(void);
 static uint32_t get_color(const char *);
 static void events_init(void);
 static xcb_atom_t getatom(const char *);
+static xcb_keycode_t *xcb_get_keycodes(xcb_keysym_t);
 //-- End of Function signatures --//
 
 //-- Load configs --//
@@ -155,7 +158,7 @@ cleanup(void)
 	//XXX: delallitems(wslist, NULL);
 	xcb_flush(conn);
 
-	if (ewmh != NULL) {
+	if (ewmh) {
 		xcb_ewmh_connection_wipe(ewmh);
 		free(ewmh);
 	}
@@ -214,6 +217,8 @@ screen_init(int scrno)
 
 	if (error)
 		return false;
+	else
+		return true;
 }
 
 /* Get screen of display */
@@ -233,7 +238,7 @@ xcb_screen_of_display(xcb_connection_t *con, int screen)
 bool
 ewmh_init(int scrno)
 {
-	if (!(ewmh = calloc(1, sizeof(xcb_ewmh_connection_t))))
+	if (!(ewmh = calloc(1, sizeof(*ewmh))))
 		return false;
 
 	xcb_intern_atom_cookie_t *cookie = xcb_ewmh_init_atoms(conn, ewmh);
@@ -258,9 +263,12 @@ ewmh_init(int scrno)
 	xcb_ewmh_set_current_desktop(ewmh, scrno, 0);
 	// The number of desktop is hardcoded
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, 10);
+	return true;
 }
 
-//XXX: clean that up - I haven't checked it yet
+/* numlock is considered a modifier and if it's "on" then the match with the
+ * other modifiers won't work, thus here we keep that modifier bit set for
+ * later ORing */
 bool
 keyboard_init(void)
 {
@@ -268,39 +276,60 @@ keyboard_init(void)
 	xcb_keycode_t *modmap, *numlock;
 	unsigned int i,j,n;
 
+	// The reply contains interesting things such as the number of
+	// keycodes per modifier - we also use it to fetch all the keycodes
+	// related to modifiers - It's a sort of easy way to do a hashmap
 	reply = xcb_get_modifier_mapping_reply(conn,
 				xcb_get_modifier_mapping_unchecked(conn), NULL);
-
 	if (!reply)
 		return false;
 
+	// Fetch all valid modifiers keys
 	modmap = xcb_get_modifier_mapping_keycodes(reply);
 
-	if (!modmap)
-		return false;
-
+	// ...and fetch all keycodes attached to the name "numlock"
 	numlock = xcb_get_keycodes(XK_Num_Lock);
 
-	for (i=0; i<8; i++) {
-		for (j=0; j<reply->keycodes_per_modifier; j++) {
+	if (!numlock || !modmap)
+		return true;
+
+	// There are 8 valid modifiers mask (you can find them in an enum
+	// under the name xcb_mod_mask_t), the values are shifted bitwise.
+	// Here we check if any modifier keycode match the "numlock"
+	// keycodes if yes we turn on that modifier (it's certainly not
+	// XCB_MOD_MASK_SHIFT (1 - iteration 0 here) nor XCB_MOD_MASK_CONTROL
+	// (4 iteration 2 here) nor XCB_MOD_MASK_LOCK (2 iteration 1 here)
+	// -- no worry about the last one, we set it by default
+	for (i=3; i<8; i++) {
+		for (j=0; j < reply->keycodes_per_modifier; j++) {
+			// do a bit of hashmap math to calculate the
+			// position of the keycode in the modmap
 			xcb_keycode_t keycode = modmap[i
 				* reply->keycodes_per_modifier + j];
-
+			// This means there's nothing left in that hash
+			// for this modifier
 			if (keycode == XCB_NO_SYMBOL)
-				continue;
+				break;
 
-			if(numlock != NULL)
-				for (n=0; numlock[n] != XCB_NO_SYMBOL; n++)
-					if (numlock[n] == keycode) {
-						numlockmask = 1 << i;
-						break;
-					}
+			// now does one of the modifier keycode match
+			// one of the "numlock" keycode?
+			bool skip_next = false;
+			for (n=0; numlock[n] != XCB_NO_SYMBOL; n++) {
+				if (numlock[n] == keycode) {
+					numlockmask = 1 << i;
+					skip_next = true;
+					break;
+				}
+			}
+			// no need to continue with the other keycodes
+			// for that modifier, we know we want it in the mask
+			if (skip_next)
+				break;
 		}
 	}
 
 	free(reply);
 	free(numlock);
-
 	return true;
 }
 
@@ -322,7 +351,7 @@ conf_init(void)
 		conf[i] = get_color(colors[j]);
 
 	// Load from the x resources
-	if (db != NULL) {
+	if (db) {
 		for (i = 0; i < LAST_CONF; i++) {
 			strcpy(conf_name, "twobwm.");
 			if (strlen(config_names[i]) > 160)
@@ -386,16 +415,32 @@ getatom(const char *atom_name)
 	xcb_intern_atom_reply_t *rep = xcb_intern_atom_reply(conn, atom_cookie,
 			NULL);
 
-	/* XXX Note that we return 0 as an atom if anything goes wrong.
-	 * Might become interesting.*/
+	// XXX Note that we return 0 as an atom if anything goes wrong.
+	// Might become interesting.*/
 
-	if (NULL == rep)
+	if (!rep)
 		return 0;
 
 	xcb_atom_t atom = rep->atom;
 
 	free(rep);
 	return atom;
+}
+
+/* wrapper to get xcb keycodes from keysymbol */
+xcb_keycode_t *
+xcb_get_keycodes(xcb_keysym_t keysym)
+{
+	xcb_key_symbols_t *keysyms;
+	xcb_keycode_t *keycode;
+
+	if (!(keysyms = xcb_key_symbols_alloc(conn)))
+		return NULL;
+
+	keycode = xcb_key_symbols_get_keycode(keysyms, keysym);
+	xcb_key_symbols_free(keysyms);
+
+	return keycode;
 }
 //-- End of Internal functions --//
 
@@ -408,6 +453,7 @@ main(int argc, char **argv)
 	atexit(cleanup);
 	if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno))) {
 		if (setup(scrno)) {
+			puts("Setup worked\n");
 		}
 	}
 	//		run();
