@@ -1,6 +1,7 @@
+//-- Start of user configurations --//
 
 //-- Borders --//
-const uint32_t borders[] = {
+static const uint32_t borders[] = {
 	3, // 0) Outer border size.
 	   // If you put this negative it will be a square.
 	5, // 1) Inner borderwidth
@@ -10,7 +11,7 @@ const uint32_t borders[] = {
 	   // outer borders colors will be swapped
 	1  // 5) Enable compton, set to 1 for non-transparent resize windows
 };
-const char *colors[] = {
+static const char *colors[] = {
 	"#35586c", // 0) focus_color
 	"#333333", // 1) unfocus_color
 	"#7a8c5c", // 2) fixed_color
@@ -24,10 +25,11 @@ const char *colors[] = {
 
 //XXX: TODO maybe we'll have to rethink that but it's great for now and has
 //          worked great so far
-static struct key keys[] = {
+static const struct key keys[] = {
     /* modifier           key            function           argument */
     // Focus to next/previous window
     {  XCB_MOD_MASK_4 ,              XK_Tab,        NULL,         {.i=0}},
     {  XCB_MOD_MASK_4|XCB_MOD_MASK_SHIFT,        XK_Tab,        NULL,         {.i=0}},
 };
 
+//-- End of user configurations --//

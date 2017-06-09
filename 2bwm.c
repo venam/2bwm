@@ -65,21 +65,6 @@ enum config_indices {
 	EMPTY_COLOR,
 	LAST_CONF
 };
-const char *config_names[LAST_CONF] = {
-	"inner_border",
-	"outer_border",
-	"magnet_border",
-	"resize_border",
-	"inverted_colors",
-	"enable_compton",
-	"focus_color",
-	"unfocus_color",
-	"fixed_color",
-	"unkill_color",
-	"outer_border_color",
-	"fixed_unkill_color",
-	"empty_color"
-};
 // arguments to the callback functions are either array of strings
 // (usually a command) or int
 union Arg {
@@ -98,19 +83,35 @@ struct key {
 
 //-- Important globals --//
 // xserver connection
-xcb_connection_t *conn;
+static xcb_connection_t *conn;
 // Keep track of signals so that we know when to interrupt
-sig_atomic_t sigcode;
+static sig_atomic_t sigcode;
 // The screen object
-xcb_screen_t *screen;
+static xcb_screen_t *screen;
 // Keep the id of the randr base event
-int randrbase;
+static int randrbase;
 // The window manager simple configurations
-int32_t conf[LAST_CONF];
+static int32_t conf[LAST_CONF];
 // EWHM con
-xcb_ewmh_connection_t *ewmh;
+static xcb_ewmh_connection_t *ewmh;
 // XCB events to function
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
+// The named value version of the configs
+static const char *config_names[LAST_CONF] = {
+	"inner_border",
+	"outer_border",
+	"magnet_border",
+	"resize_border",
+	"inverted_colors",
+	"enable_compton",
+	"focus_color",
+	"unfocus_color",
+	"fixed_color",
+	"unkill_color",
+	"outer_border_color",
+	"fixed_unkill_color",
+	"empty_color"
+};
 //-- End of Important globals --//
 
 //-- Function signatures --//
@@ -123,12 +124,12 @@ static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *, int);
 static bool ewmh_init(int);
 static bool keyboard_init(void);
 static bool fix_numlock(unsigned int *);
-static void grabkeys(unsigned int);
+static void grabkeys(const unsigned int);
 static bool conf_init(void);
 static uint32_t get_color(const char *);
 static void events_init(void);
 static xcb_atom_t getatom(const char *);
-static xcb_keycode_t *xcb_get_keycodes(xcb_keysym_t);
+static xcb_keycode_t *xcb_get_keycodes(const xcb_keysym_t);
 //-- End of Function signatures --//
 
 //-- Load configs --//
@@ -368,7 +369,7 @@ fix_numlock(unsigned int *numlockmask)
 
 /* the wm should listen to key presses */
 void
-grabkeys(unsigned int numlockmask)
+grabkeys(const unsigned int numlockmask)
 {
 	xcb_keycode_t *keycode;
 	int i,k,m;
@@ -493,7 +494,7 @@ getatom(const char *atom_name)
 
 /* wrapper to get xcb keycodes from keysymbol */
 xcb_keycode_t *
-xcb_get_keycodes(xcb_keysym_t keysym)
+xcb_get_keycodes(const xcb_keysym_t keysym)
 {
 	xcb_key_symbols_t *keysyms;
 	xcb_keycode_t *keycode;
