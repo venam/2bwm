@@ -36,6 +36,9 @@
 // this is again "usually" 397 but it might not be stable
 //#define WM_CHANGE_STATE (getatom("WM_CHANGE_STATE"))
 #define WM_CHANGE_STATE 397
+// this is gonna be used to remove the masks we don't care about
+#define IGNORE_MASK XCB_MOD_MASK_5|XCB_MOD_MASK_3|XCB_MOD_MASK_2|XCB_MOD_MASK_LOCK
+#define CLEANMASK(mask) (mask & ~IGNORE_MASK)
 /* Each prepocessor directive defines a single bit */
 //#define KEY_UP       (1 << 0)  /* 000001 */
 //#define KEY_RIGHT    (1 << 1)  /* 000010 */
@@ -77,6 +80,20 @@ const char *config_names[LAST_CONF] = {
 	"fixed_unkill_color",
 	"empty_color"
 };
+// arguments to the callback functions are either array of strings
+// (usually a command) or int
+union Arg {
+	const char** com;
+	const int8_t i;
+};
+// a key is composed of a modifier, the "key name"/symbol, the callback,
+// and the arg
+struct key {
+	unsigned int mod;
+	xcb_keysym_t keysym;
+	void (*func)(const union Arg);
+	const union Arg arg;
+};
 //-- End of Structures & Unions --//
 
 //-- Important globals --//
@@ -94,8 +111,6 @@ int32_t conf[LAST_CONF];
 xcb_ewmh_connection_t *ewmh;
 // XCB events to function
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
-// holds numlock - numlock messes with the buttons
-static unsigned int numlockmask = 0;
 //-- End of Important globals --//
 
 //-- Function signatures --//
@@ -107,6 +122,8 @@ static bool screen_init(int);
 static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *, int);
 static bool ewmh_init(int);
 static bool keyboard_init(void);
+static bool fix_numlock(unsigned int *);
+static void grabkeys(unsigned int);
 static bool conf_init(void);
 static uint32_t get_color(const char *);
 static void events_init(void);
@@ -189,7 +206,6 @@ setup(int scrno)
 	// those don't fail - otherwise WTF
 	conf_init();
 	events_init();
-	//grabkeys();
 
 	return true;
 }
@@ -267,11 +283,22 @@ ewmh_init(int scrno)
 	return true;
 }
 
+/* Fix the numlock mask and register the keys we want to grab|masks */
+bool
+keyboard_init(void)
+{
+	unsigned int numlockmask = 0;
+	if (!fix_numlock(&numlockmask))
+		return false;
+	grabkeys(numlockmask);
+	return true;
+}
+
 /* numlock is considered a modifier and if it's "on" then the match with the
  * other modifiers won't work, thus here we keep that modifier bit set for
  * later ORing */
 bool
-keyboard_init(void)
+fix_numlock(unsigned int *numlockmask)
 {
 	xcb_get_modifier_mapping_reply_t *reply;
 	xcb_keycode_t *modmap, *numlock;
@@ -322,7 +349,7 @@ keyboard_init(void)
 			bool skip_next = false;
 			for (n=0; numlock[n] != XCB_NO_SYMBOL; n++) {
 				if (numlock[n] == keycode) {
-					numlockmask = 1 << i;
+					*numlockmask = 1 << i;
 					skip_next = true;
 					break;
 				}
@@ -337,6 +364,37 @@ keyboard_init(void)
 	free(reply);
 	free(numlock);
 	return true;
+}
+
+/* the wm should listen to key presses */
+void
+grabkeys(unsigned int numlockmask)
+{
+	xcb_keycode_t *keycode;
+	int i,k,m;
+	unsigned int modifiers[] = {
+		0,
+		XCB_MOD_MASK_LOCK,
+		numlockmask,
+		numlockmask|XCB_MOD_MASK_LOCK
+	};
+
+	xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
+
+	for (i=0; i<LENGTH(keys); i++) {
+		// for every key we want to grab there are multiple
+		// possible keycodes + modifier combinations
+		keycode = xcb_get_keycodes(keys[i].keysym);
+		for (k=0; keycode[k] != XCB_NO_SYMBOL; k++)
+			for (m=0; m<LENGTH(modifiers); m++)
+				xcb_grab_key(conn, 1, screen->root,
+					keys[i].mod|modifiers[m],
+					keycode[k],
+					XCB_GRAB_MODE_ASYNC,//pointer mode
+					XCB_GRAB_MODE_ASYNC //keyboard mode
+				);
+		free(keycode);
+	}
 }
 
 /* Setup the config map from the config.h or from the xrdb */
@@ -450,6 +508,12 @@ xcb_get_keycodes(xcb_keysym_t keysym)
 	return keycode;
 }
 //-- End of Internal functions --//
+
+//-- Start of Event functions --//
+//-- End of Event functions --//
+
+//-- Start of keys/buttons callbacks --//
+//-- End of keys/buttons callbacks --//
 
 //-- Main routine --//
 int

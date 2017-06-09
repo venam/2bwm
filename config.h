@@ -21,3 +21,13 @@ const char *colors[] = {
 };
 //-- End of Borders --//
 
+
+//XXX: TODO maybe we'll have to rethink that but it's great for now and has
+//          worked great so far
+static struct key keys[] = {
+    /* modifier           key            function           argument */
+    // Focus to next/previous window
+    {  XCB_MOD_MASK_4 ,              XK_Tab,        NULL,         {.i=0}},
+    {  XCB_MOD_MASK_4|XCB_MOD_MASK_SHIFT,        XK_Tab,        NULL,         {.i=0}},
+};
+
