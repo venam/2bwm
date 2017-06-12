@@ -1,4 +1,5 @@
-/* 2bwm, a fast floating WM  with the particularity of having 2 borders written
+/*
+ * 2bwm, a fast floating WM  with the particularity of having 2 borders written
  * over the XCB library and derived from mcwm written by Michael Cardell.
  * Heavily modified version of http://www.hack.org/mc/hacks/mcwm/
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at the domain hack.org.
@@ -14,11 +15,14 @@
  * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <signal.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
+
 #include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
@@ -36,16 +40,30 @@
 // this is again "usually" 397 but it might not be stable
 //#define WM_CHANGE_STATE (getatom("WM_CHANGE_STATE"))
 #define WM_CHANGE_STATE 397
+// bunch of wrapper for the long MOD_MASK names
+#define SHIFT XCB_MOD_MASK_SHIFT
+#define LOCK XCB_MOD_MASK_LOCK
+#define CONTROL XCB_MOD_MASK_CONTROL
+#define MASK_1 XCB_MOD_MASK_1
+#define MASK_2 XCB_MOD_MASK_2
+#define ALT MASK_2
+#define MASK_3 XCB_MOD_MASK_3
+#define MASK_4 XCB_MOD_MASK_4
+#define MOD MASK_4
+#define MASK_5 XCB_MOD_MASK_5
+#define MASK_ANY XCB_MOD_MASK_ANY
 // this is gonna be used to remove the masks we don't care about
-#define IGNORE_MASK XCB_MOD_MASK_5|XCB_MOD_MASK_3|XCB_MOD_MASK_2|XCB_MOD_MASK_LOCK
+#define IGNORE_MASK MASK_5|MASK_3|MASK_2|LOCK
 #define CLEANMASK(mask) (mask & ~IGNORE_MASK)
-/* Each prepocessor directive defines a single bit */
-//#define KEY_UP       (1 << 0)  /* 000001 */
-//#define KEY_RIGHT    (1 << 1)  /* 000010 */
-//#define KEY_DOWN     (1 << 2)  /* 000100 */
-//#define KEY_LEFT     (1 << 3)  /* 001000 */
-//#define KEY_BUTTON1  (1 << 4)  /* 010000 */
-//#define KEY_BUTTON2  (1 << 5)  /* 100000 */
+// window statuses (or use an enum to restrict the choices, better?)
+#define FIXED (1 << 0)
+#define UNKILLABLE (1 << 1)
+#define VERTMAXED (1 << 2)
+#define HORMAXED (1 << 3)
+#define MAXED (1 << 4)
+#define VERTHOR (1 << 5)
+#define IGNORE_BORDERS (1 << 6)
+#define ICONIC (1 << 7)
 //-- End of Macros --//
 
 //-- Structures & Unions --//
@@ -143,13 +161,16 @@ sigcatch(const int sig)
 	sigcode = sig;
 }
 
-/* Ignore SIGCHLD & override SIGINT, SIGHUP, & SIGTERM to the sigaction
- * aka let them be handled later on in the loop. */
+/*
+ * Ignore SIGCHLD & override SIGINT, SIGHUP, & SIGTERM to the sigaction
+ * aka let them be handled later on in the loop.
+ */
 void
 install_sig_handlers(void)
 {
 	struct sigaction sa;
 	struct sigaction sa_chld;
+
 	sa.sa_handler = SIG_IGN;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_NOCLDSTOP;
@@ -165,12 +186,15 @@ install_sig_handlers(void)
 		exit(-1);
 }
 
-/* Set keyboard focus to follow mouse pointer. Clear EWMH. Then exit. We
+/*
+ * Set keyboard focus to follow mouse pointer. Clear EWMH. Then exit. We
  * don't need to bother mapping all windows we know about. They should all
- * be in the X server's Save Set and should be mapped automagically. */
+ * be in the X server's Save Set and should be mapped automagically.
+ */
 void
 cleanup(void)
 {
+
 	xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,
 			XCB_CURRENT_TIME);
 	//XXX: delallitems(wslist, NULL);
@@ -184,7 +208,8 @@ cleanup(void)
 	xcb_disconnect(conn);
 }
 
-/* Initial window manager setup "facade":
+/*
+ * Initial window manager setup "facade":
  * EWMH
  * XRDB
  * Keyboard
@@ -195,6 +220,7 @@ cleanup(void)
 bool
 setup(int scrno)
 {
+
 	if (!screen_init(scrno)
 		|| !ewmh_init(scrno)
 		|| !keyboard_init())
@@ -211,7 +237,7 @@ setup(int scrno)
 	return true;
 }
 
-/* initialize the global screen object */
+/* Initialize the global screen object */
 bool
 screen_init(int scrno)
 {
@@ -243,6 +269,7 @@ xcb_screen_t *
 xcb_screen_of_display(xcb_connection_t *con, int screen)
 {
 	xcb_screen_iterator_t iter;
+
 	iter = xcb_setup_roots_iterator(xcb_get_setup(con));
 	for (; iter.rem; --screen, xcb_screen_next(&iter))
 		if (screen == 0)
@@ -258,11 +285,7 @@ ewmh_init(int scrno)
 	ewmh = calloc(1, sizeof(xcb_ewmh_connection_t));
 	if (ewmh == NULL)
 		return false;
-
-	xcb_intern_atom_cookie_t *cookie = xcb_ewmh_init_atoms(conn, ewmh);
-	xcb_ewmh_init_atoms_replies(ewmh, cookie, (void *)0);
-	xcb_ewmh_set_wm_pid(ewmh, screen->root, getpid());
-	xcb_ewmh_set_wm_name(ewmh, screen->root, 4, "2bwm");
+	xcb_intern_atom_cookie_t *cookie;
 	xcb_atom_t net_atoms[] = {
 		ewmh->_NET_SUPPORTED,              ewmh->_NET_WM_DESKTOP,
 		ewmh->_NET_NUMBER_OF_DESKTOPS,     ewmh->_NET_CURRENT_DESKTOP,
@@ -276,6 +299,11 @@ ewmh_init(int scrno)
 		ewmh->WM_PROTOCOLS,                ewmh->_NET_WM_STATE,
 		ewmh->_NET_WM_STATE_DEMANDS_ATTENTION
 	};
+
+	cookie = xcb_ewmh_init_atoms(conn, ewmh);
+	xcb_ewmh_init_atoms_replies(ewmh, cookie, (void *)0);
+	xcb_ewmh_set_wm_pid(ewmh, screen->root, getpid());
+	xcb_ewmh_set_wm_name(ewmh, screen->root, 4, "2bwm");
 	xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
 	// We always start on the first workspace
 	xcb_ewmh_set_current_desktop(ewmh, scrno, 0);
@@ -289,15 +317,18 @@ bool
 keyboard_init(void)
 {
 	unsigned int numlockmask = 0;
+
 	if (!fix_numlock(&numlockmask))
 		return false;
 	grabkeys(numlockmask);
 	return true;
 }
 
-/* numlock is considered a modifier and if it's "on" then the match with the
+/*
+ * Numlock is considered a modifier and if it's "on" then the match with the
  * other modifiers won't work, thus here we keep that modifier bit set for
- * later ORing */
+ * later ORing
+ */
 bool
 fix_numlock(unsigned int *numlockmask)
 {
@@ -367,7 +398,7 @@ fix_numlock(unsigned int *numlockmask)
 	return true;
 }
 
-/* the wm should listen to key presses */
+/* The wm should listen to key presses */
 void
 grabkeys(const unsigned int numlockmask)
 {
@@ -375,12 +406,12 @@ grabkeys(const unsigned int numlockmask)
 	int i,k,m;
 	unsigned int modifiers[] = {
 		0,
-		XCB_MOD_MASK_LOCK,
+		LOCK,
 		numlockmask,
-		numlockmask|XCB_MOD_MASK_LOCK
+		numlockmask|LOCK
 	};
 
-	xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
+	xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, MASK_ANY);
 
 	for (i=0; i<LENGTH(keys); i++) {
 		// for every key we want to grab there are multiple
@@ -451,23 +482,25 @@ get_color(const char *hex)
 	return rgb48 | 0xff000000;
 }
 
+/* Assign callbacks in the events array */
 void
 events_init(void)
 {
 	unsigned int i = 0;
+
 	for (i=0; i<XCB_NO_OPERATION; i++)
 		events[i] = NULL;
 
-	//events[XCB_CONFIGURE_REQUEST]   = configurerequest;
-	//events[XCB_DESTROY_NOTIFY]      = destroynotify;
-	//events[XCB_ENTER_NOTIFY]        = enternotify;
-	//events[XCB_KEY_PRESS]           = handle_keypress;
-	//events[XCB_MAP_REQUEST]         = newwin;
-	//events[XCB_UNMAP_NOTIFY]        = unmapnotify;
-	//events[XCB_CONFIGURE_NOTIFY]    = confignotify;
-	//events[XCB_CIRCULATE_REQUEST]   = circulaterequest;
-	//events[XCB_BUTTON_PRESS]        = buttonpress;
-	//events[XCB_CLIENT_MESSAGE]      = clientmessage;
+	events[XCB_CONFIGURE_REQUEST]   = NULL;
+	events[XCB_DESTROY_NOTIFY]      = NULL;
+	events[XCB_ENTER_NOTIFY]        = NULL;
+	events[XCB_KEY_PRESS]           = NULL;
+	events[XCB_MAP_REQUEST]         = NULL;
+	events[XCB_UNMAP_NOTIFY]        = NULL;
+	events[XCB_CONFIGURE_NOTIFY]    = NULL;
+	events[XCB_CIRCULATE_REQUEST]   = NULL;
+	events[XCB_BUTTON_PRESS]        = NULL;
+	events[XCB_CLIENT_MESSAGE]      = NULL;
 }
 
 /* Get a defined atom number from the X server. */
@@ -476,13 +509,11 @@ getatom(const char *atom_name)
 {
 	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(conn, 0,
 			strlen(atom_name), atom_name);
-
 	xcb_intern_atom_reply_t *rep = xcb_intern_atom_reply(conn, atom_cookie,
 			NULL);
 
 	// XXX Note that we return 0 as an atom if anything goes wrong.
 	// Might become interesting.*/
-
 	if (rep == NULL)
 		return 0;
 
@@ -492,7 +523,7 @@ getatom(const char *atom_name)
 	return atom;
 }
 
-/* wrapper to get xcb keycodes from keysymbol */
+/* Wrapper to get xcb keycodes from keysymbol */
 xcb_keycode_t *
 xcb_get_keycodes(const xcb_keysym_t keysym)
 {
@@ -517,10 +548,12 @@ xcb_get_keycodes(const xcb_keysym_t keysym)
 //-- End of keys/buttons callbacks --//
 
 //-- Main routine --//
+/* 2bwm a fast and floating window manager */
 int
 main(int argc, char **argv)
 {
 	int scrno;
+
 	install_sig_handlers();
 	atexit(cleanup);
 	if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno))) {

@@ -23,13 +23,15 @@ static const char *colors[] = {
 //-- End of Borders --//
 
 
+//-- Keys & Buttons events --//
 //XXX: TODO maybe we'll have to rethink that but it's great for now and has
 //          worked great so far
 static const struct key keys[] = {
-    /* modifier           key            function           argument */
+    // modifier           key            function           argument
     // Focus to next/previous window
-    {  XCB_MOD_MASK_4 ,              XK_Tab,        NULL,         {.i=0}},
-    {  XCB_MOD_MASK_4|XCB_MOD_MASK_SHIFT,        XK_Tab,        NULL,         {.i=0}},
+    { MOD,                XK_Tab,        NULL,              {.i=0}},
+    { MOD|SHIFT,          XK_Tab,        NULL,              {.i=0}},
 };
+//-- End of Keys & Buttons events --//
 
 //-- End of user configurations --//
