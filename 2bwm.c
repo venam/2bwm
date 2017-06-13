@@ -56,6 +56,7 @@ xcb_atom_t ATOM[NB_ATOMS];
 ///---Functions prototypes---///
 static void run(void);
 static bool setup(int);
+static void install_sig_handlers(void);
 static void start(const Arg *);
 static void mousemotion(const Arg *);
 static void cursor_move(const Arg *);
@@ -211,12 +212,6 @@ void
 twobwm_exit()
 {
 	exit(EXIT_SUCCESS);
-}
-
-void
-sigcatch(const int sig)
-{
-	sigcode = sig;
 }
 
 void
@@ -1049,7 +1044,7 @@ setup_keyboard(void)
 
 	numlock = xcb_get_keycodes(XK_Num_Lock);
 
-	for (i=0; i<8; i++) {
+	for (i=4; i<8; i++) {
 		for (j=0; j<reply->keycodes_per_modifier; j++) {
 			xcb_keycode_t keycode = modmap[i
 				* reply->keycodes_per_modifier + j];
@@ -2480,10 +2475,13 @@ handle_keypress(xcb_generic_event_t *e)
 	xcb_key_press_event_t *ev       = (xcb_key_press_event_t *)e;
 	xcb_keysym_t           keysym   = xcb_get_keysym(ev->detail);
 
-	for (unsigned int i=0; i<LENGTH(keys); i++)
+	for (unsigned int i=0; i<LENGTH(keys); i++) {
 		if (keysym == keys[i].keysym && CLEANMASK(keys[i].mod)
-				== CLEANMASK(ev->state) && keys[i].func)
+				== CLEANMASK(ev->state) && keys[i].func) {
 			keys[i].func(&keys[i].arg);
+			break;
+		}
+	}
 }
 
 /* Helper function to configure a window. */
@@ -2798,8 +2796,13 @@ buttonpress(xcb_generic_event_t *ev)
 				== CLEANMASK(e->state)){
 			if ((focuswin==NULL) && buttons[i].func == mousemotion)
 				return;
-
-			buttons[i].func(&(buttons[i].arg));
+			if (buttons[i].root_only) {
+				if (e->event == e->root && e->child == 0)
+					buttons[i].func(&(buttons[i].arg));
+			}
+			else {
+				buttons[i].func(&(buttons[i].arg));
+			}
 		}
 }
 
@@ -3018,15 +3021,17 @@ grabbuttons(struct client *c)
 	};
 
 	for (unsigned int b=0; b<LENGTH(buttons); b++)
-		for (unsigned int m=0; m<LENGTH(modifiers); m++)
-			xcb_grab_button(conn, 1, c->id,
-					XCB_EVENT_MASK_BUTTON_PRESS,
-					XCB_GRAB_MODE_ASYNC,
-					XCB_GRAB_MODE_ASYNC,
-					screen->root, XCB_NONE,
-					buttons[b].button,
-					buttons[b].mask|modifiers[m]
-			);
+		if (!buttons[b].root_only) {
+			for (unsigned int m=0; m<LENGTH(modifiers); m++)
+				xcb_grab_button(conn, 1, c->id,
+						XCB_EVENT_MASK_BUTTON_PRESS,
+						XCB_GRAB_MODE_ASYNC,
+						XCB_GRAB_MODE_ASYNC,
+						screen->root, XCB_NONE,
+						buttons[b].button,
+						buttons[b].mask|modifiers[m]
+				);
+		}
 }
 
 void
@@ -3057,20 +3062,9 @@ setup(int scrno)
 	if (!screen)
 		return false;
 
-	xcb_window_t cwin = xcb_generate_id(conn);
-
-	xcb_create_window(conn, XCB_COPY_FROM_PARENT, cwin, screen->root, 0, 0,
-			screen->width_in_pixels, screen->height_in_pixels, 0,
-			XCB_WINDOW_CLASS_INPUT_OUTPUT,
-			XCB_COPY_FROM_PARENT,XCB_CW_EVENT_MASK,
-			event_mask_pointer
-	);
-
 	ewmh_init();
-	xcb_ewmh_set_wm_pid(ewmh, cwin, getpid());
-	xcb_ewmh_set_wm_name(ewmh, cwin, 4, "2bwm");
-	xcb_ewmh_set_supporting_wm_check(ewmh, cwin, cwin);
-	xcb_ewmh_set_supporting_wm_check(ewmh, screen->root, cwin);
+	xcb_ewmh_set_wm_pid(ewmh, screen->root, getpid());
+	xcb_ewmh_set_wm_name(ewmh, screen->root, 4, "2bwm");
 
 	xcb_atom_t net_atoms[] = {
 		ewmh->_NET_SUPPORTED,              ewmh->_NET_WM_DESKTOP,
@@ -3159,8 +3153,8 @@ setup(int scrno)
 	if (error)
 		return false;
 
-	xcb_ewmh_set_current_desktop(ewmh, 0, curws);
-	xcb_ewmh_set_number_of_desktops(ewmh, 0, WORKSPACES);
+	xcb_ewmh_set_current_desktop(ewmh, scrno, curws);
+	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
 
 	grabkeys();
 	/* set events */
@@ -3195,12 +3189,15 @@ twobwm_restart(void)
 	execvp(TWOBWM_PATH, NULL);
 }
 
-int
-main(void)
+void
+sigcatch(const int sig)
 {
-	int scrno;
+	sigcode = sig;
+}
 
-	/* Install signal handlers. */
+void
+install_sig_handlers(void)
+{
 	struct sigaction sa;
 	struct sigaction sa_chld;
 	sa.sa_handler = SIG_IGN;
@@ -3211,20 +3208,22 @@ main(void)
 		exit(-1);
 	sa.sa_handler = sigcatch;
 	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART; /* Restart functions if
-								 interrupted by handler */
-	if (sigaction(SIGINT, &sa, NULL) == -1)
+	sa.sa_flags = SA_RESTART; /* Restart if interrupted by handler */
+	if ( sigaction(SIGINT, &sa, NULL) == -1
+		|| sigaction(SIGHUP, &sa, NULL) == -1
+		|| sigaction(SIGTERM, &sa, NULL) == -1)
 		exit(-1);
-	if (sigaction(SIGHUP, &sa, NULL) == -1)
-		exit(-1);
-	if (sigaction(SIGTERM, &sa, NULL) == -1)
-		exit(-1);
-	atexit(cleanup);
+}
 
+int
+main(int argc, char **argv)
+{
+	int scrno;
+	install_sig_handlers();
+	atexit(cleanup);
 	if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno)))
 		if (setup(scrno))
 			run();
-
 	/* the WM has stopped running, because sigcode is not 0 */
 	exit(sigcode);
 }

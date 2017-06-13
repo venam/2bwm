@@ -20,6 +20,7 @@ typedef struct {
 	unsigned int mask, button;
 	void (*func)(const Arg *);
 	const Arg arg;
+	const bool root_only;
 } Button;
 struct sizepos {
 	int16_t x, y;
