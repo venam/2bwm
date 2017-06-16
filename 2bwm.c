@@ -16,6 +16,16 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ * XXX - TODO:
+ * Grab buttons but allow some events to be on the root window only (right click menu)
+ * Workspace per monitor
+ * Having both the "Desktop metaphor" and Tagging available (having a window on selected workspaces)
+ * Having a clean and readable code base so that anyone can learn from it
+ * Lighter & faster (less linked lists and O(n) searches for windows, those will be replaced by hashmaps)
+ * Try to fix some of the race condition bugs
+ * Maybe a full text file configuration (I thought a bit about how to implement this but I'm not sure it's necessary)
+ * Fix the gap mechanism (add gap between windows too)
  */
 
 #include <signal.h>
@@ -29,6 +39,9 @@
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_xrm.h>
 #include <X11/keysym.h>
+
+#include "khash.h"
+
 //XXX: temporary for debug
 #include <stdio.h>
 
@@ -85,7 +98,7 @@ enum config_indices {
 };
 // arguments to the callback functions are either array of strings
 // (usually a command) or int
-union Arg {
+union callback_arg {
 	const char** com;
 	const int8_t i;
 };
@@ -94,9 +107,39 @@ union Arg {
 struct key {
 	unsigned int mod;
 	xcb_keysym_t keysym;
-	void (*func)(const union Arg);
-	const union Arg arg;
+	void (*func)(const union callback_arg);
+	const union callback_arg arg;
 };
+// This will only hold window ids which are uint32_t xcb_drawable_t
+KHASH_MAP_INIT_INT(workspaces, bool);
+// A monitor object contains 10 workspaces which are composed of hashes
+// of window IDs
+struct monitor {
+	char *name;
+	int16_t y, x;
+	uint16_t width, height;
+	khash_t(workspaces) *workspaces[10];
+};
+// This will hold the monitors by ids which are uint32_t xcb_randr_output_t
+KHASH_MAP_INIT_INT(monitors, struct monitor);
+// The mighty client structure
+// TODO: clean it up -> this is the next step
+struct client {
+	bool usercoord; // XXX X,Y was set by -geom.
+	int16_t x, y; // X/Y coordinate.
+	uint16_t width,height; // Width,Height in pixels.
+	struct sizepos {
+		int16_t x, y;
+		uint16_t width,height;
+	} origsize;
+	uint16_t max_width, max_height,min_width, min_height, width_inc, height_inc,base_width, base_height;
+	uint32_t status; // BIT FIELD -XXX fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic;
+	struct monitor *monitor;        // The physical output this window is on.
+	//struct item *winitem;           // Pointer to our place in global windows list.
+	//struct item *wsitem[WORKSPACES];// Pointer to our place in every workspace window list.
+};
+// This will only hold all the clients with as id the window id
+KHASH_MAP_INIT_INT(clients, struct client);
 //-- End of Structures & Unions --//
 
 //-- Important globals --//
@@ -130,6 +173,8 @@ static const char *config_names[LAST_CONF] = {
 	"fixed_unkill_color",
 	"empty_color"
 };
+// This is the annoying numlock mask that messes with buttons and keys
+static unsigned int numlockmask = 0;
 //-- End of Important globals --//
 
 //-- Function signatures --//
@@ -142,7 +187,7 @@ static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *, int);
 static bool ewmh_init(int);
 static bool keyboard_init(void);
 static bool fix_numlock(unsigned int *);
-static void grabkeys(const unsigned int);
+static void grab_keys(const unsigned int);
 static bool conf_init(void);
 static uint32_t get_color(const char *);
 static void events_init(void);
@@ -316,11 +361,9 @@ ewmh_init(int scrno)
 bool
 keyboard_init(void)
 {
-	unsigned int numlockmask = 0;
-
 	if (!fix_numlock(&numlockmask))
 		return false;
-	grabkeys(numlockmask);
+	grab_keys(numlockmask);
 	return true;
 }
 
@@ -400,7 +443,7 @@ fix_numlock(unsigned int *numlockmask)
 
 /* The wm should listen to key presses */
 void
-grabkeys(const unsigned int numlockmask)
+grab_keys(const unsigned int numlockmask)
 {
 	xcb_keycode_t *keycode;
 	int i,k,m;
@@ -438,6 +481,8 @@ conf_init(void)
 	int j = 0;
 	char *value = NULL;
 	char conf_name[160];
+	char *config_prefix = "twobwm.";
+	int prefix_len = strlen(config_prefix);
 
 	// Load the borders related configs
 	for (i = 0; i < LENGTH(borders); i++)
@@ -449,8 +494,8 @@ conf_init(void)
 	// Load from the x resources
 	if (db != NULL) {
 		for (i = 0; i < LAST_CONF; i++) {
-			strcpy(conf_name, "twobwm.");
-			if (strlen(config_names[i]) > 160)
+			strcpy(conf_name, config_prefix);
+			if (strlen(config_names[i]) > 160 - prefix_len)
 				continue;
 			strcat(conf_name, config_names[i]);
 			if (xcb_xrm_resource_get_string(db,
@@ -469,7 +514,7 @@ conf_init(void)
 	xcb_xrm_database_free(db);
 }
 
-/* Get the pixel values of a named colour colstr. Returns pixel values. */
+/* Get the pixel values of a hex colour */
 uint32_t
 get_color(const char *hex)
 {

@@ -9,7 +9,7 @@ X11_INCLUDE?=/usr/local/include
 
 #CC=clang
 DIST=2bwm-$(VERSION)
-SRC=2bwm.c list.h hidden.c config.h
+SRC=2bwm.c khash.h hidden.c config.h
 DISTFILES=Makefile README.md TODO 2bwm.man $(SRC)
 #CFLAGS+=-Os -s -I${X11_INCLUDE}
 CFLAGS+=-g -I${X11_INCLUDE} \
@@ -28,7 +28,7 @@ all: $(TARGETS)
 hidden: hidden.c
 	$(CC) -o $@ $(CFLAGS) hidden.c $(LDFLAGS)
 
-2bwm.o: 2bwm.c list.h config.h Makefile
+2bwm.o: 2bwm.c khash.h config.h Makefile
 
 install: $(TARGETS)
 	test -d $(DESTDIR)$(PREFIX)/bin || mkdir -p $(DESTDIR)$(PREFIX)/bin

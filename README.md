@@ -9,6 +9,14 @@ used for move, resize and raise/lower.
 WARNING: This WM and this repository are experimental, 2bwm is only meant for
 advanced users.  
 
+Non-Official Tutorials
+==========
+
+https://extendedreality.wordpress.com/2015/06/12/window-managers-5-2bwm/  
+https://copr.fedorainfracloud.org/coprs/dmoerner/2bwm/  
+http://wandapcguide.blogspot.com/2016/12/how-to-install-2bwm.html  
+https://wiki.archlinux.org/index.php/2bwm (outdated)  
+
 
 Features:
 =========
