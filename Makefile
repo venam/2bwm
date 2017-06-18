@@ -15,7 +15,7 @@ DISTFILES=Makefile README.md TODO 2bwm.man $(SRC)
 CFLAGS+=-g -I${X11_INCLUDE} \
 		-DTWOBWM_PATH=\"${TWOBWM_PATH}\" 
 
-LDFLAGS+=-L${PREFIX}/${LIB_SUFFIX} -lxcb -lxcb-randr -lxcb-keysyms \
+LDFLAGS+=-L${PREFIX}/${LIB_SUFFIX} -lxcb -lxcb-randr -lxcb-util -lxcb-keysyms \
 		 -lxcb-icccm -lxcb-ewmh -lxcb-xrm
 TARGETS=2bwm hidden
 OBJS=2bwm.o

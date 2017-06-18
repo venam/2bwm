@@ -21,11 +21,14 @@
  * Grab buttons but allow some events to be on the root window only (right click menu)
  * Workspace per monitor
  * Having both the "Desktop metaphor" and Tagging available (having a window on selected workspaces)
+ * New function that centers the window but with a certain predefined width
  * Having a clean and readable code base so that anyone can learn from it
  * Lighter & faster (less linked lists and O(n) searches for windows, those will be replaced by hashmaps)
  * Try to fix some of the race condition bugs
+ * Resize from any corner
  * Maybe a full text file configuration (I thought a bit about how to implement this but I'm not sure it's necessary)
  * Fix the gap mechanism (add gap between windows too)
+ * Use lines with width instead of rects for the borders
  */
 
 #include <signal.h>
@@ -34,6 +37,7 @@
 #include <string.h>
 
 #include <xcb/randr.h>
+#include <xcb/xcb_aux.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
@@ -100,7 +104,7 @@ enum config_indices {
 // (usually a command) or int
 union callback_arg {
 	const char** com;
-	const int8_t i;
+	const uint32_t i;
 };
 // a key is composed of a modifier, the "key name"/symbol, the callback,
 // and the arg
@@ -138,8 +142,14 @@ struct client {
 	//struct item *winitem;           // Pointer to our place in global windows list.
 	//struct item *wsitem[WORKSPACES];// Pointer to our place in every workspace window list.
 };
-// This will only hold all the clients with as id the window id
+// This will hold all the clients with as id the window id
 KHASH_MAP_INIT_INT(clients, struct client);
+// All the monitor info we fetched (screen id, nb screen, event stamp)
+struct monitor_resources {
+	xcb_randr_output_t *outputs;
+	int len;
+	xcb_timestamp_t timestamp;
+};
 //-- End of Structures & Unions --//
 
 //-- Important globals --//
@@ -150,7 +160,7 @@ static sig_atomic_t sigcode;
 // The screen object
 static xcb_screen_t *screen;
 // Keep the id of the randr base event
-static int randrbase;
+static uint8_t randr_event;
 // The window manager simple configurations
 static int32_t conf[LAST_CONF];
 // EWHM con
@@ -174,7 +184,10 @@ static const char *config_names[LAST_CONF] = {
 	"empty_color"
 };
 // This is the annoying numlock mask that messes with buttons and keys
-static unsigned int numlockmask = 0;
+static unsigned int numlock_mask = 0;
+// The hashes holding the monitors and clients
+khash_t(monitors) *monitors_hash;
+khash_t(clients) *clients_hash;
 //-- End of Important globals --//
 
 //-- Function signatures --//
@@ -183,11 +196,17 @@ static void install_sig_handlers(void);
 static void cleanup(void);
 static bool setup(int);
 static bool screen_init(int);
-static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *, int);
 static bool ewmh_init(int);
 static bool keyboard_init(void);
 static bool fix_numlock(unsigned int *);
 static void grab_keys(const unsigned int);
+static bool monitor_init(void);
+static bool monitor_get_extension(void);
+static struct monitor_resources monitor_get_resources(void);
+static void monitor_set_info(struct monitor_resources);
+static void monitor_hash_add(xcb_randr_output_t,
+		xcb_randr_get_crtc_info_reply_t *);
+static void monitor_hash_del(xcb_randr_output_t);
 static bool conf_init(void);
 static uint32_t get_color(const char *);
 static void events_init(void);
@@ -239,10 +258,11 @@ install_sig_handlers(void)
 void
 cleanup(void)
 {
+	khiter_t k;
+	int i;
 
 	xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,
 			XCB_CURRENT_TIME);
-	//XXX: delallitems(wslist, NULL);
 	xcb_flush(conn);
 
 	if (ewmh != NULL) {
@@ -250,28 +270,47 @@ cleanup(void)
 		free(ewmh);
 	}
 
+	// clean workspaces per monitor
+	for (k = kh_begin(monitors_hash); k != kh_end(monitors_hash); ++k) {
+		// checking for its existence & erase
+		if (kh_exist(monitors_hash, k)) {
+			for (i = 0; i < 10; i++) {
+				kh_destroy(
+					workspaces,
+					kh_value(monitors_hash, k).workspaces[i]
+				);
+			}
+		}
+	}
+	kh_destroy(monitors, monitors_hash);
+	kh_destroy(clients, clients_hash);
+
 	xcb_disconnect(conn);
 }
 
 /*
  * Initial window manager setup "facade":
+ * Screen root + Events
  * EWMH
- * XRDB
- * Keyboard
- * RANDR XXX: store separate list of clients per monitor
- * Event mapping from everywhere to foos
- * Map current windows available
+ * Keyboard + Events
+ * Monitor + Randr + events
+ * Configs + XRDB
+ * Events
+ * Map windows
  */
 bool
 setup(int scrno)
 {
 
+	monitors_hash = kh_init(monitors);
+	clients_hash = kh_init(clients);
+
 	if (!screen_init(scrno)
 		|| !ewmh_init(scrno)
-		|| !keyboard_init())
+		|| !keyboard_init()
+		|| !monitor_init())
 		return false;
 
-	//randrbase = setuprandr();
 	//if (!setupscreen())
 	//	return false;
 
@@ -294,7 +333,7 @@ screen_init(int scrno)
 	};
 
 	// get a screen structure from the display number
-	screen = xcb_screen_of_display(conn, scrno);
+	screen = xcb_aux_get_screen(conn, scrno);
 	if (screen == NULL)
 		return false;
 
@@ -307,20 +346,6 @@ screen_init(int scrno)
 		return false;
 	else
 		return true;
-}
-
-/* Get screen of display */
-xcb_screen_t *
-xcb_screen_of_display(xcb_connection_t *con, int screen)
-{
-	xcb_screen_iterator_t iter;
-
-	iter = xcb_setup_roots_iterator(xcb_get_setup(con));
-	for (; iter.rem; --screen, xcb_screen_next(&iter))
-		if (screen == 0)
-			return iter.data;
-
-	return NULL;
 }
 
 /* Allocate & create the ewmh object */
@@ -361,9 +386,10 @@ ewmh_init(int scrno)
 bool
 keyboard_init(void)
 {
-	if (!fix_numlock(&numlockmask))
+
+	if (!fix_numlock(&numlock_mask))
 		return false;
-	grab_keys(numlockmask);
+	grab_keys(numlock_mask);
 	return true;
 }
 
@@ -373,7 +399,7 @@ keyboard_init(void)
  * later ORing
  */
 bool
-fix_numlock(unsigned int *numlockmask)
+fix_numlock(unsigned int *numlock_mask)
 {
 	xcb_get_modifier_mapping_reply_t *reply;
 	xcb_keycode_t *modmap, *numlock;
@@ -424,7 +450,7 @@ fix_numlock(unsigned int *numlockmask)
 			bool skip_next = false;
 			for (n=0; numlock[n] != XCB_NO_SYMBOL; n++) {
 				if (numlock[n] == keycode) {
-					*numlockmask = 1 << i;
+					*numlock_mask = 1 << i;
 					skip_next = true;
 					break;
 				}
@@ -433,8 +459,8 @@ fix_numlock(unsigned int *numlockmask)
 			// for that modifier, we know we want it in the mask
 			if (skip_next)
 				break;
-		}
-	}
+		}  // for (keys per modif)
+	}  // for (4,5,7)
 
 	free(reply);
 	free(numlock);
@@ -443,15 +469,15 @@ fix_numlock(unsigned int *numlockmask)
 
 /* The wm should listen to key presses */
 void
-grab_keys(const unsigned int numlockmask)
+grab_keys(const unsigned int numlock_mask)
 {
 	xcb_keycode_t *keycode;
 	int i,k,m;
 	unsigned int modifiers[] = {
 		0,
 		LOCK,
-		numlockmask,
-		numlockmask|LOCK
+		numlock_mask,
+		numlock_mask|LOCK
 	};
 
 	xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, MASK_ANY);
@@ -470,6 +496,202 @@ grab_keys(const unsigned int numlockmask)
 				);
 		free(keycode);
 	}
+}
+
+/*
+ * Monitor initialization "facade":
+ * Get extension
+ * Subscribe to events
+ * List monitors
+ * Add monitors to hash
+ */
+bool
+monitor_init(void)
+{
+	struct monitor_resources mon_res;
+
+	if (!monitor_get_extension())
+		return false;
+
+	// subscribe to monitor events
+	xcb_randr_select_input(conn, screen->root,
+		XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE
+		| XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE
+		| XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE
+		| XCB_RANDR_NOTIFY_MASK_OUTPUT_PROPERTY
+	);
+
+	// list all monitors and add/remove new or old ones
+	mon_res = monitor_get_resources();
+	// no monitor was found
+	if (mon_res.len == 0) {
+		return false;
+	}
+	monitor_set_info(mon_res);
+	return true;
+}
+
+/* Fetch/Check the randr extension event number (if available) */
+bool
+monitor_get_extension(void)
+{
+	const xcb_query_extension_reply_t *extension
+		= xcb_get_extension_data(conn, &xcb_randr_id);
+
+	if (!extension->present)
+		return false;
+	// first_event is the event corresponding to this extension
+	randr_event = extension->first_event;
+	return true;
+}
+
+/* Get monitor resources (data useful to fetch every screen info later on) */
+struct monitor_resources
+monitor_get_resources(void)
+{
+	xcb_randr_get_screen_resources_current_cookie_t rcookie;
+	xcb_randr_get_screen_resources_current_reply_t *res;
+	struct monitor_resources mon_res;
+
+	// async request + reply
+	mon_res.len = 0;
+	rcookie = xcb_randr_get_screen_resources_current(conn, screen->root);
+	res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL);
+	if (res == NULL)
+		return mon_res;
+
+	// fetch the number of screens
+	mon_res.timestamp = res->config_timestamp;
+	mon_res.len = xcb_randr_get_screen_resources_current_outputs_length(res);
+	mon_res.outputs = xcb_randr_get_screen_resources_current_outputs(res);
+	free(res);
+	return mon_res;
+}
+
+/*
+ * Fetch the info of every monitor id from 0 to len at time timestamp and
+ * update it in the HASH
+ */
+void
+monitor_set_info(struct monitor_resources mon_res)
+{
+	int i;
+	xcb_randr_get_output_info_cookie_t ocookie;
+	xcb_randr_get_crtc_info_cookie_t icookie;
+	xcb_randr_get_output_info_reply_t *output = NULL;
+	xcb_randr_get_crtc_info_reply_t *crtc = NULL;
+
+	for (i = 0; i < mon_res.len; i++) {
+		ocookie = xcb_randr_get_output_info(conn, mon_res.outputs[i],
+				mon_res.timestamp);
+		output = xcb_randr_get_output_info_reply(conn, ocookie, NULL);
+		if (output == NULL) {
+			continue;
+		}
+
+		if (output->crtc != XCB_NONE) {
+			icookie = xcb_randr_get_crtc_info(conn, output->crtc,
+					mon_res.timestamp);
+			crtc = xcb_randr_get_crtc_info_reply(conn, icookie,
+					NULL);
+			if (NULL == crtc)
+				continue;
+			monitor_hash_add(mon_res.outputs[i], crtc);
+			free(crtc);
+		} else {
+			monitor_hash_del(mon_res.outputs[i]);
+		}
+
+		if (output != NULL)
+			free(output);
+	}  // for
+}
+
+void
+monitor_hash_add(xcb_randr_output_t out, xcb_randr_get_crtc_info_reply_t *rep)
+{
+	khiter_t k;
+	int i;
+	int ret;
+	struct monitor new_mon;
+
+	/* Check if it's a clone. */
+	//clonemon = findclones(outputs[i], crtc->x, crtc->y);
+	//if (NULL != clonemon)
+	//	continue;
+
+	// check if the monitor is already in the list
+	k = kh_get(monitors, monitors_hash, out);
+
+	// it's missing
+	if (k == kh_end(monitors_hash)) {
+		k = kh_put(monitors, monitors_hash, out, &ret);
+		new_mon.x = rep->x;
+		new_mon.y = rep->y;
+		new_mon.width = rep->width;
+		new_mon.height = rep->height;
+		for (i = 0; i < 10; i++) {
+			new_mon.workspaces[i] = kh_init(workspaces);
+		}
+		kh_value(monitors_hash, k) = new_mon;
+	} else {
+		new_mon = kh_value(monitors_hash, k);
+		new_mon.x = rep->x;
+		new_mon.y = rep->y;
+		new_mon.width = rep->width;
+		new_mon.height = rep->height;
+		kh_value(monitors_hash, k) = new_mon;
+	}
+	//if (NULL == (mon = findmonitor(outputs[i])))
+	//	addmonitor(outputs[i], name, crtc->x, crtc->y,
+	//			crtc->width,crtc->height);
+	//else
+	//	/* We know this monitor. Update information.
+	//	* If it's smaller than before, rearrange windows. */
+	//	if ( crtc->x != mon->x||crtc->y != mon->y||crtc->width
+	//			!= mon->width||crtc->height
+	//			!= mon->height) {
+	//		if (crtc->x != mon->x)
+	//			mon->x = crtc->x;
+	//		if (crtc->y != mon->y)
+	//			mon->y = crtc->y;
+	//		if (crtc->width != mon->width)
+	//			mon->width = crtc->width;
+	//		if (crtc->height != mon->height)
+	//			mon->height = crtc->height;
+
+
+	//		arrbymon(mon);
+	//	}
+}
+
+void
+monitor_hash_del(xcb_randr_output_t out)
+{
+	///* Check if it was used before. If it was, do something. */
+	//if ((mon = findmonitor(out))) {
+	//	struct client *client;
+	//	for (item = winlist; item != NULL; item = item->next) {
+	//		/* Check all windows on this monitor
+	//		* and move them to the next or to the
+	//		* first monitor if there is no next. */
+	//		client = item->data;
+
+	//		if (client->monitor == mon) {
+	//			if (NULL == client->monitor->item->next)
+	//				if (NULL == monlist)
+	//					client->monitor = NULL;
+	//				else
+	//					client->monitor = monlist->data;
+	//			else
+	//				client->monitor = client->monitor->item->next->data;
+	//			fitonscreen(client);
+	//		}
+	//	}
+
+	//	/* It's not active anymore. Forget about it. */
+	//	delmonitor(mon);
+	//}
 }
 
 /* Setup the config map from the config.h or from the xrdb */
@@ -603,7 +825,7 @@ main(int argc, char **argv)
 	atexit(cleanup);
 	if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno))) {
 		if (setup(scrno)) {
-			puts("Setup worked\n");
+			puts("Setup worked");
 		}
 	}
 	//		run();
