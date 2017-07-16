@@ -615,10 +615,9 @@ monitor_hash_add(xcb_randr_output_t out, xcb_randr_get_crtc_info_reply_t *rep)
 	int ret;
 	struct monitor new_mon;
 
-	/* Check if it's a clone. */
-	//clonemon = findclones(outputs[i], crtc->x, crtc->y);
-	//if (NULL != clonemon)
-	//	continue;
+	// Skip and handle clones separately
+	//if (monitor_clone_handling(out, rep))
+	//	return;
 
 	// check if the monitor is already in the list
 	k = kh_get(monitors, monitors_hash, out);
@@ -626,42 +625,19 @@ monitor_hash_add(xcb_randr_output_t out, xcb_randr_get_crtc_info_reply_t *rep)
 	// it's missing
 	if (k == kh_end(monitors_hash)) {
 		k = kh_put(monitors, monitors_hash, out, &ret);
-		new_mon.x = rep->x;
-		new_mon.y = rep->y;
-		new_mon.width = rep->width;
-		new_mon.height = rep->height;
 		for (i = 0; i < 10; i++) {
 			new_mon.workspaces[i] = kh_init(workspaces);
 		}
-		kh_value(monitors_hash, k) = new_mon;
 	} else {
 		new_mon = kh_value(monitors_hash, k);
-		new_mon.x = rep->x;
-		new_mon.y = rep->y;
-		new_mon.width = rep->width;
-		new_mon.height = rep->height;
-		kh_value(monitors_hash, k) = new_mon;
 	}
-	//if (NULL == (mon = findmonitor(outputs[i])))
-	//	addmonitor(outputs[i], name, crtc->x, crtc->y,
-	//			crtc->width,crtc->height);
-	//else
-	//	/* We know this monitor. Update information.
-	//	* If it's smaller than before, rearrange windows. */
-	//	if ( crtc->x != mon->x||crtc->y != mon->y||crtc->width
-	//			!= mon->width||crtc->height
-	//			!= mon->height) {
-	//		if (crtc->x != mon->x)
-	//			mon->x = crtc->x;
-	//		if (crtc->y != mon->y)
-	//			mon->y = crtc->y;
-	//		if (crtc->width != mon->width)
-	//			mon->width = crtc->width;
-	//		if (crtc->height != mon->height)
-	//			mon->height = crtc->height;
+	new_mon.x = rep->x;
+	new_mon.y = rep->y;
+	new_mon.width = rep->width;
+	new_mon.height = rep->height;
+	kh_value(monitors_hash, k) = new_mon;
 
-
-	//		arrbymon(mon);
+	//	arrbymon(mon);
 	//	}
 }
 
