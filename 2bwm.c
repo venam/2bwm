@@ -207,6 +207,8 @@ static void monitor_set_info(struct monitor_resources);
 static void monitor_hash_add(xcb_randr_output_t,
 		xcb_randr_get_crtc_info_reply_t *);
 static void monitor_hash_del(xcb_randr_output_t);
+static bool monitor_clone_handling(xcb_randr_output_t,
+		const xcb_randr_get_crtc_info_reply_t *);
 static bool conf_init(void);
 static uint32_t get_color(const char *);
 static void events_init(void);
@@ -616,8 +618,8 @@ monitor_hash_add(xcb_randr_output_t out, xcb_randr_get_crtc_info_reply_t *rep)
 	struct monitor new_mon;
 
 	// Skip and handle clones separately
-	//if (monitor_clone_handling(out, rep))
-	//	return;
+	if (monitor_clone_handling(out, rep))
+		return;
 
 	// check if the monitor is already in the list
 	k = kh_get(monitors, monitors_hash, out);
@@ -636,14 +638,13 @@ monitor_hash_add(xcb_randr_output_t out, xcb_randr_get_crtc_info_reply_t *rep)
 	new_mon.width = rep->width;
 	new_mon.height = rep->height;
 	kh_value(monitors_hash, k) = new_mon;
-
-	//	arrbymon(mon);
-	//	}
 }
 
 void
 monitor_hash_del(xcb_randr_output_t out)
 {
+
+	//// XXX: TODO delete monitor and replace windows on another monitor
 	///* Check if it was used before. If it was, do something. */
 	//if ((mon = findmonitor(out))) {
 	//	struct client *client;
@@ -668,6 +669,26 @@ monitor_hash_del(xcb_randr_output_t out)
 	//	/* It's not active anymore. Forget about it. */
 	//	delmonitor(mon);
 	//}
+}
+
+bool
+monitor_clone_handling(xcb_randr_output_t out, const xcb_randr_get_crtc_info_reply_t * rep)
+{
+	khiter_t k;
+
+	for (k = kh_begin(monitors_hash); k != kh_end(monitors_hash); ++k) {
+		if (kh_exist(monitors_hash, k)) {
+			if (kh_key(monitors_hash, k) != out
+			&& kh_value(monitors_hash, k).x == rep->x
+			&& kh_value(monitors_hash, k).y == rep->y) {
+				// XXX: Here we should decide which one
+				// we take, the newest or older (does width
+				// and height differ?
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 /* Setup the config map from the config.h or from the xrdb */
