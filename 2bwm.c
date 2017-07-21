@@ -609,6 +609,7 @@ monitor_set_info(struct monitor_resources mon_res)
 	}  // for
 }
 
+/* Add a monitor to the list, making sure it's not a clone first */
 void
 monitor_hash_add(xcb_randr_output_t out, xcb_randr_get_crtc_info_reply_t *rep)
 {
@@ -640,37 +641,47 @@ monitor_hash_add(xcb_randr_output_t out, xcb_randr_get_crtc_info_reply_t *rep)
 	kh_value(monitors_hash, k) = new_mon;
 }
 
+/*
+ * Remove a monitor from the list moving windows that are on it to
+ * another monitor
+ */
 void
 monitor_hash_del(xcb_randr_output_t out)
 {
+	int i;
+	khiter_t k;
+	khiter_t k_ws;
 
-	//// XXX: TODO delete monitor and replace windows on another monitor
-	///* Check if it was used before. If it was, do something. */
-	//if ((mon = findmonitor(out))) {
-	//	struct client *client;
-	//	for (item = winlist; item != NULL; item = item->next) {
-	//		/* Check all windows on this monitor
-	//		* and move them to the next or to the
-	//		* first monitor if there is no next. */
-	//		client = item->data;
+	// check if the monitor is already in the list
+	k = kh_get(monitors, monitors_hash, out);
 
-	//		if (client->monitor == mon) {
-	//			if (NULL == client->monitor->item->next)
-	//				if (NULL == monlist)
-	//					client->monitor = NULL;
-	//				else
-	//					client->monitor = monlist->data;
-	//			else
-	//				client->monitor = client->monitor->item->next->data;
-	//			fitonscreen(client);
-	//		}
-	//	}
+	// a valid monitor in our hash
+	if (k != kh_end(monitors_hash)) {
+		// XXX: loop through the clients on all workspaces of the old
+		// monitors and move them to new monitor also make sure those
+		// clients fit on the new monitor
+		for (i = 0; i < 10; i++) {
+			khash_t(workspaces) *ws = kh_value(monitors_hash, k).workspaces[i];
+			for (k_ws = kh_begin(ws); k_ws != kh_end(ws); ++k_ws) {
+				if (kh_exist(ws, k_ws)) {
+					// Here move that client to the
+					// same workspace on another monitor
+				}
+			}
 
-	//	/* It's not active anymore. Forget about it. */
-	//	delmonitor(mon);
-	//}
+			kh_destroy(
+				workspaces,
+				kh_value(monitors_hash, k).workspaces[i]
+			);
+		}
+		kh_del(monitors, monitors_hash, k);
+	}
 }
 
+/*
+ * Check if a monitor is a clone (same x,y), if yes return the newest one
+ * (replace the old one)
+ */
 bool
 monitor_clone_handling(xcb_randr_output_t out, const xcb_randr_get_crtc_info_reply_t * rep)
 {
