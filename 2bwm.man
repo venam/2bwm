@@ -172,10 +172,7 @@ fix window so it is visible on all workspaces (toggles).
 Move the cursor (with shift fast).
 .IP \(bu 2
 .B w
-start the menu (to be set in the config file)
-.IP \(bu 2
-.B Return
-start terminal (To be set in the config file, default:urxvtc)
+start the menu program (to be set in the config file)
 .IP \(bu 2
 .B ctr+q ctrl+r
 quit or restart 2bwm
