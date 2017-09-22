@@ -2555,7 +2555,7 @@ configurerequest(xcb_generic_event_t *ev)
 			if (!client->maxed && !client->vertmaxed)
 				client->height = e->height;
 
-		
+
 		if (e->value_mask & XCB_CONFIG_WINDOW_X)
 		 	if (!client->maxed && !client->hormaxed)
 				client->x = e->x;
@@ -3047,7 +3047,9 @@ ewmh_init(void)
 bool
 setup(int scrno)
 {
-	unsigned int i;
+	unsigned int i, j;
+	unsigned int ewmh_desktops_len;
+	char* ewmh_desktops;
 	uint32_t event_mask_pointer[] = { XCB_EVENT_MASK_POINTER_MOTION };
 
 	unsigned int values[1] = {
@@ -3077,7 +3079,7 @@ setup(int scrno)
 		ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR, ewmh->_NET_WM_PID,
 		ewmh->_NET_CLIENT_LIST,            ewmh->_NET_CLIENT_LIST_STACKING,
 		ewmh->WM_PROTOCOLS,                ewmh->_NET_WM_STATE,
-		ewmh->_NET_WM_STATE_DEMANDS_ATTENTION
+		ewmh->_NET_DESKTOP_NAMES,          ewmh->_NET_WM_STATE_DEMANDS_ATTENTION
 	};
 
 	xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
@@ -3153,8 +3155,26 @@ setup(int scrno)
 	if (error)
 		return false;
 
+	for(i = 0, ewmh_desktops_len = 0; desktops[i] != NULL; i++)
+		ewmh_desktops_len += strlen(desktops[i]) + 1;
+
+	ewmh_desktops = malloc(sizeof(char) * ewmh_desktops_len);
+
+	if(ewmh_desktops == NULL)
+		return false;
+
+	/* build ewmh_desktops from desktops */
+	for(i=0; desktops[i] != NULL; i++)
+	{
+		for(j=0; desktops[i][j] != '\0'; j++)
+			*ewmh_desktops++ = desktops[i][j];
+		*ewmh_desktops++ = '\0';
+	}
+	ewmh_desktops -= ewmh_desktops_len;
+
 	xcb_ewmh_set_current_desktop(ewmh, scrno, curws);
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
+	xcb_ewmh_set_desktop_names(ewmh, scrno, ewmh_desktops_len, ewmh_desktops);
 
 	grabkeys();
 	/* set events */
@@ -3172,6 +3192,7 @@ setup(int scrno)
 	events[XCB_BUTTON_PRESS]        = buttonpress;
 	events[XCB_CLIENT_MESSAGE]      = clientmessage;
 
+	free(ewmh_desktops);
 	return true;
 }
 
