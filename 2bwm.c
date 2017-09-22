@@ -3176,6 +3176,8 @@ setup(int scrno)
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
 	xcb_ewmh_set_desktop_names(ewmh, scrno, ewmh_desktops_len, ewmh_desktops);
 
+	free(ewmh_desktops);
+
 	grabkeys();
 	/* set events */
 	for (i=0; i<XCB_NO_OPERATION; i++)
@@ -3192,7 +3194,6 @@ setup(int scrno)
 	events[XCB_BUTTON_PRESS]        = buttonpress;
 	events[XCB_CLIENT_MESSAGE]      = clientmessage;
 
-	free(ewmh_desktops);
 	return true;
 }
 
