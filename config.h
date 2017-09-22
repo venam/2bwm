@@ -49,8 +49,8 @@ static void halfandcentered(const Arg *arg)
 	Arg arg3 = {.i=TWOBWM_TELEPORT_CENTER};
 	teleport(&arg3);
 }
-///---Desktop names---///
-static const char *desktops[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", NULL};
+///---Workspaces names---///
+static const char *workspaces[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", NULL};
 ///---Shortcuts---///
 /* Check /usr/include/X11/keysymdef.h for the list of all keys
  * 0x000000 is for no modkey

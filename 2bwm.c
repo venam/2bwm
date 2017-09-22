@@ -3048,8 +3048,8 @@ bool
 setup(int scrno)
 {
 	unsigned int i, j;
-	unsigned int ewmh_desktops_len;
-	char* ewmh_desktops;
+	unsigned int ewmh_workspaces_len;
+	char* ewmh_workspaces;
 	uint32_t event_mask_pointer[] = { XCB_EVENT_MASK_POINTER_MOTION };
 
 	unsigned int values[1] = {
@@ -3155,28 +3155,28 @@ setup(int scrno)
 	if (error)
 		return false;
 
-	for(i = 0, ewmh_desktops_len = 0; desktops[i] != NULL; i++)
-		ewmh_desktops_len += strlen(desktops[i]) + 1;
+	for(i = 0, ewmh_workspaces_len = 0; workspaces[i] != NULL; i++)
+		ewmh_workspaces_len += strlen(workspaces[i]) + 1;
 
-	ewmh_desktops = malloc(sizeof(char) * ewmh_desktops_len);
+	ewmh_workspaces = malloc(sizeof(char) * ewmh_workspaces_len);
 
-	if(ewmh_desktops == NULL)
+	if(ewmh_workspaces == NULL)
 		return false;
 
-	/* build ewmh_desktops from desktops */
-	for(i=0; desktops[i] != NULL; i++)
+	/* build ewmh_workspaces from workspaces */
+	for(i=0; workspaces[i] != NULL; i++)
 	{
-		for(j=0; desktops[i][j] != '\0'; j++)
-			*ewmh_desktops++ = desktops[i][j];
-		*ewmh_desktops++ = '\0';
+		for(j=0; workspaces[i][j] != '\0'; j++)
+			*ewmh_workspaces++ = workspaces[i][j];
+		*ewmh_workspaces++ = '\0';
 	}
-	ewmh_desktops -= ewmh_desktops_len;
+	ewmh_workspaces -= ewmh_workspaces_len;
 
 	xcb_ewmh_set_current_desktop(ewmh, scrno, curws);
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
-	xcb_ewmh_set_desktop_names(ewmh, scrno, ewmh_desktops_len, ewmh_desktops);
+	xcb_ewmh_set_desktop_names(ewmh, scrno, ewmh_workspaces_len, ewmh_workspaces);
 
-	free(ewmh_desktops);
+	free(ewmh_workspaces);
 
 	grabkeys();
 	/* set events */
