@@ -2555,7 +2555,7 @@ configurerequest(xcb_generic_event_t *ev)
 			if (!client->maxed && !client->vertmaxed)
 				client->height = e->height;
 
-		
+
 		if (e->value_mask & XCB_CONFIG_WINDOW_X)
 		 	if (!client->maxed && !client->hormaxed)
 				client->x = e->x;
@@ -3047,7 +3047,9 @@ ewmh_init(void)
 bool
 setup(int scrno)
 {
-	unsigned int i;
+	unsigned int i, j;
+	unsigned int ewmh_workspaces_len;
+	char* ewmh_workspaces;
 	uint32_t event_mask_pointer[] = { XCB_EVENT_MASK_POINTER_MOTION };
 
 	unsigned int values[1] = {
@@ -3077,7 +3079,7 @@ setup(int scrno)
 		ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR, ewmh->_NET_WM_PID,
 		ewmh->_NET_CLIENT_LIST,            ewmh->_NET_CLIENT_LIST_STACKING,
 		ewmh->WM_PROTOCOLS,                ewmh->_NET_WM_STATE,
-		ewmh->_NET_WM_STATE_DEMANDS_ATTENTION
+		ewmh->_NET_DESKTOP_NAMES,          ewmh->_NET_WM_STATE_DEMANDS_ATTENTION
 	};
 
 	xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
@@ -3153,8 +3155,28 @@ setup(int scrno)
 	if (error)
 		return false;
 
+	for(i = 0, ewmh_workspaces_len = 0; workspaces[i] != NULL; i++)
+		ewmh_workspaces_len += strlen(workspaces[i]) + 1;
+
+	ewmh_workspaces = malloc(sizeof(char) * ewmh_workspaces_len);
+
+	if(ewmh_workspaces == NULL)
+		return false;
+
+	/* build ewmh_workspaces from workspaces */
+	for(i=0; workspaces[i] != NULL; i++)
+	{
+		for(j=0; workspaces[i][j] != '\0'; j++)
+			*ewmh_workspaces++ = workspaces[i][j];
+		*ewmh_workspaces++ = '\0';
+	}
+	ewmh_workspaces -= ewmh_workspaces_len;
+
 	xcb_ewmh_set_current_desktop(ewmh, scrno, curws);
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
+	xcb_ewmh_set_desktop_names(ewmh, scrno, ewmh_workspaces_len, ewmh_workspaces);
+
+	free(ewmh_workspaces);
 
 	grabkeys();
 	/* set events */

@@ -49,6 +49,8 @@ static void halfandcentered(const Arg *arg)
 	Arg arg3 = {.i=TWOBWM_TELEPORT_CENTER};
 	teleport(&arg3);
 }
+///---Workspaces names---///
+static const char *workspaces[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", NULL};
 ///---Shortcuts---///
 /* Check /usr/include/X11/keysymdef.h for the list of all keys
  * 0x000000 is for no modkey
@@ -57,7 +59,7 @@ static void halfandcentered(const Arg *arg)
  * KeyRelease event, serial 40, synthetic NO, window 0x1e00001,
  *  root 0x98, subw 0x0, time 211120530, (128,73), root:(855,214),
  *  state 0x10, keycode 171 (keysym 0x1008ff17, XF86AudioNext), same_screen YES,
- *  XLookupString gives 0 bytes: 
+ *  XLookupString gives 0 bytes:
  *  XFilterEvent returns: False
  *
  *  The keycode here is keysym 0x1008ff17, so use  0x1008ff17
