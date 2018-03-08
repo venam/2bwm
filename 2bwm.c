@@ -77,6 +77,7 @@ static void changescreen(const Arg *);
 static void grabkeys(void);
 static void twobwm_restart();
 static void twobwm_exit();
+static void centerpointer(xcb_drawable_t, struct client *);
 static void always_on_top();
 static bool setup_keyboard(void);
 static bool setupscreen(void);
