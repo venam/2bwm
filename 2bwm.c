@@ -2012,7 +2012,7 @@ setborders(struct client *client,const bool isitfocused)
 		else
 			if (client->fixed)
 				values[0]  = conf.fixedcol;
-      else
+			else
 				values[0]  = conf.unkillcol;
 	}
 
