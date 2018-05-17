@@ -1901,12 +1901,10 @@ setborders(struct client *client,const bool isitfocused)
 	if (client->maxed || client->ignore_borders)
 		return;
 
-  bool has_tag = false;
-	if (client->unkillable || client->fixed)
-    has_tag = true;
+  bool has_tag = client->unkillable || client->fixed;
 
 	/* Set border width. */
-  if (has_tag || !(conf.no_outer_border)) {
+  if (has_tag || !conf.no_outer_border) {
 	  values[0] = conf.borderwidth;
 	  half = conf.outer_border;
   } else {
