@@ -1901,15 +1901,24 @@ setborders(struct client *client,const bool isitfocused)
 	if (client->maxed || client->ignore_borders)
 		return;
 
+	bool has_tag = client->unkillable || client->fixed;
+
 	/* Set border width. */
-	values[0] = conf.borderwidth;
+	if (has_tag || !conf.no_outer_border) {
+		values[0] = conf.borderwidth;
+		half = conf.outer_border;
+	} else {
+		values[0] = conf.borderwidth - conf.outer_border;
+		half = 0;
+	}
+
 	xcb_configure_window(conn, client->id,
 			XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
 
 	if (top_win!=0 &&client->id ==top_win)
 		inv = !inv;
 
-	half = conf.outer_border;
+
 
 	xcb_rectangle_t rect_inner[] = {
 		{
@@ -3097,6 +3106,7 @@ setup(int scrno)
 	conf.empty_col				= getcolor(colors[6]);
 	conf.inverted_colors	= inverted_colors;
 	conf.enable_compton	 = false;
+	conf.no_outer_border = false;
 
 	if (db != NULL)
 	{
@@ -3131,6 +3141,8 @@ setup(int scrno)
 
 		if (xcb_xrm_resource_get_string(db, "twobwm.enable_compton", NULL, &value) >= 0)
 			conf.enable_compton = strcmp(value, "true") == 0;
+		if (xcb_xrm_resource_get_string(db, "twobwm.no_outer_border", NULL, &value) >= 0)
+			conf.no_outer_border = strcmp(value, "true") == 0;
 	}
 
 	xcb_xrm_database_free(db);
