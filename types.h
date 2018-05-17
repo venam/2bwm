@@ -50,4 +50,5 @@ struct conf {
 	uint32_t focuscol,unfocuscol,fixedcol,unkillcol,empty_col,fixed_unkil_col,outer_border_col;
 	bool inverted_colors;
 	bool enable_compton;
+  bool no_outer_border;
 } conf;
