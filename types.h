@@ -31,6 +31,7 @@ struct client {                     // Everything we know about a window.
 	bool usercoord;                 // X,Y was set by -geom.
 	int16_t x, y;                   // X/Y coordinate.
 	uint16_t width,height;          // Width,Height in pixels.
+	uint8_t  depth;                 // pixel depth
 	struct sizepos origsize;        // Original size if we're currently maxed.
 	uint16_t max_width, max_height,min_width, min_height, width_inc, height_inc,base_width, base_height;
 	bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic;
