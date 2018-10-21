@@ -240,8 +240,6 @@ Cleanup and restart
 .B 2bwm\fP obeys the $DISPLAY variable.
 
 .SH ERRORS AND TROUBLESHOOTING
-.SS No borders appear when using URxvt
-This might be due to you .Xressources. If you have `URxvt.depth: 32` comment it.
 .SS Race Condition
 There is currently a race condition when switching worskpaces really
 fast. This may be due to the asynchronous nature of the X11 protocol. A
