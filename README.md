@@ -219,10 +219,6 @@ it right from the sources
 Troubleshooting
 ===============
 
-No borders appear when using URxvt
-----------------------------------
-This might be due to you .Xresources file. If you have `URxvt.depth: 32` comment it.
-
 Clickable areas with `bar`
 --------------------------
 
