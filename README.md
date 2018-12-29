@@ -325,8 +325,6 @@ TODO:
 
 * Fix the race condition bug that happens when switching workspaces too fast.
 
-* Fix the mapping issue with mplayer (doesn't have the issue when using -vo gl)
-
 * Bug related to gtkfilechooser dialog in telegram-desktop - needs more information to debug
 
 * Use the `xcb_ewmh.h` functions instead of that ugly hardcoded ATOM enum for
