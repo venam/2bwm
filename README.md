@@ -219,10 +219,6 @@ it right from the sources
 Troubleshooting
 ===============
 
-No borders appear when using URxvt
-----------------------------------
-This might be due to you .Xresources file. If you have `URxvt.depth: 32` comment it.
-
 Clickable areas with `bar`
 --------------------------
 
@@ -265,16 +261,6 @@ These are the values 2bwm will try loading from Xresources at startup:
 
 **Note**: set `enable_compton` option to true in case you're using a
 composition manager.
-
-mplayer borders aren't set on startup
--------------------------------------
-
-A simple solution is to always use the video output as gl.
-
-You can set it in your mplayer config `$HOME/.mplayer/config`:
-
-    vo=gl
-
 
 Preventing X11 Crash
 --------------------
