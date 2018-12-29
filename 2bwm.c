@@ -3077,7 +3077,7 @@ setup(int scrno)
 		ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR, ewmh->_NET_WM_PID,
 		ewmh->_NET_CLIENT_LIST,            ewmh->_NET_CLIENT_LIST_STACKING,
 		ewmh->WM_PROTOCOLS,                ewmh->_NET_WM_STATE,
-		ewmh->_NET_WM_STATE_DEMANDS_ATTENTION
+		ewmh->_NET_DESKTOP_NAMES,          ewmh->_NET_WM_STATE_DEMANDS_ATTENTION
 	};
 
 	xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
@@ -3155,6 +3155,7 @@ setup(int scrno)
 
 	xcb_ewmh_set_current_desktop(ewmh, scrno, curws);
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
+	xcb_ewmh_set_desktop_names(ewmh, scrno, sizeof(ewmh_workspaces), ewmh_workspaces);
 
 	grabkeys();
 	/* set events */
