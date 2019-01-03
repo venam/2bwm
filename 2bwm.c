@@ -90,6 +90,8 @@ static void raise_current_window(void);
 static void raiseorlower();
 static void setunfocus(void);
 static void maximize(const Arg *);
+static void unmaxwin(struct client *);
+static void maxwin(struct client *, uint8_t);
 static void maximize_helper(struct client *,uint16_t, uint16_t, uint16_t, uint16_t);
 static void hide();
 static void clientmessage(xcb_generic_event_t *);
@@ -2055,25 +2057,38 @@ unmax(struct client *client)
 void
 maximize(const Arg *arg)
 {
-	uint32_t values[4];
-	int16_t mon_x, mon_y;
-	uint16_t mon_width, mon_height;
-
 	if (NULL == focuswin)
 		return;
 
 	/* Check if maximized already. If so, revert to stored geometry. */
 	if (focuswin->maxed) {
-		unmax(focuswin);
-		focuswin->maxed = false;
-		setborders(focuswin,true);
+		unmaxwin(focuswin);
 		return;
 	}
-
-	getmonsize(arg->i, &mon_x, &mon_y, &mon_width, &mon_height, focuswin);
-	maximize_helper(focuswin, mon_x, mon_y, mon_width, mon_height);
-	raise_current_window();
+	maxwin(focuswin, arg->i);
 	xcb_flush(conn);
+}
+
+void
+unmaxwin(struct client *client){
+	unmax(client);
+	client->maxed = false;
+	setborders(client,true);
+	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
+			ewmh->_NET_WM_STATE, XCB_ATOM_ATOM, 32, 0, &ewmh->_NET_WM_STATE_FULLSCREEN);
+}
+
+void 
+maxwin(struct client *client, uint8_t with_offsets){
+	uint32_t values[4];
+	int16_t mon_x, mon_y;
+	int16_t mon_width, mon_height;
+
+	getmonsize(with_offsets, &mon_x, &mon_y, &mon_width, &mon_height, client);
+	maximize_helper(client, mon_x, mon_y, mon_width, mon_height);
+	raise_current_window();
+	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
+			ewmh->_NET_WM_STATE, XCB_ATOM_ATOM, 32, 1, &ewmh->_NET_WM_STATE_FULLSCREEN);
 }
 
 void
@@ -2835,6 +2850,31 @@ clientmessage(xcb_generic_event_t *ev)
 	}
 	else if (e->type == ewmh->_NET_CURRENT_DESKTOP)
 		changeworkspace_helper(e->data.data32[0]);
+	else if (e->type == ewmh->_NET_WM_STATE && e->format == 32) {
+		cl = findclient(&e->window);
+		if (NULL == cl)
+			return;
+		if(e->data.data32[1] == ewmh->_NET_WM_STATE_FULLSCREEN
+				|| e->data.data32[2] == ewmh->_NET_WM_STATE_FULLSCREEN) {
+			switch (e->data.data32[0]) {
+				case XCB_EWMH_WM_STATE_REMOVE:
+					unmaxwin(cl);
+					break;
+				case XCB_EWMH_WM_STATE_ADD:
+					maxwin(cl, true);
+					break;
+				case XCB_EWMH_WM_STATE_TOGGLE:
+						if(cl->maxed)
+							unmaxwin(cl);
+						else
+							maxwin(cl, true);
+					break;
+
+				default:
+					break;
+			}
+		}
+	}
 }
 
 void
@@ -3077,7 +3117,8 @@ setup(int scrno)
 		ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR, ewmh->_NET_WM_PID,
 		ewmh->_NET_CLIENT_LIST,            ewmh->_NET_CLIENT_LIST_STACKING,
 		ewmh->WM_PROTOCOLS,                ewmh->_NET_WM_STATE,
-		ewmh->_NET_WM_STATE_DEMANDS_ATTENTION
+		ewmh->_NET_WM_STATE_DEMANDS_ATTENTION,
+		ewmh->_NET_WM_STATE_FULLSCREEN
 	};
 
 	xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);

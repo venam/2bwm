@@ -336,8 +336,7 @@ TODO:
 
   - Use the new xcb-ewmh for the EWMH hints.
      _NET_WM_STATE, _NET_WM_STATE_STICKY,
-     _NET_WM_STATE_MAXIMIZED_VERT, 
-     _NET_WM_STATE_FULLSCREEN
+     _NET_WM_STATE_MAXIMIZED_VERT, [etc](https://standards.freedesktop.org/wm-spec/wm-spec-latest.html#idm140200472615568).
 
 * A separate workspace list for every monitor. (CTRL+NUM)
 	* get the cursor position (on which monitor)
