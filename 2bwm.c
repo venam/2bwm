@@ -2861,13 +2861,13 @@ clientmessage(xcb_generic_event_t *ev)
 					unmaxwin(cl);
 					break;
 				case XCB_EWMH_WM_STATE_ADD:
-					maxwin(cl, true);
+					maxwin(cl, false);
 					break;
 				case XCB_EWMH_WM_STATE_TOGGLE:
 						if(cl->maxed)
 							unmaxwin(cl);
 						else
-							maxwin(cl, true);
+							maxwin(cl, false);
 					break;
 
 				default:
