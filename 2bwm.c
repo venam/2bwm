@@ -90,6 +90,7 @@ static void raise_current_window(void);
 static void raiseorlower();
 static void setunfocus(void);
 static void maximize(const Arg *);
+static void fullscreen(const Arg *);
 static void unmaxwin(struct client *);
 static void maxwin(struct client *, uint8_t);
 static void maximize_helper(struct client *,uint16_t, uint16_t, uint16_t, uint16_t);
@@ -2057,17 +2058,15 @@ unmax(struct client *client)
 void
 maximize(const Arg *arg)
 {
-	if (NULL == focuswin)
-		return;
-
-	/* Check if maximized already. If so, revert to stored geometry. */
-	if (focuswin->maxed) {
-		unmaxwin(focuswin);
-		return;
-	}
-	maxwin(focuswin, arg->i);
-	xcb_flush(conn);
+	maxwin(focuswin, 1);
 }
+
+void
+fullscreen(const Arg *arg)
+{
+	maxwin(focuswin, 0);
+}
+
 
 void
 unmaxwin(struct client *client){
@@ -2075,7 +2074,7 @@ unmaxwin(struct client *client){
 	client->maxed = false;
 	setborders(client,true);
 	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
-			ewmh->_NET_WM_STATE, XCB_ATOM_ATOM, 32, 0, &ewmh->_NET_WM_STATE_FULLSCREEN);
+			ewmh->_NET_WM_STATE, XCB_ATOM_ATOM, 32, 0, NULL);
 }
 
 void 
@@ -2084,11 +2083,23 @@ maxwin(struct client *client, uint8_t with_offsets){
 	int16_t mon_x, mon_y;
 	int16_t mon_width, mon_height;
 
+	if (NULL == focuswin)
+		return;
+
+	/* Check if maximized already. If so, revert to stored geometry. */
+	if (focuswin->maxed) {
+		unmaxwin(focuswin);
+		return;
+	}
+
 	getmonsize(with_offsets, &mon_x, &mon_y, &mon_width, &mon_height, client);
 	maximize_helper(client, mon_x, mon_y, mon_width, mon_height);
 	raise_current_window();
-	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
+	if (!with_offsets) {
+		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
 			ewmh->_NET_WM_STATE, XCB_ATOM_ATOM, 32, 1, &ewmh->_NET_WM_STATE_FULLSCREEN);
+	}
+	xcb_flush(conn);
 }
 
 void
