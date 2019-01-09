@@ -2095,6 +2095,7 @@ maxwin(struct client *client, uint8_t with_offsets){
 	getmonsize(with_offsets, &mon_x, &mon_y, &mon_width, &mon_height, client);
 	maximize_helper(client, mon_x, mon_y, mon_width, mon_height);
 	raise_current_window();
+	client->maxed = true;
 	if (!with_offsets) {
 		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
 			ewmh->_NET_WM_STATE, XCB_ATOM_ATOM, 32, 1, &ewmh->_NET_WM_STATE_FULLSCREEN);
