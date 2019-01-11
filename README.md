@@ -273,9 +273,10 @@ emulator. Here's an example of a .xinitrc file that will do that:
 
 Screenshots:
 ============
-![2bwm](http://venam.1.ai/2bwm_colors.png)
-![yrmt 2bwm](http://fc00.deviantart.net/fs70/f/2013/236/8/0/agust_warm_setup_by_ybeastie-d6jaqyb.png)
-![movements](http://blog.z3bra.org/img/2014-05-27-windows.gif)
+
+![2bwm](https://venam.nixers.net/blog/assets/scrots/1.png)
+![2bwm with panel](https://venam.nixers.net/blog/assets/scrots/17.png)
+![2bwm fancy 3 borders](https://venam.nixers.net/blog/assets/scrots/19.png)
 
 Recommended Softwares
 =====================
@@ -363,6 +364,7 @@ Big thanks for the help of the following persons:
 * crshd
 * jolia
 * anshin
+* frstrikerman
 
 Thanks to the UnixHub/Nixers community for the support and ideas.  
 Thanks to Michael Cardell for starting it all.
