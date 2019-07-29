@@ -33,7 +33,7 @@
 
 ///---Internal Constants---///
 ///---Globals---///
-static xcb_generic_event_t *ev = NULL;
+static xcb_generic_event_t *ev  = NULL;
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 static unsigned int numlockmask = 0;
 int sigcode = 0;                        // Signal code. Non-zero if we've been interruped by a signal.
