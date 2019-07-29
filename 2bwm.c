@@ -33,15 +33,16 @@
 
 ///---Internal Constants---///
 ///---Globals---///
+static xcb_generic_event_t *ev = NULL;
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 static unsigned int numlockmask = 0;
-int sigcode;                        // Signal code. Non-zero if we've been interruped by a signal.
-xcb_connection_t *conn;             // Connection to X server.
-xcb_ewmh_connection_t *ewmh;        // Ewmh Connection.
-xcb_screen_t     *screen;           // Our current screen.
-int randrbase;                      // Beginning of RANDR extension events.
+int sigcode = 0;                        // Signal code. Non-zero if we've been interruped by a signal.
+xcb_connection_t *conn = NULL;             // Connection to X server.
+xcb_ewmh_connection_t *ewmh = NULL;        // Ewmh Connection.
+xcb_screen_t     *screen = NULL;           // Our current screen.
+int randrbase = 0;                      // Beginning of RANDR extension events.
 static uint8_t curws = 0;                  // Current workspace.
-struct client *focuswin;            // Current focus window.
+struct client *focuswin = NULL;            // Current focus window.
 static xcb_drawable_t top_win=0;           // Window always on top.
 static struct item *winlist = NULL;        // Global list of all client windows.
 static struct item *monlist = NULL;        // List of all physical monitor outputs.
@@ -312,15 +313,33 @@ movepointerback(const int16_t startx, const int16_t starty,
 void
 cleanup(void)
 {
+    free(ev);
+    if(monlist)
+        delallitems(&monlist,NULL);
+    struct item *curr,*wsitem;
+    for(int i = 0; i < WORKSPACES; i++){
+        if(!wslist[i])
+            continue;
+        curr = wslist[i];
+        while(curr){
+            wsitem = curr;
+            curr = curr->next;
+            free(wsitem);
+        }
+    }
+    if(winlist){
+        delallitems(&winlist,NULL);
+    }
+    if (ewmh != NULL){
+	    xcb_ewmh_connection_wipe(ewmh);
+		free(ewmh);
+    }
+    if(!conn){
+        return;
+    }
 	xcb_set_input_focus(conn, XCB_NONE,XCB_INPUT_FOCUS_POINTER_ROOT,
 			XCB_CURRENT_TIME);
-	delallitems(wslist, NULL);
-	xcb_ewmh_connection_wipe(ewmh);
 	xcb_flush(conn);
-
-	if (ewmh != NULL)
-		free(ewmh);
-
 	xcb_disconnect(conn);
 }
 
@@ -889,21 +908,21 @@ setupwin(xcb_window_t win)
 	xcb_ewmh_get_atoms_reply_t win_type;
 	struct item *item;
 	struct client *client;
-
 	if (xcb_ewmh_get_wm_window_type_reply(ewmh,
-				xcb_ewmh_get_wm_window_type(ewmh, win),
-				&win_type, NULL) == 1)
+                xcb_ewmh_get_wm_window_type(ewmh, win), &win_type, NULL)
+                == 1)
+    {
 		for (i = 0; i < win_type.atoms_len; i++) {
 			a = win_type.atoms[i];
 			if (a == ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR || a
 					== ewmh->_NET_WM_WINDOW_TYPE_DOCK || a
 					== ewmh->_NET_WM_WINDOW_TYPE_DESKTOP ) {
-				xcb_ewmh_get_atoms_reply_wipe(&win_type);
 				xcb_map_window(conn,win);
 				return NULL;
 			}
 		}
-
+        xcb_ewmh_get_atoms_reply_wipe(&win_type);
+    }
 	values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
 	xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXEL,
 			&conf.empty_col);
@@ -1640,8 +1659,8 @@ start(const Arg *arg)
 	if (fork())
 		return;
 
-	if (conn)
-		close(screen->root);
+//	if (conn)
+//		close(screen->root);
 
 	setsid();
 	execvp((char*)arg->com[0], (char**)arg->com);
@@ -3008,16 +3027,16 @@ confignotify(xcb_generic_event_t *ev)
 void
 run(void)
 {
-	xcb_generic_event_t *ev;
 	sigcode = 0;
 
 	while (0 == sigcode) {
 		/* the WM is running */
 		xcb_flush(conn);
 
-		if (xcb_connection_has_error(conn))
+		if (xcb_connection_has_error(conn)){
+            cleanup();
 			abort();
-
+        }
 		if ((ev = xcb_wait_for_event(conn))) {
 			if(ev->response_type==randrbase +
 					XCB_RANDR_SCREEN_CHANGE_NOTIFY)
@@ -3092,7 +3111,10 @@ ewmh_init(void)
 		printf("Fail\n");
 
 	xcb_intern_atom_cookie_t *cookie = xcb_ewmh_init_atoms(conn, ewmh);
-	xcb_ewmh_init_atoms_replies(ewmh, cookie, (void *)0);
+	if(!xcb_ewmh_init_atoms_replies(ewmh, cookie, (void *)0)){
+        fprintf(stderr,"%s\n","xcb_ewmh_init_atoms_replies:faild.");
+        exit(1);
+    }
 }
 
 bool
@@ -3202,9 +3224,11 @@ setup(int scrno)
 				XCB_CW_EVENT_MASK, values));
 	xcb_flush(conn);
 
-	if (error)
+	if (error){
+        fprintf(stderr,"%s\n","xcb_request_check:faild.");
+        free(error);
 		return false;
-
+    }
 	xcb_ewmh_set_current_desktop(ewmh, scrno, curws);
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
 
@@ -3270,9 +3294,9 @@ install_sig_handlers(void)
 int
 main(int argc, char **argv)
 {
-	int scrno;
-	install_sig_handlers();
+	int scrno = 0;
 	atexit(cleanup);
+	install_sig_handlers();
 	if (!xcb_connection_has_error(conn = xcb_connect(NULL, &scrno)))
 		if (setup(scrno))
 			run();
