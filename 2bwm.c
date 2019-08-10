@@ -314,8 +314,19 @@ void
 cleanup(void)
 {
     free(ev);
-    if(monlist)
-        delallitems(&monlist,NULL);
+    struct item *item = NULL;
+    struct item *head = monlist;
+    struct monitor *mon = NULL;
+    while(head != NULL){
+        mon = head->data;
+        item = head;
+        head = head->next;
+        if(mon){
+            free(mon->name);
+            free(mon);
+        }
+        free(item);
+    }
     struct item *curr,*wsitem;
     for(int i = 0; i < WORKSPACES; i++){
         if(!wslist[i])
@@ -1234,7 +1245,6 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 {
 	int i;
 	int name_len;
-	char *name;
 
 	/* was at time timestamp. */
 	xcb_randr_get_crtc_info_cookie_t icookie;
@@ -1254,12 +1264,6 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 				NULL)) == NULL)
 			continue;
 
-	name_len = MIN(16, xcb_randr_get_output_info_name_length(output));
-	name = malloc(name_len+1);
-
-	snprintf(name, name_len+1, "%.*s", name_len,
-			xcb_randr_get_output_info_name(output));
-
 	if (XCB_NONE != output->crtc) {
 		icookie = xcb_randr_get_crtc_info(conn, output->crtc,
 				timestamp);
@@ -1275,10 +1279,14 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 			continue;
 
 		/* Do we know this monitor already? */
-		if (NULL == (mon = findmonitor(outputs[i])))
-			addmonitor(outputs[i], name, crtc->x, crtc->y,
+		if (NULL == (mon = findmonitor(outputs[i]))){
+			mon = addmonitor(outputs[i], NULL, crtc->x, crtc->y,
 					crtc->width,crtc->height);
-		else
+            name_len = MIN(16, xcb_randr_get_output_info_name_length(output));
+            mon->name = malloc(sizeof(char *) * (name_len + 1));
+	        snprintf(mon->name, name_len+1, "%.*s", name_len,
+			        xcb_randr_get_output_info_name(output));
+		}else
 			/* We know this monitor. Update information.
 			 * If it's smaller than before, rearrange windows. */
 			if ( crtc->x != mon->x||crtc->y != mon->y||crtc->width
@@ -1325,7 +1333,6 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 	if (NULL != output)
 		free(output);
 
-	free(name);
 	} /* for */
 }
 
