@@ -1408,7 +1408,6 @@ addmonitor(xcb_randr_output_t id, char *name,const int16_t x, const int16_t y,
 
 	item->data  = mon;
 	mon->id     = id;
-	mon->name   = name;
 	mon->item   = item;
 	mon->x      = x;
 	mon->y      = y;

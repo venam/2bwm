@@ -1,7 +1,6 @@
 ///---Types---///
 struct monitor {
 	xcb_randr_output_t id;
-	char *name;
 	int16_t y,x;                    // X and Y.
 	uint16_t width,height;          // Width/Height in pixels.
 	struct item *item;              // Pointer to our place in output list.
