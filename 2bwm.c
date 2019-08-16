@@ -1457,9 +1457,8 @@ movelim(struct client *client)
 	noborder(&temp, client, true);
 
 	/* Is it outside the physical monitor or close to the side? */
-	if (client->y-conf.borderwidth < mon_y)
-		client->y = mon_y;
-	else if (client->y < borders[2] + mon_y)
+	if (client->y-conf.borderwidth < mon_y
+		|| client->y < borders[2] + mon_y)
 		client->y = mon_y;
 	else if (client->y + client->height + (conf.borderwidth * 2) > mon_y
 			+ mon_height - borders[2])
@@ -1472,11 +1471,6 @@ movelim(struct client *client)
 			> mon_x + mon_width - borders[2])
 		client->x = mon_x + mon_width - client->width
 			- conf.borderwidth * 2;
-
-	if (client->y + client->height > mon_y + mon_height
-			- conf.borderwidth * 2)
-		client->y = (mon_y + mon_height - conf.borderwidth * 2)
-			- client->height;
 
 	movewindow(client->id, client->x, client->y);
 	noborder(&temp, client, false);
