@@ -131,7 +131,7 @@ static struct monitor *findmonitor(xcb_randr_output_t);
 static struct monitor *findclones(xcb_randr_output_t, const int16_t, const int16_t);
 static struct monitor *findmonbycoord(const int16_t, const int16_t);
 static void delmonitor(struct monitor *);
-static struct monitor *addmonitor(xcb_randr_output_t, char *,const int16_t, const int16_t, const uint16_t, const uint16_t);
+static struct monitor *addmonitor(xcb_randr_output_t, const int16_t, const int16_t, const uint16_t, const uint16_t);
 static void raisewindow(xcb_drawable_t);
 static void movelim(struct client *);
 static void movewindow(xcb_drawable_t, const int16_t, const int16_t);
@@ -1254,11 +1254,10 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 				NULL)) == NULL)
 			continue;
 
-	name_len = MIN(16, xcb_randr_get_output_info_name_length(output));
-	name = malloc(name_len+1);
-
-	snprintf(name, name_len+1, "%.*s", name_len,
-			xcb_randr_get_output_info_name(output));
+	//name_len = MIN(16, xcb_randr_get_output_info_name_length(output));
+	//name = malloc(name_len+1);
+	//snprintf(name, name_len+1, "%.*s", name_len,
+	//		xcb_randr_get_output_info_name(output));
 
 	if (XCB_NONE != output->crtc) {
 		icookie = xcb_randr_get_crtc_info(conn, output->crtc,
@@ -1276,7 +1275,7 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 
 		/* Do we know this monitor already? */
 		if (NULL == (mon = findmonitor(outputs[i])))
-			addmonitor(outputs[i], name, crtc->x, crtc->y,
+			addmonitor(outputs[i], crtc->x, crtc->y,
 					crtc->width,crtc->height);
 		else
 			/* We know this monitor. Update information.
@@ -1394,7 +1393,7 @@ findmonbycoord(const int16_t x, const int16_t y)
 }
 
 struct monitor *
-addmonitor(xcb_randr_output_t id, char *name,const int16_t x, const int16_t y,
+addmonitor(xcb_randr_output_t id, const int16_t x, const int16_t y,
 		const uint16_t width,const uint16_t height)
 {
 	struct item *item;
