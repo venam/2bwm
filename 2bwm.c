@@ -902,16 +902,20 @@ struct client *
 setupwin(xcb_window_t win)
 {
 	unsigned int i;
+	uint8_t result;
 	uint32_t values[2],ws;
 	xcb_atom_t a;
 	xcb_size_hints_t hints;
 	xcb_ewmh_get_atoms_reply_t win_type;
+	xcb_window_t *prop;
 	struct item *item;
 	struct client *client;
+	xcb_get_property_cookie_t cookie;
+
+
 	if (xcb_ewmh_get_wm_window_type_reply(ewmh,
-                xcb_ewmh_get_wm_window_type(ewmh, win), &win_type, NULL)
-                == 1)
-    {
+		xcb_ewmh_get_wm_window_type(ewmh, win), &win_type, NULL) == 1)
+	{
 		for (i = 0; i < win_type.atoms_len; i++) {
 			a = win_type.atoms[i];
 			if (a == ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR || a
@@ -921,8 +925,9 @@ setupwin(xcb_window_t win)
 				return NULL;
 			}
 		}
-        xcb_ewmh_get_atoms_reply_wipe(&win_type);
-    }
+		xcb_ewmh_get_atoms_reply_wipe(&win_type);
+	}
+
 	values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
 	xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXEL,
 			&conf.empty_col);
@@ -996,6 +1001,21 @@ setupwin(xcb_window_t win)
 	if (hints.flags &XCB_ICCCM_SIZE_HINT_BASE_SIZE) {
 		client->base_width  = hints.base_width;
 		client->base_height = hints.base_height;
+	}
+
+	cookie = xcb_icccm_get_wm_transient_for_unchecked(conn, win);
+	xcb_generic_error_t *error;
+	result = xcb_icccm_get_wm_transient_for_reply(conn, cookie, prop, &error);
+	if (result && !error) {
+		struct client *parent = findclient(prop);
+		if (parent) {
+			client->usercoord = true;
+			client->x = parent->x+(parent->width/2.0) - (client->width/2.0);
+			client->y = parent->y+(parent->height/2.0) - (client->height/2.0);
+		}
+	}
+	if (error) {
+		free(error);
 	}
 
 	check_name(client);
