@@ -914,8 +914,7 @@ setupwin(xcb_window_t win)
 
 
 	if (xcb_ewmh_get_wm_window_type_reply(ewmh,
-		xcb_ewmh_get_wm_window_type(ewmh, win), &win_type, NULL) == 1)
-	{
+		xcb_ewmh_get_wm_window_type(ewmh, win), &win_type, NULL) == 1) {
 		for (i = 0; i < win_type.atoms_len; i++) {
 			a = win_type.atoms[i];
 			if (a == ewmh->_NET_WM_WINDOW_TYPE_TOOLBAR || a
@@ -927,7 +926,6 @@ setupwin(xcb_window_t win)
 		}
 		xcb_ewmh_get_atoms_reply_wipe(&win_type);
 	}
-
 	values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
 	xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXEL,
 			&conf.empty_col);
@@ -1002,20 +1000,17 @@ setupwin(xcb_window_t win)
 		client->base_width  = hints.base_width;
 		client->base_height = hints.base_height;
 	}
-
 	cookie = xcb_icccm_get_wm_transient_for_unchecked(conn, win);
-	xcb_generic_error_t *error;
-	result = xcb_icccm_get_wm_transient_for_reply(conn, cookie, prop, &error);
-	if (result && !error) {
-		struct client *parent = findclient(prop);
-		if (parent) {
-			client->usercoord = true;
-			client->x = parent->x+(parent->width/2.0) - (client->width/2.0);
-			client->y = parent->y+(parent->height/2.0) - (client->height/2.0);
+	if (cookie.sequence > 0) {
+		result = xcb_icccm_get_wm_transient_for_reply(conn, cookie, prop, NULL);
+		if (result) {
+			struct client *parent = findclient(prop);
+			if (parent) {
+				client->usercoord = true;
+				client->x = parent->x+(parent->width/2.0) - (client->width/2.0);
+				client->y = parent->y+(parent->height/2.0) - (client->height/2.0);
+			}
 		}
-	}
-	if (error) {
-		free(error);
 	}
 
 	check_name(client);
@@ -1288,6 +1283,8 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 			return;
 
 		/* Check if it's a clone. */
+		// TODO maybe they are not cloned, one might be bigger
+		// than the other after closing the lid
 		clonemon = findclones(outputs[i], crtc->x, crtc->y);
 
 		if (NULL != clonemon)
@@ -1312,6 +1309,7 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 				if (crtc->height != mon->height)
 					mon->height = crtc->height;
 
+				// TODO when lid closed, one screen
 				arrbymon(mon);
 			}
 		free(crtc);
