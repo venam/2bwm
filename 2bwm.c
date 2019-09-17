@@ -488,13 +488,18 @@ changeworkspace_helper(const uint32_t ws)
 		return;
 
 	xcb_ewmh_set_current_desktop(ewmh, 0, ws);
-	for (item=wslist[curws]; item != NULL; item = item->next) {
+	for (item=wslist[curws]; item != NULL;) {
 		/* Go through list of current ws.
 		 * Unmap everything that isn't fixed. */
 		client = item->data;
+		item = item->next;
 		setborders(client,false);
 		if (!client->fixed)
 			xcb_unmap_window(conn, client->id);
+		else{
+			addtoworkspace(client,ws);
+			delfromworkspace(client,curws);
+		}
 	}
 
 	for (item=wslist[ws]; item != NULL; item = item->next) {
@@ -552,10 +557,6 @@ fixwindow(struct client *client)
 				ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1,
 				&curws
 		);
-
-		/* Delete from all workspace lists except current. */
-		for (ws=0; ws < WORKSPACES; ws ++)
-			if (ws != curws) delfromworkspace(client, ws);
 	} else {
 		/* Raise the window, if going to another desktop don't
 		 * let the fixed window behind. */
@@ -566,10 +567,6 @@ fixwindow(struct client *client)
 				ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1,
 				&ww
 		);
-
-		/* Add window to all workspace lists. */
-		for (ws=0; ws < WORKSPACES; ws ++)
-			if (ws != curws) addtoworkspace(client, ws);
 	}
 
 	setborders(client,true);
