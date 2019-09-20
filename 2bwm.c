@@ -904,7 +904,7 @@ setupwin(xcb_window_t win)
 	xcb_atom_t a;
 	xcb_size_hints_t hints;
 	xcb_ewmh_get_atoms_reply_t win_type;
-	xcb_window_t *prop;
+	xcb_window_t prop;
 	struct item *item;
 	struct client *client;
 	xcb_get_property_cookie_t cookie;
@@ -999,9 +999,9 @@ setupwin(xcb_window_t win)
 	}
 	cookie = xcb_icccm_get_wm_transient_for_unchecked(conn, win);
 	if (cookie.sequence > 0) {
-		result = xcb_icccm_get_wm_transient_for_reply(conn, cookie, prop, NULL);
+		result = xcb_icccm_get_wm_transient_for_reply(conn, cookie, &prop, NULL);
 		if (result) {
-			struct client *parent = findclient(prop);
+			struct client *parent = findclient(&prop);
 			if (parent) {
 				client->usercoord = true;
 				client->x = parent->x+(parent->width/2.0) - (client->width/2.0);
