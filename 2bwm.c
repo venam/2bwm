@@ -1002,7 +1002,8 @@ setupwin(xcb_window_t win)
 		client->base_width  = hints.base_width;
 		client->base_height = hints.base_height;
 	}
-
+	// this function crashs any X11 application e.g: inkscape, firefox.
+	// sub windows started from terminal.
 	cookie = xcb_icccm_get_wm_transient_for_unchecked(conn, win);
 	xcb_generic_error_t *error;
 	result = xcb_icccm_get_wm_transient_for_reply(conn, cookie, prop, &error);
