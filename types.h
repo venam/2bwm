@@ -7,7 +7,7 @@ struct monitor {
 };
 typedef union {
 	const char** com;
-	const int8_t i;
+	const uint32_t i;
 } Arg;
 typedef struct {
 	unsigned int mod;
@@ -36,7 +36,8 @@ struct client {                     // Everything we know about a window.
 	bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic;
 	struct monitor *monitor;        // The physical output this window is on.
 	struct item *winitem;           // Pointer to our place in global windows list.
-	struct item *wsitem[WORKSPACES];// Pointer to our place in every workspace window list.
+	struct item *wsitem;            // Pointer to workspace window list.
+	int ws;                         // In which workspace this window belongs to.
 };
 struct winconf {                    // Window configuration data.
 	int16_t      x, y;
