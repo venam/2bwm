@@ -364,7 +364,7 @@ Big thanks for the help of the following persons:
 * crshd
 * jolia
 * anshin
-* frstrikerman
+* strikersh
 
 Thanks to the UnixHub/Nixers community for the support and ideas.  
 Thanks to Michael Cardell for starting it all.
