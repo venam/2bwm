@@ -36,11 +36,12 @@
 static xcb_generic_event_t *ev  = NULL;
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 static unsigned int numlockmask = 0;
-int sigcode = 0;                        // Signal code. Non-zero if we've been interruped by a signal.
+static bool is_sloppy = true;              // by default use sloppy focus
+int sigcode = 0;                           // Signal code. Non-zero if we've been interruped by a signal.
 xcb_connection_t *conn = NULL;             // Connection to X server.
 xcb_ewmh_connection_t *ewmh = NULL;        // Ewmh Connection.
 xcb_screen_t     *screen = NULL;           // Our current screen.
-int randrbase = 0;                      // Beginning of RANDR extension events.
+int randrbase = 0;                         // Beginning of RANDR extension events.
 static uint8_t curws = 0;                  // Current workspace.
 struct client *focuswin = NULL;            // Current focus window.
 static xcb_drawable_t top_win=0;           // Window always on top.
@@ -844,6 +845,7 @@ newwin(xcb_generic_event_t *ev)
 		XCB_NONE
 	};
 
+
 	/* The window is trying to map itself on the current workspace,
 	 * but since it's unmapped it probably belongs on another workspace.*/
 	if (NULL != findclient(&e->window))
@@ -887,6 +889,8 @@ newwin(xcb_generic_event_t *ev)
 
 	if (!client->maxed)
 		setborders(client,true);
+	// always focus new window
+	setfocus(client);
 }
 
 /* Set border colour, width and event mask for window. */
@@ -2798,7 +2802,25 @@ void
 buttonpress(xcb_generic_event_t *ev)
 {
 	xcb_button_press_event_t *e = (xcb_button_press_event_t *)ev;
+	struct client *client;
 	unsigned int i;
+
+
+	if (!is_sloppy && e->detail == XCB_BUTTON_INDEX_1
+			&& CLEANMASK(e->state) == 0) {
+		// skip if already focused
+		if (NULL != focuswin && e->event == focuswin->id) {
+			return;
+		}
+		client = findclient(&e->event);
+		if (NULL != client) {
+			setfocus(client);
+			raisewindow(client->id);
+			centerpointer(client->id,client);
+			setborders(client,true);
+		}
+		return;
+	}
 
 	for (i=0; i<LENGTH(buttons); i++)
 		if (buttons[i].func && buttons[i].button == e->detail
@@ -2895,6 +2917,13 @@ enternotify(xcb_generic_event_t *ev)
 {
 	xcb_enter_notify_event_t *e = (xcb_enter_notify_event_t *)ev;
 	struct client *client;
+	unsigned int modifiers[] = {
+		0,
+		XCB_MOD_MASK_LOCK,
+		numlockmask,
+		numlockmask | XCB_MOD_MASK_LOCK
+	};
+
 
 	/*
 	 * If this isn't a normal enter notify, don't bother. We also need
@@ -2907,6 +2936,7 @@ enternotify(xcb_generic_event_t *ev)
 	 * to change focus in those cases.
 	 */
 
+
 	if (e->mode == XCB_NOTIFY_MODE_NORMAL
 			|| e->mode == XCB_NOTIFY_MODE_UNGRAB) {
 		/* If we're entering the same window we focus now,
@@ -2915,6 +2945,7 @@ enternotify(xcb_generic_event_t *ev)
 		if (NULL != focuswin && e->event == focuswin->id)
 			return;
 
+
 		/* Otherwise, set focus to the window we just entered if we
 		 * can find it among the windows we know about.
 		 * If not, just keep focus in the old window. */
@@ -2922,6 +2953,30 @@ enternotify(xcb_generic_event_t *ev)
 		client = findclient(&e->event);
 		if (NULL == client)
 			return;
+
+		/* skip this if not is_sloppy
+		 * we'll focus on click instead (see buttonpress function)
+		 * thus we have to grab left click button on that window
+		 * the grab is removed at the end of the setfocus function,
+		 * in the grabbuttons when not in sloppy mode
+		 */
+		if (!is_sloppy) {
+			for (unsigned int m=0; m<LENGTH(modifiers); m++) {
+				xcb_grab_button(conn,
+						0, // owner_events => 0 means
+						   // the grab_window won't
+						   // receive this event
+						client->id,
+						XCB_EVENT_MASK_BUTTON_PRESS,
+						XCB_GRAB_MODE_ASYNC,
+						XCB_GRAB_MODE_ASYNC,
+						screen->root, XCB_NONE,
+						XCB_BUTTON_INDEX_1,
+						modifiers[m]
+				);
+			}
+			return;
+		}
 
 		setfocus(client);
 		setborders(client,true);
@@ -3063,6 +3118,19 @@ grabbuttons(struct client *c)
 						buttons[b].mask|modifiers[m]
 				);
 		}
+
+	/* ungrab the left click, otherwise we can't use it
+	 * we've previously grabbed the left click in the enternotify function
+	 * when not in sloppy mode
+	 * though the name is counter-intuitive to the method
+	 */
+	for (unsigned int m=0; m<LENGTH(modifiers); m++) {
+		xcb_ungrab_button(conn,
+				XCB_BUTTON_INDEX_1,
+				c->id,
+				modifiers[m]
+		);
+	}
 }
 
 void
