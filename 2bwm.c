@@ -2816,7 +2816,6 @@ buttonpress(xcb_generic_event_t *ev)
 		if (NULL != client) {
 			setfocus(client);
 			raisewindow(client->id);
-			centerpointer(client->id,client);
 			setborders(client,true);
 		}
 		return;
