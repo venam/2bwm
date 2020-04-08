@@ -2890,6 +2890,22 @@ clientmessage(xcb_generic_event_t *ev)
 					break;
 			}
 		}
+	} else if (e->type == ewmh->_NET_WM_DESKTOP && e->format == 32) {
+		cl = findclient(&e->window);
+		if (NULL == cl)
+			return;
+		/*
+		 * e->data.data32[1] Source indication
+		 * 0: backward compat
+		 * 1: normal
+		 * 2: pager/bars
+		 *
+		 * e->data.data32[0] new workspace
+		 */
+		delfromworkspace(cl);
+		addtoworkspace(cl, e->data.data32[0]);
+		xcb_unmap_window(conn, cl->id);
+		xcb_flush(conn);
 	}
 }
 
