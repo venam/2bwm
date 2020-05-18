@@ -44,7 +44,8 @@ xcb_ewmh_connection_t *ewmh = NULL;        // Ewmh Connection.
 xcb_screen_t     *screen = NULL;           // Our current screen.
 int randrbase = 0;                         // Beginning of RANDR extension events.
 static uint8_t curws = 0;                  // Current workspace.
-static uint8_t curmon = 0;                 // Current monitor.
+static struct monitor *curmon;             // Current monitor struct
+static uint8_t curmonindex = 0;            // Current monitor.
 struct client *focuswin = NULL;            // Current focus window.
 static xcb_drawable_t top_win=0;           // Window always on top.
 static struct item *winlist = NULL;        // Global list of all client windows.
@@ -70,6 +71,8 @@ static void changemonitor(const Arg *);
 static bool changemonitor_helper(const uint32_t);
 static void focusnext(const Arg *);
 static void focusnext_helper(bool);
+static void monitorfocusnext(const Arg *);
+static void monitorfocusnext_helper(bool);
 static void sendtoworkspace(const Arg *);
 static void sendtonextworkspace(const Arg *);
 static void sendtoprevworkspace(const Arg *);
@@ -197,6 +200,12 @@ focusnext(const Arg *arg)
 }
 
 void
+monitorfocusnext(const Arg *arg)
+{
+	monitorfocusnext_helper(arg->i > 0);
+}
+
+void
 delfromworkspace(struct client *client)
 {
 	if(client->ws < 0)
@@ -237,7 +246,7 @@ nextmonitor()
 	updatecurmon();
 	/* Check if next monitor exists if not check the 0th otherwise
 	 * don't do anything */
-	if (!changemonitor_helper(curmon + 1))
+	if (!changemonitor_helper(curmonindex + 1))
 		changemonitor_helper(0);
 }
 
@@ -251,7 +260,7 @@ prevmonitor()
 	if (monlist == NULL)
 		return;
 
-	if (curmon == 0) {
+	if (curmonindex == 0) {
 		it = monlist;
 		while (it != NULL) {
 			mon_list_len++;
@@ -260,7 +269,7 @@ prevmonitor()
 
 		changemonitor_helper(mon_list_len - 1);
 	} else
-		changemonitor_helper(curmon - 1);
+		changemonitor_helper(curmonindex - 1);
 }
 
 void
@@ -574,7 +583,8 @@ changemonitor_helper(const uint32_t mn)
 	int16_t cur_x, cur_y;
 	// Check if monitor exists
 	if (NULL != (m = findmonbyindex(mn))) {
-		curmon = mn;
+		curmonindex = mn;
+		curmon = m;
 		// Update cursor
 		cur_x = m->x + m->width / 2;
 		cur_y = m->y + m->height / 2;
@@ -1512,13 +1522,17 @@ updatecurmon(void)
 		while (it != NULL) {
 			// Update index if monitor is found
 			if (m == it->data) {
-				curmon = index;
+				curmonindex = index;
+				curmon = m;
 				return;
 			}
 			index++;
 			it = it->next;
 		}
+		curmon = m;
+		curmonindex = 0;
 	}
+	// If no index is found set curmonindex to 0
 }
 
 struct monitor *
@@ -1668,6 +1682,61 @@ focusnext_helper(bool arg)
 	centerpointer(cl->id,cl);
 	setfocus(cl);
 }
+
+void
+monitorfocusnext_helper(bool arg)
+{
+	struct client *cl = NULL;
+	struct item *head = wslist[curws];
+	struct item *tail,*item = NULL;
+	updatecurmon();
+
+    // no windows on current workspace
+    if (NULL == head)
+		return;
+	// if no focus on current workspace, find first valid item on list.
+    if (NULL == focuswin || focuswin->ws != curws) {
+		for(item = head;item != NULL;item = item->next){
+			cl = item->data;
+			if(!cl->iconic && cl->monitor == curmon)
+				break;
+		}
+    }else{
+		// find tail of list and make list circular.
+		for(tail = head = item = wslist[curws]; item != NULL;
+			tail = item,item = item->next);
+		head->prev = tail;
+		tail->next = head;
+		if (arg == TWOBWM_FOCUS_NEXT) {
+			// start from focus next and find first valid item on circular list.
+			head = item = focuswin->wsitem->next;
+			do{
+				cl = item->data;
+				if(!cl->iconic && cl->monitor == curmon)
+					break;
+				item = item->next;
+			}while(item != head);
+		}else{
+			// start from focus previous and find first valid on circular list.
+			tail = item = focuswin->wsitem->prev;
+			do{
+				cl = item->data;
+				if(!cl->iconic && cl->monitor == curmon)
+					break;
+				item = item->prev;
+			}while(item != tail);
+		}
+		// restore list.
+		wslist[curws]->prev->next = NULL;
+		wslist[curws]->prev = NULL;
+	}
+	if(!item || !(cl = item->data) || cl->iconic || cl->monitor != curmon)
+		return;
+	raisewindow(cl->id);
+	centerpointer(cl->id,cl);
+	setfocus(cl);
+}
+
 /* Mark window win as unfocused. */
 void setunfocus(void)
 {
