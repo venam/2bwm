@@ -27,6 +27,7 @@
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_xrm.h>
 #include <X11/keysym.h>
+#include <xcb/xproto.h>
 #include "list.h"
 #include "definitions.h"
 #include "types.h"
@@ -43,6 +44,7 @@ xcb_ewmh_connection_t *ewmh = NULL;        // Ewmh Connection.
 xcb_screen_t     *screen = NULL;           // Our current screen.
 int randrbase = 0;                         // Beginning of RANDR extension events.
 static uint8_t curws = 0;                  // Current workspace.
+static uint8_t curmon = 0;                 // Current monitor.
 struct client *focuswin = NULL;            // Current focus window.
 static xcb_drawable_t top_win=0;           // Window always on top.
 static struct item *winlist = NULL;        // Global list of all client windows.
@@ -64,6 +66,8 @@ static void mousemotion(const Arg *);
 static void cursor_move(const Arg *);
 static void changeworkspace(const Arg *);
 static void changeworkspace_helper(const uint32_t);
+static void changemonitor(const Arg *);
+static bool changemonitor_helper(const uint32_t);
 static void focusnext(const Arg *);
 static void focusnext_helper(bool);
 static void sendtoworkspace(const Arg *);
@@ -87,6 +91,8 @@ static int  setuprandr(void);
 static void arrangewindows(void);
 static void prevworkspace();
 static void nextworkspace();
+static void nextmonitor();
+static void prevmonitor();
 static void getrandr(void);
 static void raise_current_window(void);
 static void raiseorlower();
@@ -131,6 +137,7 @@ static void arrbymon(struct monitor *);
 static struct monitor *findmonitor(xcb_randr_output_t);
 static struct monitor *findclones(xcb_randr_output_t, const int16_t, const int16_t);
 static struct monitor *findmonbycoord(const int16_t, const int16_t);
+static struct monitor *findmonbyindex(const uint8_t);
 static void delmonitor(struct monitor *);
 static struct monitor *addmonitor(xcb_randr_output_t, const int16_t, const int16_t, const uint16_t, const uint16_t);
 static void raisewindow(xcb_drawable_t);
@@ -205,6 +212,12 @@ changeworkspace(const Arg *arg)
 }
 
 void
+changemonitor(const Arg *arg)
+{
+	changemonitor_helper(arg->i);
+}
+
+void
 nextworkspace()
 {
 	curws == WORKSPACES - 1 ? changeworkspace_helper(0)
@@ -216,6 +229,36 @@ prevworkspace()
 {
 	curws > 0 ? changeworkspace_helper(curws - 1)
 		: changeworkspace_helper(WORKSPACES-1);}
+
+void
+nextmonitor()
+{
+	/* Check if next monitor exists if not check the 0th otherwise
+	 * don't do anything */
+	if (!changemonitor_helper(curmon + 1))
+		changemonitor_helper(0);
+}
+
+void
+prevmonitor()
+{
+	struct item *it;
+	uint8_t mon_list_len = 0;
+
+	if (monlist == NULL)
+		return;
+
+	if (curmon == 0) {
+		it = monlist;
+		while (it != NULL) {
+			mon_list_len++;
+			it = it->next;
+		}
+
+		changemonitor_helper(mon_list_len - 1);
+	} else
+		changemonitor_helper(curmon - 1);
+}
 
 void
 twobwm_exit()
@@ -518,6 +561,24 @@ changeworkspace_helper(const uint32_t ws)
 		setfocus(findclient(&pointer->child));
 		free(pointer);
 	}
+}
+
+/* Change current monitor to mn */
+bool
+changemonitor_helper(const uint32_t mn)
+{
+	struct monitor *m;
+	int16_t cur_x, cur_y;
+	// Check if monitor exists
+	if (NULL != (m = findmonbyindex(mn))) {
+		curmon = mn;
+		// Update cursor
+		cur_x = m->x + m->width / 2;
+		cur_y = m->y + m->height / 2;
+		xcb_warp_pointer(conn, XCB_NONE, screen->root, 0, 0, 0, 0, cur_x, cur_y);
+		return true;
+	}
+	return false;
 }
 
 void
@@ -1401,6 +1462,23 @@ findmonbycoord(const int16_t x, const int16_t y)
 		if (x>=mon->x && x <= mon->x + mon->width && y >= mon->y && y
 				<= mon->y+mon->height)
 			return mon;
+	}
+
+	return NULL;
+}
+
+struct monitor *
+findmonbyindex(const uint8_t i)
+{
+	struct monitor *mon;
+	struct item *item;
+	uint8_t index = 0;
+
+	for (item = monlist; item != NULL; item = item->next) {
+		mon = item->data;
+		if (index == i)
+			return mon;
+		index++;
 	}
 
 	return NULL;
