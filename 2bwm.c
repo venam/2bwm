@@ -138,6 +138,7 @@ static struct monitor *findmonitor(xcb_randr_output_t);
 static struct monitor *findclones(xcb_randr_output_t, const int16_t, const int16_t);
 static struct monitor *findmonbycoord(const int16_t, const int16_t);
 static struct monitor *findmonbyindex(const uint8_t);
+static void updatecurmon(void);
 static void delmonitor(struct monitor *);
 static struct monitor *addmonitor(xcb_randr_output_t, const int16_t, const int16_t, const uint16_t, const uint16_t);
 static void raisewindow(xcb_drawable_t);
@@ -233,6 +234,7 @@ prevworkspace()
 void
 nextmonitor()
 {
+	updatecurmon();
 	/* Check if next monitor exists if not check the 0th otherwise
 	 * don't do anything */
 	if (!changemonitor_helper(curmon + 1))
@@ -242,6 +244,7 @@ nextmonitor()
 void
 prevmonitor()
 {
+	updatecurmon();
 	struct item *it;
 	uint8_t mon_list_len = 0;
 
@@ -1482,6 +1485,40 @@ findmonbyindex(const uint8_t i)
 	}
 
 	return NULL;
+}
+
+void
+updatecurmon(void)
+{
+	struct monitor* m;
+	struct item* it;
+	uint8_t index;
+	int16_t cur_x, cur_y;
+	xcb_query_pointer_reply_t *pointer;
+
+	pointer = xcb_query_pointer_reply(conn,
+			xcb_query_pointer(conn, screen->root), 0);
+	if (pointer == NULL)
+		return;
+
+	cur_x = pointer->root_x;
+	cur_y = pointer->root_y;
+	free(pointer);
+	
+	if ((m = findmonbycoord(cur_x, cur_y)) != NULL) {
+		// Check list for monitor if it exists
+		it = monlist;
+		index = 0;
+		while (it != NULL) {
+			// Update index if monitor is found
+			if (m == it->data) {
+				curmon = index;
+				return;
+			}
+			index++;
+			it = it->next;
+		}
+	}
 }
 
 struct monitor *
