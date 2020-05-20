@@ -1220,9 +1220,12 @@ setupscreen(void)
 	if (NULL == reply)
 		return false;
 
-	if (mon == NULL && monlist == NULL)
-		return false;
-	mon = monlist->data;
+	if (mon == NULL) {
+		if (monlist == NULL)
+			return false;
+		else
+			mon = monlist->data;
+	}
 
 	len = xcb_query_tree_children_length(reply);
 	children = xcb_query_tree_children(reply);
