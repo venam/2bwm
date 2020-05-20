@@ -1772,7 +1772,6 @@ monitorfocusnext_helper(bool arg)
 
 	curws = mon->ws;
 	head = wslist[curws];
-	updatecurmon();
 
     // no windows on current workspace
     if (NULL == head)
@@ -1781,7 +1780,7 @@ monitorfocusnext_helper(bool arg)
     if (NULL == focuswin || focuswin->ws != curws) {
 		for(item = head;item != NULL;item = item->next){
 			cl = item->data;
-			if(!cl->iconic && cl->monitor == curmon)
+			if(!cl->iconic && cl->monitor == mon)
 				break;
 		}
     }else{
@@ -1795,7 +1794,7 @@ monitorfocusnext_helper(bool arg)
 			head = item = focuswin->wsitem->next;
 			do{
 				cl = item->data;
-				if(!cl->iconic && cl->monitor == curmon)
+				if(!cl->iconic && cl->monitor == mon)
 					break;
 				item = item->next;
 			}while(item != head);
@@ -1804,7 +1803,7 @@ monitorfocusnext_helper(bool arg)
 			tail = item = focuswin->wsitem->prev;
 			do{
 				cl = item->data;
-				if(!cl->iconic && cl->monitor == curmon)
+				if(!cl->iconic && cl->monitor == mon)
 					break;
 				item = item->prev;
 			}while(item != tail);
@@ -1813,7 +1812,7 @@ monitorfocusnext_helper(bool arg)
 		wslist[curws]->prev->next = NULL;
 		wslist[curws]->prev = NULL;
 	}
-	if(!item || !(cl = item->data) || cl->iconic || cl->monitor != curmon)
+	if(!item || !(cl = item->data) || cl->iconic || cl->monitor != mon)
 		return;
 	raisewindow(cl->id);
 	centerpointer(cl->id,cl);
