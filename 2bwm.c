@@ -43,7 +43,6 @@ xcb_connection_t *conn = NULL;             // Connection to X server.
 xcb_ewmh_connection_t *ewmh = NULL;        // Ewmh Connection.
 xcb_screen_t     *screen = NULL;           // Our current screen.
 int randrbase = 0;                         // Beginning of RANDR extension events.
-static uint8_t curws = 0;                  // Current workspace.
 static struct monitor *curmon;             // Current monitor struct
 static uint8_t curmonindex = 0;            // Current monitor.
 struct client *focuswin = NULL;            // Current focus window.
@@ -141,6 +140,7 @@ static struct monitor *findmonitor(xcb_randr_output_t);
 static struct monitor *findclones(xcb_randr_output_t, const int16_t, const int16_t);
 static struct monitor *findmonbycoord(const int16_t, const int16_t);
 static struct monitor *findmonbyindex(const uint8_t);
+static struct monitor *screenbypointer(void);
 static void updatecurmon(void);
 static void delmonitor(struct monitor *);
 static struct monitor *addmonitor(xcb_randr_output_t, const int16_t, const int16_t, const uint16_t, const uint16_t);
@@ -230,14 +230,20 @@ changemonitor(const Arg *arg)
 void
 nextworkspace()
 {
-	curws == WORKSPACES - 1 ? changeworkspace_helper(0)
-		:changeworkspace_helper(curws+1);
+	struct monitor *mon = screenbypointer();
+	if (mon == NULL)
+		return;
+	mon->ws == WORKSPACES - 1 ? changeworkspace_helper(0)
+		:changeworkspace_helper(mon->ws+1);
 }
 
 void
 prevworkspace()
 {
-	curws > 0 ? changeworkspace_helper(curws - 1)
+	struct monitor *mon = screenbypointer();
+	if (mon == NULL)
+		return;
+	mon->ws > 0 ? changeworkspace_helper(mon->ws - 1)
 		: changeworkspace_helper(WORKSPACES-1);}
 
 void
@@ -542,14 +548,19 @@ changeworkspace_helper(const uint32_t ws)
 	xcb_query_pointer_reply_t *pointer;
 	struct client *client;
 	struct item *item;
-	if (ws == curws)
+	struct monitor *mon = screenbypointer();
+
+	if (mon == NULL || ws == mon->ws)
 		return;
 	xcb_ewmh_set_current_desktop(ewmh, 0, ws);
 	/* Go through list of current ws.
-	 * Unmap everything that isn't fixed. */
-	for (item=wslist[curws]; item != NULL;) {
+	 * Unmap everything that isn't fixed or on the current monitor. */
+	for (item=wslist[mon->ws]; item != NULL;) {
 		client = item->data;
 		item = item->next;
+		// If not on the current monitor ignore window.
+		if (client->monitor != mon)
+			continue;
 		setborders(client,false);
 		if (!client->fixed){
 			xcb_unmap_window(conn, client->id);
@@ -559,14 +570,16 @@ changeworkspace_helper(const uint32_t ws)
 			addtoworkspace(client,ws);
 		}
 	}
+	/* Map all windows on that workspace on the current monitor */
 	for (item=wslist[ws]; item != NULL; item = item->next) {
 		client = item->data;
-		if (!client->fixed && !client->iconic)
+		if (!client->fixed && !client->iconic && client->monitor == mon)
 			xcb_map_window(conn, client->id);
 	}
-	curws = ws;
+
 	pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn,
 				screen->root), 0);
+	mon->ws = ws;
 	if(pointer == NULL)
 		setfocus(NULL);
 	else {
@@ -621,6 +634,10 @@ void
 fixwindow(struct client *client)
 {
 	uint32_t ws,ww;
+	struct monitor *mon = screenbypointer();
+
+	if (mon == NULL)
+		return;
 
 	if (NULL == client)
 		return;
@@ -629,7 +646,7 @@ fixwindow(struct client *client)
 		client->fixed = false;
 		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
 				ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1,
-				&curws
+				&mon->ws
 		);
 	} else {
 		/* Raise the window, if going to another desktop don't
@@ -671,7 +688,7 @@ unkillablewindow(struct client *client)
 void
 sendtoworkspace(const Arg *arg)
 {
-    if (NULL == focuswin||focuswin->fixed||arg->i == curws)
+    if (NULL == focuswin||focuswin->fixed||arg->i == focuswin->monitor->ws)
 	    return;
 	// correct order is delete first add later.
     delfromworkspace(focuswin);
@@ -683,6 +700,9 @@ sendtoworkspace(const Arg *arg)
 void
 sendtonextworkspace(const Arg *arg)
 {
+	if (NULL == focuswin || focuswin->fixed)
+		return;
+	uint32_t curws = focuswin->monitor->ws;
 	Arg arg2 = { .i=0 };
 	Arg arg3 = { .i=curws + 1 };
 	curws == WORKSPACES - 1 ? sendtoworkspace(&arg2):sendtoworkspace(&arg3);
@@ -691,6 +711,9 @@ sendtonextworkspace(const Arg *arg)
 void
 sendtoprevworkspace(const Arg *arg)
 {
+	if (NULL == focuswin || focuswin->fixed)
+		return;
+	uint32_t curws = focuswin->monitor->ws;
 	Arg arg2 = {.i=curws-1};
 	Arg arg3 = {.i=WORKSPACES-1};
 	curws > 0 ? sendtoworkspace(&arg2) : sendtoworkspace(&arg3);
@@ -914,11 +937,14 @@ newwin(xcb_generic_event_t *ev)
 {
 	xcb_map_request_event_t *e = (xcb_map_request_event_t *) ev;
 	struct client *client;
+	struct monitor *mon = screenbypointer();
 	long data[] = {
 		XCB_ICCCM_WM_STATE_NORMAL,
 		XCB_NONE
 	};
 
+	if (mon == NULL)
+		return;
 
 	/* The window is trying to map itself on the current workspace,
 	 * but since it's unmapped it probably belongs on another workspace.*/
@@ -931,7 +957,7 @@ newwin(xcb_generic_event_t *ev)
 		return;
 
 	/* Add this window to the current workspace. */
-	addtoworkspace(client, curws);
+	addtoworkspace(client, mon->ws);
 
 	/* If we don't have specific coord map it where the pointer is.*/
 	if (!client->usercoord) {
@@ -1185,6 +1211,7 @@ setupscreen(void)
 	uint32_t len;
 	xcb_window_t *children;
 	uint32_t i;
+	struct monitor *mon = screenbypointer();
 
 	/* Get all children. */
 	xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn,
@@ -1192,6 +1219,10 @@ setupscreen(void)
 
 	if (NULL == reply)
 		return false;
+
+	if (mon == NULL && monlist == NULL)
+		return false;
+	mon = monlist->data;
 
 	len = xcb_query_tree_children_length(reply);
 	children = xcb_query_tree_children(reply);
@@ -1203,58 +1234,57 @@ setupscreen(void)
 				NULL
 		);
 
-	if (!attr)
-		continue;
+		if (!attr)
+			continue;
 
-        /* Don't set up or even bother windows in override redirect mode.
-	 * This mode means they wouldn't have been reported to us with a
-	 * MapRequest if we had been running, so in the normal case we wouldn't
-	 * have seen them. Only handle visible windows. */
-        if (!attr->override_redirect && attr->map_state
-			== XCB_MAP_STATE_VIEWABLE) {
-		client = setupwin(children[i]);
+    	    /* Don't set up or even bother windows in override redirect mode.
+		 * This mode means they wouldn't have been reported to us with a
+		 * MapRequest if we had been running, so in the normal case we wouldn't
+		 * have seen them. Only handle visible windows. */
+    	    if (!attr->override_redirect && attr->map_state
+				== XCB_MAP_STATE_VIEWABLE) {
+			client = setupwin(children[i]);
 
-		if (NULL != client) {
-			/* Find the physical output this window will be on if
-			 * RANDR is active. */
-			if (-1 != randrbase)
-				client->monitor = findmonbycoord(client->x,
-						client->y);
-			/* Fit window on physical screen. */
-			fitonscreen(client);
-			setborders(client, false);
+			if (NULL != client) {
+				/* Find the physical output this window will be on if
+				 * RANDR is active. */
+				if (-1 != randrbase)
+					client->monitor = findmonbycoord(client->x,
+							client->y);
+				/* Fit window on physical screen. */
+				fitonscreen(client);
+				setborders(client, false);
 
-			/* Check if this window has a workspace set already
-			 * as a WM hint. */
-			ws = getwmdesktop(children[i]);
+				/* Check if this window has a workspace set already
+				 * as a WM hint. */
+				ws = getwmdesktop(children[i]);
 
-			if (get_unkil_state(children[i]))
-				unkillablewindow(client);
+				if (get_unkil_state(children[i]))
+					unkillablewindow(client);
 
-			if (ws == NET_WM_FIXED) {
-				/* Add to current workspace. */
-				addtoworkspace(client, curws);
-				/* Add to all other workspaces. */
-				fixwindow(client);
-			} else {
-				if (TWOBWM_NOWS != ws && ws < WORKSPACES) {
-					addtoworkspace(client, ws);
-					if (ws != curws)
-						/* If it's not our current works
-						 * pace, hide it. */
-						xcb_unmap_window(conn,
-								client->id);
+				if (ws == NET_WM_FIXED) {
+					/* Add to current workspace. */
+					addtoworkspace(client, client->monitor->ws);
+					/* Add to all other workspaces. */
+					fixwindow(client);
 				} else {
-					addtoworkspace(client, curws);
-					addtoclientlist(children[i]);
+					if (TWOBWM_NOWS != ws && ws < WORKSPACES) {
+						addtoworkspace(client, ws);
+						if (ws != client->monitor->ws)
+							/* If it's not our current works
+							 * pace, hide it. */
+							xcb_unmap_window(conn,
+									client->id);
+					} else {
+						addtoworkspace(client, client->monitor->ws);
+						addtoclientlist(children[i]);
+					}
 				}
 			}
 		}
-	}
 
-	if(NULL != attr)
-		free(attr);
-
+		if(NULL != attr)
+			free(attr);
 	}
 	changeworkspace_helper(0);
 
@@ -1497,6 +1527,42 @@ findmonbyindex(const uint8_t i)
 	return NULL;
 }
 
+/* Retrieve information about the monitor the pointer is on.
+ * ws = the current workspace of the monitor where the cursor is on.
+ * mnptr = a pointer to the monitor struct. */
+struct monitor *
+screenbypointer(void)
+{
+	uint16_t x, y;
+	struct monitor *mon;
+	struct item *item;
+	uint32_t index = 0;
+	xcb_query_pointer_reply_t *pointer;
+
+
+	pointer = xcb_query_pointer_reply(conn,
+			xcb_query_pointer(conn, screen->root), 0);
+
+	if (pointer == NULL) {
+		return NULL;
+	}
+	x = pointer->root_x;
+	y = pointer->root_y;
+	free(pointer);
+
+	for (item = monlist; item != NULL; item = item->next) {
+		mon = item->data;
+
+		if (x>=mon->x && x <= mon->x + mon->width && y >= mon->y && y
+				<= mon->y+mon->height) {
+			return mon;
+		}
+		index++;
+	}
+
+	return NULL;
+}
+
 void
 updatecurmon(void)
 {
@@ -1555,6 +1621,7 @@ addmonitor(xcb_randr_output_t id, const int16_t x, const int16_t y,
 	mon->y      = y;
 	mon->width  = width;
 	mon->height = height;
+	mon->ws     = 0;
 
 	return mon;
 }
@@ -1635,8 +1702,16 @@ void
 focusnext_helper(bool arg)
 {
 	struct client *cl = NULL;
-	struct item *head = wslist[curws];
+	uint32_t curws;
+	struct item *head;
 	struct item *tail,*item = NULL;
+	struct monitor *mon = screenbypointer();
+
+	if (mon == NULL)
+		return;
+
+	curws = mon->ws;
+	head = wslist[curws];
     // no windows on current workspace
     if (NULL == head)
 		return;
@@ -1687,8 +1762,16 @@ void
 monitorfocusnext_helper(bool arg)
 {
 	struct client *cl = NULL;
-	struct item *head = wslist[curws];
+	struct item *head;
 	struct item *tail,*item = NULL;
+	uint32_t curws;
+	struct monitor *mon = screenbypointer();
+
+	if (mon == NULL)
+		return;
+
+	curws = mon->ws;
+	head = wslist[curws];
 	updatecurmon();
 
     // no windows on current workspace
@@ -1956,10 +2039,14 @@ snapwindow(struct client *client)
 	struct client *win;
 	int16_t mon_x, mon_y;
 	uint16_t mon_width, mon_height;
+	struct monitor *mon = screenbypointer();
+
+	if (mon == NULL)
+		return;
 
 	getmonsize(1, &mon_x,&mon_y,&mon_width,&mon_height,focuswin);
 
-	for (item = wslist[curws]; item != NULL; item = item->next) {
+	for (item = wslist[mon->ws]; item != NULL; item = item->next) {
 		win = item->data;
 
 		if (client != win) {
@@ -2005,7 +2092,10 @@ snapwindow(struct client *client)
 void
 mousemove(const int16_t rel_x, const int16_t rel_y)
 {
-	if (focuswin == NULL || focuswin->ws != curws)
+	struct monitor *mon = screenbypointer();
+	if (mon == NULL)
+		return;
+	if (focuswin == NULL || focuswin->ws != mon->ws)
 		return;
 
 	focuswin->x = rel_x;
@@ -2465,8 +2555,12 @@ teleport(const Arg *arg)
 {
 	int16_t pointx, pointy, mon_x, mon_y, temp = 0;
 	uint16_t mon_width, mon_height;
+	struct monitor *mon = screenbypointer();
 
-	if (NULL == focuswin|| NULL == wslist[curws]|| focuswin->maxed)
+	if (mon == NULL)
+		return;
+
+	if (NULL == focuswin|| NULL == wslist[mon->ws]|| focuswin->maxed)
 		return;
 
 	if (!getpointer(&focuswin->id, &pointx, &pointy))
@@ -3187,6 +3281,10 @@ unmapnotify(xcb_generic_event_t *ev)
 {
 	xcb_unmap_notify_event_t *e = (xcb_unmap_notify_event_t *)ev;
 	struct client *client = NULL;
+	struct monitor *mon = screenbypointer();
+
+	if (mon == NULL)
+		return;
 	/*
 	 * Find the window in our current workspace list, then forget about it.
 	 * Note that we might not know about the window we got the UnmapNotify
@@ -3202,7 +3300,7 @@ unmapnotify(xcb_generic_event_t *ev)
 	 * ignore UnmapNotify on them.
 	 */
 	client = findclient( & e->window);
-	if (NULL == client || client->ws != curws)
+	if (NULL == client || client->ws != mon->ws)
 		return;
 	if (focuswin!=NULL && client->id == focuswin->id)
 		focuswin = NULL;
@@ -3457,7 +3555,7 @@ setup(int scrno)
         free(error);
 		return false;
     }
-	xcb_ewmh_set_current_desktop(ewmh, scrno, curws);
+	xcb_ewmh_set_current_desktop(ewmh, scrno, 0);
 	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
 
 	grabkeys();

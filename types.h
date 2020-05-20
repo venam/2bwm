@@ -4,6 +4,7 @@ struct monitor {
 	int16_t y,x;                    // X and Y.
 	uint16_t width,height;          // Width/Height in pixels.
 	struct item *item;              // Pointer to our place in output list.
+	uint32_t ws;                    // The workspace number this monitor is in
 };
 typedef union {
 	const char** com;
