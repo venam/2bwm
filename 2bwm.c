@@ -607,6 +607,7 @@ changemonitor_helper(const uint32_t mn)
 		cur_x = m->x + m->width / 2;
 		cur_y = m->y + m->height / 2;
 		xcb_warp_pointer(conn, XCB_NONE, screen->root, 0, 0, 0, 0, cur_x, cur_y);
+		xcb_ewmh_set_current_desktop(ewmh, 0, m->ws + mn * WORKSPACES);
 		return true;
 	}
 	return false;
@@ -2719,6 +2720,7 @@ changescreen(const Arg *arg)
 {
 	struct item *item;
 	float xpercentage, ypercentage;
+	uint32_t mon_index;
 
 	if (NULL == focuswin || NULL == focuswin->monitor)
 		return;
@@ -2748,6 +2750,10 @@ changescreen(const Arg *arg)
 	movelim(focuswin);
 	setborders(focuswin, true);
 	centerpointer(focuswin->id, focuswin);
+	delfromworkspace(focuswin);
+	addtoworkspace(focuswin, focuswin->monitor->ws);
+	screenbypointer(&mon_index);
+	xcb_ewmh_set_current_desktop(ewmh, 0, focuswin->monitor->ws + mon_index * WORKSPACES);
 }
 
 /* Function to make the cursor move with the keyboard */
