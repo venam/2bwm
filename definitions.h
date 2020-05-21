@@ -1,4 +1,5 @@
 #define WORKSPACES      10
+#define MAX_LEN         256
 #define BUTTONMASK      XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE
 #define NET_WM_FIXED    0xffffffff  // Value in WM hint which means this window is fixed on all workspaces.
 #define TWOBWM_NOWS     0xfffffffe  // This means we didn't get any window hint at all.

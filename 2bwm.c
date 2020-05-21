@@ -140,7 +140,8 @@ static struct monitor *findmonitor(xcb_randr_output_t);
 static struct monitor *findclones(xcb_randr_output_t, const int16_t, const int16_t);
 static struct monitor *findmonbycoord(const int16_t, const int16_t);
 static struct monitor *findmonbyindex(const uint8_t);
-static struct monitor *screenbypointer(void);
+static struct monitor *screenbypointer(uint32_t *);
+static uint32_t updateviewports(void);
 static void updatecurmon(void);
 static void delmonitor(struct monitor *);
 static struct monitor *addmonitor(xcb_randr_output_t, const int16_t, const int16_t, const uint16_t, const uint16_t);
@@ -230,7 +231,7 @@ changemonitor(const Arg *arg)
 void
 nextworkspace()
 {
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 	if (mon == NULL)
 		return;
 	mon->ws == WORKSPACES - 1 ? changeworkspace_helper(0)
@@ -240,7 +241,7 @@ nextworkspace()
 void
 prevworkspace()
 {
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 	if (mon == NULL)
 		return;
 	mon->ws > 0 ? changeworkspace_helper(mon->ws - 1)
@@ -516,6 +517,9 @@ void
 addtoworkspace(struct client *client, uint32_t ws)
 {
 	struct item *item = additem(&wslist[ws]);
+	uint32_t mon_index, actual_ws;
+	screenbypointer(&mon_index);
+	actual_ws = ws + WORKSPACES * mon_index;
 
 	if (client == NULL)
 		return;
@@ -532,7 +536,7 @@ addtoworkspace(struct client *client, uint32_t ws)
 	if (!client->fixed)
 		xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
 				ewmh->_NET_WM_DESKTOP, XCB_ATOM_CARDINAL, 32, 1,
-				&ws
+				&actual_ws
 		);
 }
 static void addtoclientlist(const xcb_drawable_t id)
@@ -548,11 +552,12 @@ changeworkspace_helper(const uint32_t ws)
 	xcb_query_pointer_reply_t *pointer;
 	struct client *client;
 	struct item *item;
-	struct monitor *mon = screenbypointer();
+	uint32_t mon_index;
+	struct monitor *mon = screenbypointer(&mon_index);
 
 	if (mon == NULL || ws == mon->ws)
 		return;
-	xcb_ewmh_set_current_desktop(ewmh, 0, ws);
+	xcb_ewmh_set_current_desktop(ewmh, 0, ws + WORKSPACES * mon_index);
 	/* Go through list of current ws.
 	 * Unmap everything that isn't fixed or on the current monitor. */
 	for (item=wslist[mon->ws]; item != NULL;) {
@@ -634,7 +639,7 @@ void
 fixwindow(struct client *client)
 {
 	uint32_t ws,ww;
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 
 	if (mon == NULL)
 		return;
@@ -937,7 +942,7 @@ newwin(xcb_generic_event_t *ev)
 {
 	xcb_map_request_event_t *e = (xcb_map_request_event_t *) ev;
 	struct client *client;
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 	long data[] = {
 		XCB_ICCCM_WM_STATE_NORMAL,
 		XCB_NONE
@@ -1211,7 +1216,7 @@ setupscreen(void)
 	uint32_t len;
 	xcb_window_t *children;
 	uint32_t i;
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 
 	/* Get all children. */
 	xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn,
@@ -1534,7 +1539,7 @@ findmonbyindex(const uint8_t i)
  * ws = the current workspace of the monitor where the cursor is on.
  * mnptr = a pointer to the monitor struct. */
 struct monitor *
-screenbypointer(void)
+screenbypointer(uint32_t *i)
 {
 	uint16_t x, y;
 	struct monitor *mon;
@@ -1558,12 +1563,45 @@ screenbypointer(void)
 
 		if (x>=mon->x && x <= mon->x + mon->width && y >= mon->y && y
 				<= mon->y+mon->height) {
+			if (i != NULL)
+				*i = index;
 			return mon;
 		}
 		index++;
 	}
 
 	return NULL;
+}
+
+/* Update the viewports and desktop names */
+uint32_t
+updateviewports(void)
+{
+	uint32_t monitor_nbr = 0, i = 0, s_ptr = 0;
+	struct item *item;
+	struct monitor *mon;
+	xcb_ewmh_coordinates_t *coords;
+	char names[MAX_LEN];
+
+	for (item = monlist; item != NULL; item = item->next)
+		monitor_nbr++;
+
+	coords = malloc(sizeof(*coords) * monitor_nbr * WORKSPACES);
+
+	monitor_nbr = 0;
+	for (item = monlist; item != NULL; item = item->next) {
+		mon = item->data;
+		for (i = 0; i < WORKSPACES; i++) {
+			coords[monitor_nbr] = (xcb_ewmh_coordinates_t){ mon->x, mon->y };
+			s_ptr += sprintf(names + s_ptr, "%d", i + 1) + 1;
+			monitor_nbr++;
+		}
+	}
+
+	xcb_ewmh_set_desktop_viewport(ewmh, 0, monitor_nbr, coords);
+	xcb_ewmh_set_desktop_names(ewmh, 0, s_ptr, names);
+	free(coords);
+	return monitor_nbr;
 }
 
 void
@@ -1708,7 +1746,7 @@ focusnext_helper(bool arg)
 	uint32_t curws;
 	struct item *head;
 	struct item *tail,*item = NULL;
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 
 	if (mon == NULL)
 		return;
@@ -1768,7 +1806,7 @@ monitorfocusnext_helper(bool arg)
 	struct item *head;
 	struct item *tail,*item = NULL;
 	uint32_t curws;
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 
 	if (mon == NULL)
 		return;
@@ -2041,7 +2079,7 @@ snapwindow(struct client *client)
 	struct client *win;
 	int16_t mon_x, mon_y;
 	uint16_t mon_width, mon_height;
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 
 	if (mon == NULL)
 		return;
@@ -2094,7 +2132,7 @@ snapwindow(struct client *client)
 void
 mousemove(const int16_t rel_x, const int16_t rel_y)
 {
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 	if (mon == NULL)
 		return;
 	if (focuswin == NULL || focuswin->ws != mon->ws)
@@ -2557,7 +2595,7 @@ teleport(const Arg *arg)
 {
 	int16_t pointx, pointy, mon_x, mon_y, temp = 0;
 	uint16_t mon_width, mon_height;
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 
 	if (mon == NULL)
 		return;
@@ -3283,7 +3321,7 @@ unmapnotify(xcb_generic_event_t *ev)
 {
 	xcb_unmap_notify_event_t *e = (xcb_unmap_notify_event_t *)ev;
 	struct client *client = NULL;
-	struct monitor *mon = screenbypointer();
+	struct monitor *mon = screenbypointer(NULL);
 
 	if (mon == NULL)
 		return;
@@ -3450,6 +3488,7 @@ setup(int scrno)
 {
 	unsigned int i;
 	uint32_t event_mask_pointer[] = { XCB_EVENT_MASK_POINTER_MOTION };
+	uint32_t desktop_nbr;
 
 	unsigned int values[1] = {
 		XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT
@@ -3479,7 +3518,8 @@ setup(int scrno)
 		ewmh->_NET_CLIENT_LIST,            ewmh->_NET_CLIENT_LIST_STACKING,
 		ewmh->WM_PROTOCOLS,                ewmh->_NET_WM_STATE,
 		ewmh->_NET_WM_STATE_DEMANDS_ATTENTION,
-		ewmh->_NET_WM_STATE_FULLSCREEN
+		ewmh->_NET_WM_STATE_FULLSCREEN,
+		ewmh->_NET_DESKTOP_VIEWPORT
 	};
 
 	xcb_ewmh_set_supported(ewmh, scrno, LENGTH(net_atoms), net_atoms);
@@ -3541,6 +3581,8 @@ setup(int scrno)
 
 	randrbase = setuprandr();
 
+	desktop_nbr = updateviewports();
+
 	if (!setupscreen())
 		return false;
 
@@ -3558,7 +3600,7 @@ setup(int scrno)
 		return false;
     }
 	xcb_ewmh_set_current_desktop(ewmh, scrno, 0);
-	xcb_ewmh_set_number_of_desktops(ewmh, scrno, WORKSPACES);
+	xcb_ewmh_set_number_of_desktops(ewmh, scrno, desktop_nbr);
 
 	grabkeys();
 	/* set events */
