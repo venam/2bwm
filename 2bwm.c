@@ -1803,6 +1803,7 @@ focusnext_helper(bool arg)
 		raisewindow(cl->id);
 		centerpointer(cl->id,cl);
 		setfocus(cl);
+		changeworkspace_helper(cl->monitor->ws)
 	}
 }
 
