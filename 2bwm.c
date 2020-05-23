@@ -1745,59 +1745,65 @@ focusnext_helper(bool arg)
 {
 	struct client *cl = NULL;
 	uint32_t curws;
+	struct monitor *mon = NULL;
 	struct item *head;
+	struct item *mon_head;
 	struct item *tail,*item = NULL;
-	struct monitor *mon = screenbypointer(NULL);
+	struct item *visible_windows = NULL;
+	struct item *visible_focuswin = NULL;
 
-	if (mon == NULL)
-		return;
-
-	curws = mon->ws;
-	head = wslist[curws];
-    // no windows on current workspace
-    if (NULL == head)
-		return;
-	// if no focus on current workspace, find first valid item on list.
-    if (NULL == focuswin || focuswin->ws != curws) {
-		for(item = head;item != NULL;item = item->next){
+	// create a circular list of all visible windows and store it
+	// in visible_windows
+	mon_head = monlist;
+	while (mon_head != NULL) {
+		mon = mon_head->data;
+		curws = mon->ws;
+		head = wslist[curws];
+		// gather the visible windows on that workspace
+		for (item = head; item != NULL; item = item->next){
 			cl = item->data;
-			if(!cl->iconic)
-				break;
+			if (!cl->iconic && cl->monitor == mon) {
+				struct item *visible_item;
+				visible_item = additem(&visible_windows);
+				tail = visible_item;
+				visible_item->data = cl;
+				if (NULL != focuswin && cl->id == focuswin->id) {
+					visible_focuswin = visible_item;
+				}
+			}
 		}
-    }else{
-		// find tail of list and make list circular.
-		for(tail = head = item = wslist[curws]; item != NULL;
-			tail = item,item = item->next);
-		head->prev = tail;
-		tail->next = head;
-		if (arg == TWOBWM_FOCUS_NEXT) {
-			// start from focus next and find first valid item on circular list.
-			head = item = focuswin->wsitem->next;
-			do{
-				cl = item->data;
-				if(!cl->iconic)
-					break;
-				item = item->next;
-			}while(item != head);
-		}else{
-			// start from focus previous and find first valid on circular list.
-			tail = item = focuswin->wsitem->prev;
-			do{
-				cl = item->data;
-				if(!cl->iconic)
-					break;
-				item = item->prev;
-			}while(item != tail);
-		}
-		// restore list.
-		wslist[curws]->prev->next = NULL;
-		wslist[curws]->prev = NULL;
+		mon_head = mon_head->next;
 	}
-	if(!item || !(cl = item->data) || cl->iconic)
+
+	head = visible_windows;
+
+	// no windows on current workspace
+	if (NULL == head)
 		return;
-	raisewindow(cl->id);
-	centerpointer(cl->id,cl);
-	setfocus(cl);
+
+	for(tail = item = visible_windows; item != NULL;
+		tail = item,item = item->next);
+	head->prev = tail;
+	tail->next = head;
+
+	// if no focus on current workspace, find first valid item on list.
+	if (NULL == focuswin) {
+		item = head;
+		cl = item->data;
+	} else {
+		if (arg == TWOBWM_FOCUS_NEXT) {
+			item = visible_focuswin->next;
+			cl = item->data;
+		} else{
+			item = visible_focuswin->prev;
+			cl = item->data;
+		}
+	}
+	if (NULL == focuswin || focuswin->id != cl->id) {
+		raisewindow(cl->id);
+		centerpointer(cl->id,cl);
+		setfocus(cl);
+	}
 }
 
 void
