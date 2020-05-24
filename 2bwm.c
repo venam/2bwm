@@ -225,7 +225,11 @@ changeworkspace(const Arg *arg)
 void
 changemonitor(const Arg *arg)
 {
-	changemonitor_helper(arg->i);
+	if (arg->i) {
+		nextmonitor();
+	} else {
+		prevmonitor();
+	}
 }
 
 void
@@ -1803,7 +1807,7 @@ focusnext_helper(bool arg)
 		raisewindow(cl->id);
 		centerpointer(cl->id,cl);
 		setfocus(cl);
-		changeworkspace_helper(cl->monitor->ws)
+		changeworkspace_helper(cl->monitor->ws);
 	}
 }
 

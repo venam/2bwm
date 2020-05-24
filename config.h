@@ -192,6 +192,8 @@ static key keys[] = {
     {  MOD |SHIFT,        XK_Down,       cursor_move,       {.i=TWOBWM_CURSOR_DOWN}},
     {  MOD |SHIFT,        XK_Right,      cursor_move,       {.i=TWOBWM_CURSOR_RIGHT}},
     {  MOD |SHIFT,        XK_Left,       cursor_move,       {.i=TWOBWM_CURSOR_LEFT}},
+    {  MOD |CONTROL,      XK_Left,       changemonitor,     {.i=1}},
+    {  MOD |CONTROL,      XK_Right,      changemonitor,     {.i=0}},
     // Start programs
     {  MOD ,              XK_w,          start,             {.com = menucmd}},
     // Exit or restart 2bwm
