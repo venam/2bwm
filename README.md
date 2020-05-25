@@ -324,6 +324,8 @@ Checkout the `3bwm` branch of the repo
 TODO:
 =====
 
+* Fix panel behavior when using multiple monitors
+
 * Fix the race condition bug that happens when switching workspaces too fast.
 
 * Bug related to gtkfilechooser dialog in telegram-desktop - needs more information to debug
@@ -331,20 +333,11 @@ TODO:
 * Use the `xcb_ewmh.h` functions instead of that ugly hardcoded ATOM enum for
   example instead of the `ATOM[atom_client_list]` we could use `xcb_ewmh_set_client_list`
 
-* Toggable sticky workspace per monitor
-
 * Extended Window Manager Hints (EWMH)
 
   - Use the new xcb-ewmh for the EWMH hints.
      _NET_WM_STATE, _NET_WM_STATE_STICKY,
      _NET_WM_STATE_MAXIMIZED_VERT, [etc](https://standards.freedesktop.org/wm-spec/wm-spec-latest.html#idm140200472615568).
-
-* A separate workspace list for every monitor. (CTRL+NUM)
-	* get the cursor position (on which monitor)
-	* unmap all window that are only on this monitor
-	* map window on the workspace NUM that are on this monitor
-	* problem with curws and remapping
-	* curws could be associated with the focuswin instead
 
 * Check why the input focus doesn't work well with applications such as macopix
 

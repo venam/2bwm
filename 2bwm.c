@@ -2,7 +2,7 @@
  * over the XCB library and derived from mcwm written by Michael Cardell.
  * Heavily modified version of http://www.hack.org/mc/hacks/mcwm/
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at the domain hack.org.
- * Copyright (c) 2014, 2015 Patrick Louis, patrick at the domain iotek dot org.
+ * Copyright (c) 2014, 2015 Patrick Louis, patrick at the domain psychology dot wtf.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -1352,6 +1352,7 @@ getrandr(void)
 
 	/* Request information for all outputs. */
 	getoutputs(outputs, len, timestamp);
+	//updateviewports();
 	free(res);
 }
 
@@ -1582,7 +1583,7 @@ screenbypointer(uint32_t *i)
 uint32_t
 updateviewports(void)
 {
-	uint32_t monitor_nbr = 0, i = 0, s_ptr = 0;
+	uint32_t monitor_nbr = 0, i = 0, coord_index = 0, s_ptr = 0;
 	struct item *item;
 	struct monitor *mon;
 	xcb_ewmh_coordinates_t *coords;
@@ -1593,14 +1594,18 @@ updateviewports(void)
 
 	coords = malloc(sizeof(*coords) * monitor_nbr * WORKSPACES);
 
+	// reusing variable monitor_nbr as counter for desktops viewports
 	monitor_nbr = 0;
 	for (item = monlist; item != NULL; item = item->next) {
 		mon = item->data;
 		for (i = 0; i < WORKSPACES; i++) {
-			coords[monitor_nbr] = (xcb_ewmh_coordinates_t){ mon->x, mon->y };
-			s_ptr += sprintf(names + s_ptr, "%d", i + 1) + 1;
-			monitor_nbr++;
+			coords[coord_index] = (xcb_ewmh_coordinates_t){ mon->x, mon->y };
+			s_ptr += sprintf(names + s_ptr,
+					"Desktop: %d, Workspace: %d",
+					monitor_nbr, i + 1) + 1;
+			coord_index;
 		}
+		monitor_nbr++;
 	}
 
 	xcb_ewmh_set_desktop_viewport(ewmh, 0, monitor_nbr, coords);
