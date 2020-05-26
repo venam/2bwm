@@ -1600,15 +1600,13 @@ updateviewports(void)
 		mon = item->data;
 		for (i = 0; i < WORKSPACES; i++) {
 			coords[coord_index] = (xcb_ewmh_coordinates_t){ mon->x, mon->y };
-			s_ptr += sprintf(names + s_ptr,
-					"Desktop: %d, Workspace: %d",
-					monitor_nbr, i + 1) + 1;
-			coord_index;
+			s_ptr += sprintf(names + s_ptr, "%d", i + 1) + 1;
+			coord_index++;
 		}
 		monitor_nbr++;
 	}
 
-	xcb_ewmh_set_desktop_viewport(ewmh, 0, monitor_nbr, coords);
+	xcb_ewmh_set_desktop_viewport(ewmh, 0, coord_index, coords);
 	xcb_ewmh_set_desktop_names(ewmh, 0, s_ptr, names);
 	free(coords);
 	return monitor_nbr;
