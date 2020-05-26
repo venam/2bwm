@@ -324,11 +324,11 @@ Checkout the `3bwm` branch of the repo
 TODO:
 =====
 
-* Fix panel behavior when using multiple monitors
+* Fix panel/bar behavior when using multiple monitors
 
 * Fix the race condition bug that happens when switching workspaces too fast.
 
-* Bug related to gtkfilechooser dialog in telegram-desktop - needs more information to debug
+* Bug related to gtkfilechooser dialog in telegram-desktop - needs more information to debug (might be related to WM_CLIENT_LEADER and WM_TRANSIENT_FOR)
 
 * Use the `xcb_ewmh.h` functions instead of that ugly hardcoded ATOM enum for
   example instead of the `ATOM[atom_client_list]` we could use `xcb_ewmh_set_client_list`
