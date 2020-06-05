@@ -2,7 +2,7 @@
  * over the XCB library and derived from mcwm written by Michael Cardell.
  * Heavily modified version of http://www.hack.org/mc/hacks/mcwm/
  * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at the domain hack.org.
- * Copyright (c) 2014, 2015 Patrick Louis, patrick at the domain iotek dot org.
+ * Copyright (c) 2014, 2020 Patrick Louis, patrick at the domain psychology dot wtf.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -2852,10 +2852,12 @@ clientmessage(xcb_generic_event_t *ev)
 			return;
 
 		if ( false == cl->iconic ) {
-			if (e->type == ewmh->_NET_ACTIVE_WINDOW)
+			if (e->type == ewmh->_NET_ACTIVE_WINDOW) {
 				setfocus(cl);
-			else
+				raisewindow(cl->id);
+			} else {
 				hide();
+			}
 
 			return;
 		}

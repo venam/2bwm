@@ -320,7 +320,7 @@ exec urxvt
 .B startx(1)
 .B xdm(1)
 .SH AUTHOR
-Venam | Patrick Louis <patrick at iotek do org>
+Venam | Patrick Louis <patrick at psychology dot wtf>
 .PP
 Big thanks for the help of the following persons:
 .RS
