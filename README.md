@@ -143,7 +143,7 @@ can download them [here](https://xcb.freedesktop.org/dist/).
 
 **Note**: `xcb-xrm` is not oficial yet,
 [here's the link](https://github.com/Airblader/xcb-util-xrm) to the repo.
-Archlinux and Voidlinux have it in their repositories.
+Archlinux and Voidlinux have it in their repositories as xcb-util-xrm.
 
 To build and install `xcb-xrm`, clone it and do the following commands:
 
