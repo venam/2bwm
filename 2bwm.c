@@ -106,6 +106,7 @@ static void addtoclientlist(const xcb_drawable_t);
 static void configurerequest(xcb_generic_event_t *);
 static void buttonpress(xcb_generic_event_t *);
 static void unmapnotify(xcb_generic_event_t *);
+static void mapnotify(xcb_generic_event_t *);
 static void destroynotify(xcb_generic_event_t *);
 static void circulaterequest(xcb_generic_event_t *);
 static void newwin(xcb_generic_event_t *);
@@ -3031,6 +3032,20 @@ unmapnotify(xcb_generic_event_t *ev)
 }
 
 void
+mapnotify(xcb_generic_event_t *ev)
+{
+	xcb_mapping_notify_event_t *e = (xcb_mapping_notify_event_t *)ev;
+	xcb_key_symbols_t *keysyms;
+	if (!(keysyms = xcb_key_symbols_alloc(conn)))
+		return;
+	xcb_refresh_keyboard_mapping(keysyms, e);
+	xcb_key_symbols_free(keysyms);
+
+	setup_keyboard();
+	grabkeys();
+}
+
+void
 confignotify(xcb_generic_event_t *ev)
 {
 	xcb_configure_notify_event_t *e= (xcb_configure_notify_event_t *)ev;
@@ -3289,6 +3304,7 @@ setup(int scrno)
 	events[XCB_KEY_PRESS]           = handle_keypress;
 	events[XCB_MAP_REQUEST]         = newwin;
 	events[XCB_UNMAP_NOTIFY]        = unmapnotify;
+	events[XCB_MAPPING_NOTIFY]      = mapnotify;
 	events[XCB_CONFIGURE_NOTIFY]    = confignotify;
 	events[XCB_CIRCULATE_REQUEST]   = circulaterequest;
 	events[XCB_BUTTON_PRESS]        = buttonpress;
