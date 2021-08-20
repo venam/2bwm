@@ -45,6 +45,7 @@ int randrbase = 0;                         // Beginning of RANDR extension event
 static uint8_t curws = 0;                  // Current workspace.
 struct client *focuswin = NULL;            // Current focus window.
 static xcb_drawable_t top_win=0;           // Window always on top.
+static xcb_drawable_t dock_win=0;          // A single dock always on top.
 static struct item *winlist = NULL;        // Global list of all client windows.
 static struct item *monlist = NULL;        // List of all physical monitor outputs.
 static struct item *wslist[WORKSPACES];
@@ -646,6 +647,8 @@ forgetclient(struct client *client)
 		return;
 	if (client->id == top_win)
 		top_win = 0;
+	if (client->id == dock_win)
+		dock_win = 0;
 	/* Delete client from the workspace list it belongs to. */
 	delfromworkspace(client);
 
@@ -918,6 +921,7 @@ setupwin(xcb_window_t win)
 					== ewmh->_NET_WM_WINDOW_TYPE_DOCK || a
 					== ewmh->_NET_WM_WINDOW_TYPE_DESKTOP ) {
 				xcb_map_window(conn,win);
+				dock_win = win;
 				return NULL;
 			}
 		}
@@ -3095,6 +3099,8 @@ run(void)
 
 			if(top_win!=0)
 				raisewindow(top_win);
+			if (dock_win != 0)
+				raisewindow(dock_win);
 
 			free(ev);
 		}
