@@ -33,6 +33,7 @@
 
 ///---Internal Constants---///
 ///---Globals---///
+static const char * program_name;
 static xcb_generic_event_t *ev  = NULL;
 static void (*events[XCB_NO_OPERATION])(xcb_generic_event_t *e);
 static unsigned int numlockmask = 0;
@@ -3330,7 +3331,7 @@ twobwm_restart(void)
 		free(ewmh);
 
 	xcb_disconnect(conn);
-	execvp(TWOBWM_PATH, NULL);
+	execlp(program_name, program_name, NULL);
 }
 
 void
@@ -3362,6 +3363,7 @@ install_sig_handlers(void)
 int
 main(int argc, char **argv)
 {
+	program_name = argv[0];
 	int scrno = 0;
 	atexit(cleanup);
 	install_sig_handlers();
