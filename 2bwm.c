@@ -1005,11 +1005,16 @@ setupwin(xcb_window_t win)
 	if (cookie.sequence > 0) {
 		result = xcb_icccm_get_wm_transient_for_reply(conn, cookie, &prop, NULL);
 		if (result) {
-			struct client *parent = findclient(&prop);
+			xcb_get_geometry_reply_t *parent = xcb_get_geometry_reply(conn,
+					xcb_get_geometry(conn, prop), NULL);
+
 			if (parent) {
 				client->usercoord = true;
 				client->x = parent->x+(parent->width/2.0) - (client->width/2.0);
 				client->y = parent->y+(parent->height/2.0) - (client->height/2.0);
+				moveresize(client->id, client->x, client->y,
+						client->width, client->height);
+				xcb_flush(conn);
 			}
 		}
 	}
@@ -1897,6 +1902,15 @@ setborders(struct client *client,const bool isitfocused)
 	uint16_t half = 0;
 	bool inv = conf.inverted_colors;
 
+	// something weird happened, fix client
+	if (client->width == 0 || client->height == 0) {
+		// restore from geometry
+		getgeom(&client->id, &client->x, &client->y, &client->width,
+			&client->height, &client->depth);
+		resize(client->id, client->width, client->height);
+		xcb_flush(conn);
+	}
+
 	if (client->maxed || client->ignore_borders)
 		return;
 
@@ -2524,14 +2538,18 @@ configwin(xcb_window_t win, uint16_t mask, const struct winconf *wc)
 
 	if (mask & XCB_CONFIG_WINDOW_WIDTH) {
 		mask |= XCB_CONFIG_WINDOW_WIDTH;
-		i++;
-		values[i] = wc->width;
+		if (wc->width != 0) {
+			i++;
+			values[i] = wc->width;
+		}
 	}
 
 	if (mask & XCB_CONFIG_WINDOW_HEIGHT) {
 		mask |= XCB_CONFIG_WINDOW_HEIGHT;
-		i++;
-		values[i] = wc->height;
+		if (wc->height != 0) {
+			i++;
+			values[i] = wc->height;
+		}
 	}
 
 	if (mask & XCB_CONFIG_WINDOW_SIBLING) {
@@ -2581,7 +2599,7 @@ configurerequest(xcb_generic_event_t *ev)
 
 		if (e->value_mask & XCB_CONFIG_WINDOW_Y)
 		 	if (!client->maxed && !client->vertmaxed)
-			client->y = e->y;
+				client->y = e->y;
 
 		/* XXX Do we really need to pass on sibling and stack mode
 		 * configuration? Do we want to? */
