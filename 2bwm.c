@@ -1014,6 +1014,7 @@ setupwin(xcb_window_t win)
 				client->y = parent->y+(parent->height/2.0) - (client->height/2.0);
 				moveresize(client->id, client->x, client->y,
 						client->width, client->height);
+				free(parent);
 				xcb_flush(conn);
 			}
 		}
