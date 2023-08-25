@@ -21,6 +21,9 @@ OBJS=2bwm.o
 
 all: $(TARGETS)
 
+config.h:
+	cp config.def.h $@
+
 2bwm: $(OBJS)
 	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LDFLAGS)
 
