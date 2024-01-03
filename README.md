@@ -164,11 +164,11 @@ Available on the AUR:
 
 Download and extract the tarball, then install it as a package:
 
-    $ curl -s 'https://aur.archlinux.org/packages/2b/2bwm/2bwm.tar.gz'|tar xzf -
+    $ git clone https://aur.archlinux.org/2bwm.git
     $ cd 2bwm
-    $ ${EDITOR:=vi} config.h
     $ makepkg
     # pacman -U 2bwm-*.pkg.tar.xz
+    $ cd src/2bwm/ && vim config.h
 
 CRUX
 ----
