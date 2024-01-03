@@ -164,7 +164,7 @@ Available on the AUR:
 
 Download and extract the tarball, then install it as a package:
 
-    $ git clone https://aur.archlinux.org/packages/2bwm.git
+    $ git clone https://aur.archlinux.org/2bwm.git
     $ cd 2bwm
     $ makepkg
     # pacman -U 2bwm-*.pkg.tar.xz
