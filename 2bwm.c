@@ -2933,7 +2933,7 @@ clientmessage(xcb_generic_event_t *ev)
 		 * e->data.data32[0] new workspace
 		 */
 		uint32_t new_ws = e->data.data32[0];
-		if (new_ws > 0 && new_ws < WORKSPACES) {
+		if (new_ws >= 0 && new_ws < WORKSPACES) {
 			delfromworkspace(cl);
 			addtoworkspace(cl, e->data.data32[0]);
 			xcb_unmap_window(conn, cl->id);
