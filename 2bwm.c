@@ -456,6 +456,10 @@ check_name(struct client *client)
 void
 addtoworkspace(struct client *client, uint32_t ws)
 {
+	if (ws < 0 || ws > WORKSPACES) {
+		// this fixes pip mode for Chrome as it somewhat returns ws=4294967295
+		ws = curws;
+	}
 	struct item *item = additem(&wslist[ws]);
 
 	if (client == NULL)
@@ -2930,8 +2934,10 @@ clientmessage(xcb_generic_event_t *ev)
 		 */
 		delfromworkspace(cl);
 		addtoworkspace(cl, e->data.data32[0]);
-		xcb_unmap_window(conn, cl->id);
-		xcb_flush(conn);
+		xcb_map_window(conn, cl->id);
+		raisewindow(cl->id);
+		//xcb_unmap_window(conn, cl->id);
+		//xcb_flush(conn);
 	}
 }
 
