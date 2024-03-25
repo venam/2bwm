@@ -2940,7 +2940,6 @@ clientmessage(xcb_generic_event_t *ev)
 			xcb_flush(conn);
 		} else {
 			// specific case, treat it as new window
-			addtoworkspace(cl, curws);
 			xcb_map_window(conn, cl->id);
 			raisewindow(cl->id);
 		}
