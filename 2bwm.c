@@ -3063,6 +3063,8 @@ unmapnotify(xcb_generic_event_t *ev)
 		forgetclient(client);
 
 	updateclientlist();
+	if (focuswin == NULL) // try to focus another window
+		focusnext_helper(true);
 }
 
 void
