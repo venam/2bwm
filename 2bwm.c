@@ -2894,9 +2894,11 @@ clientmessage(xcb_generic_event_t *ev)
 		xcb_map_window(conn, cl->id);
 		setfocus(cl);
 	}
-	else if (e->type == ewmh->_NET_CURRENT_DESKTOP)
-		changeworkspace_helper(e->data.data32[0]);
-	else if (e->type == ewmh->_NET_WM_STATE && e->format == 32) {
+	else if (e->type == ewmh->_NET_CURRENT_DESKTOP) {
+		if (e->data.data32[0] > 0 && e->data.data32[0] < WORKSPACES) {
+			changeworkspace_helper(e->data.data32[0]);
+		}
+	} else if (e->type == ewmh->_NET_WM_STATE && e->format == 32) {
 		cl = findclient(&e->window);
 		if (NULL == cl)
 			return;
