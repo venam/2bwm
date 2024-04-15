@@ -44,6 +44,7 @@ xcb_screen_t     *screen = NULL;           // Our current screen.
 int randrbase = 0;                         // Beginning of RANDR extension events.
 static uint8_t curws = 0;                  // Current workspace.
 struct client *focuswin = NULL;            // Current focus window.
+struct client *lastwin[WORKSPACES];        // Last focused window.
 static xcb_drawable_t top_win=0;           // Window always on top.
 static xcb_drawable_t dock_win=0;          // A single dock always on top.
 static struct item *winlist = NULL;        // Global list of all client windows.
@@ -66,6 +67,7 @@ static void cursor_move(const Arg *);
 static void changeworkspace(const Arg *);
 static void changeworkspace_helper(const uint32_t);
 static void focusnext(const Arg *);
+static void focuslastwin(const Arg *);
 static void focusnext_helper(bool);
 static void sendtoworkspace(const Arg *);
 static void sendtonextworkspace(const Arg *);
@@ -188,6 +190,15 @@ void
 focusnext(const Arg *arg)
 {
 	focusnext_helper(arg->i > 0);
+}
+
+void
+focuslastwin(const Arg *arg)
+{
+	if (lastwin[curws] == NULL)
+		return;
+	raisewindow(lastwin[curws]->id);
+	setfocus(lastwin[curws]);
 }
 
 void
@@ -1634,6 +1645,7 @@ setfocus(struct client *client)// Set focus on window client.
 			ewmh->_NET_ACTIVE_WINDOW, XCB_ATOM_WINDOW, 32, 1,&client->id);
 
 	/* Remember the new window as the current focused window. */
+	lastwin[curws] = focuswin;
 	focuswin = client;
 
 	grabbuttons(client);
@@ -2957,6 +2969,9 @@ destroynotify(xcb_generic_event_t *ev)
 	if (NULL != focuswin && focuswin->id == e->window)
 		focuswin = NULL;
 
+	if (NULL != lastwin[curws] && lastwin[curws]->id == e->window)
+		lastwin[curws] = NULL;
+
 	cl = findclient( & e->window);
 
 	/* Find this window in list of clients and forget about it. */
@@ -3061,6 +3076,9 @@ unmapnotify(xcb_generic_event_t *ev)
 		return;
 	if (focuswin!=NULL && client->id == focuswin->id)
 		focuswin = NULL;
+	if (lastwin[curws]!=NULL && client->id == lastwin[curws]->id)
+		lastwin[curws] = NULL;
+
 	if (client->iconic == false)
 		forgetclient(client);
 
