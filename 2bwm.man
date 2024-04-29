@@ -192,7 +192,7 @@ cursor.
 You can change the keybinds and colors in the config.h file and then recompile and restart to see changes.
 .SH EXTERNAL PROGRAMS
 2bwm does not come with a bar, or panel. 2bwm will respect some EWMH hints such as _NET_WM_WINDOW_TYPE_DOCK. Thus, most panels should work.
-The followinds were tested:
+The followings were tested:
 .PP
 Panels
 .RS
