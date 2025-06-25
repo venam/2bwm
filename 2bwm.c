@@ -15,6 +15,7 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -530,7 +531,7 @@ changeworkspace_helper(const uint32_t ws)
 	pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn,
 				screen->root), 0);
 	if(pointer == NULL)
-		setfocus(NULL);
+		focusnext_helper(true);
 	else {
 		setfocus(findclient(&pointer->child));
 		free(pointer);
@@ -3055,6 +3056,7 @@ enternotify(xcb_generic_event_t *ev)
 void
 unmapnotify(xcb_generic_event_t *ev)
 {
+	xcb_query_pointer_reply_t *pointer;
 	xcb_unmap_notify_event_t *e = (xcb_unmap_notify_event_t *)ev;
 	struct client *client = NULL;
 	/*
@@ -3083,8 +3085,16 @@ unmapnotify(xcb_generic_event_t *ev)
 		forgetclient(client);
 
 	updateclientlist();
-	if (focuswin == NULL) // try to focus another window
-		focusnext_helper(true);
+	if (focuswin == NULL) {// try to focus another window
+		pointer = xcb_query_pointer_reply(conn, xcb_query_pointer(conn,
+					screen->root), 0);
+		if(pointer == NULL)
+			focusnext_helper(true);
+		else {
+			setfocus(findclient(&pointer->child));
+			free(pointer);
+		}
+	}
 }
 
 void
