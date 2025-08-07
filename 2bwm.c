@@ -2724,7 +2724,7 @@ create_back_win(void)
 	temp_win.base_height    = focuswin->base_height;
 	temp_win.monitor        = focuswin->monitor;
 	temp_win.min_height     = focuswin->min_height;
-	temp_win.min_width      = focuswin->min_height;
+	temp_win.min_width      = focuswin->min_width;
 	temp_win.ignore_borders = focuswin->ignore_borders;
 
 	return temp_win;
@@ -2829,7 +2829,8 @@ mousemotion(const Arg *arg)
 	} while (!ungrab && focuswin != NULL);
 
 	free(pointer);
-	free(e);
+    if (NULL != e)
+        free(e);
 	xcb_free_cursor(conn,cursor);
 	xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
 
