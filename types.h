@@ -33,7 +33,7 @@ struct client {                     // Everything we know about a window.
 	uint8_t  depth;                 // pixel depth
 	struct sizepos origsize;        // Original size if we're currently maxed.
 	uint16_t max_width, max_height,min_width, min_height, width_inc, height_inc,base_width, base_height;
-	bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic;
+	bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic,needs_take_focus;
 	struct monitor *monitor;        // The physical output this window is on.
 	struct item *winitem;           // Pointer to our place in global windows list.
 	struct item *wsitem;            // Pointer to workspace window list.

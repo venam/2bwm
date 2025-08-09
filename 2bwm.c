@@ -54,7 +54,8 @@ static struct item *wslist[WORKSPACES];
 ///---Global configuration.---///
 static const char *atomnames[NB_ATOMS][1] = {
 	{"WM_DELETE_WINDOW"},
-	{"WM_CHANGE_STATE"}
+	{"WM_CHANGE_STATE"},
+	{"WM_TAKE_FOCUS"}
 };
 
 xcb_atom_t ATOM[NB_ATOMS];
@@ -927,6 +928,7 @@ setupwin(xcb_window_t win)
 	struct item *item;
 	struct client *client;
 	xcb_get_property_cookie_t cookie;
+	xcb_icccm_get_wm_protocols_reply_t protocols;
 
 
 	if (xcb_ewmh_get_wm_window_type_reply(ewmh,
@@ -974,7 +976,7 @@ setupwin(xcb_window_t win)
 	client->width_inc     = client->height_inc = 1;
 	client->usercoord     = client->vertmaxed = client->hormaxed
 		= client->maxed = client->unkillable= client->fixed
-		= client->ignore_borders= client->iconic= false;
+		= client->ignore_borders= client->iconic = client->needs_take_focus = false;
 
 	client->monitor       = NULL;
 	client->winitem       = item;
@@ -1017,6 +1019,23 @@ setupwin(xcb_window_t win)
 		client->base_width  = hints.base_width;
 		client->base_height = hints.base_height;
 	}
+
+	/* Check if client supports WM_TAKE_FOCUS.
+	 * This is needed for clients such as JetBrains IDE's which require
+	 * an explicit WM_TAKE_FOCUS message. */
+	cookie = xcb_icccm_get_wm_protocols(conn, client->id, ewmh->WM_PROTOCOLS);
+	if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL)) {
+		for (uint32_t i = 0; i < protocols.atoms_len; i++) {
+			if (protocols.atoms[i] == ATOM[wm_take_focus]) {
+				client->needs_take_focus = true;
+				break;
+			}
+		}
+
+		/* Free the recieved protocol reply */
+		xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
+	}
+
 	cookie = xcb_icccm_get_wm_transient_for_unchecked(conn, win);
 	if (cookie.sequence > 0) {
 		result = xcb_icccm_get_wm_transient_for_reply(conn, cookie, &prop, NULL);
@@ -1609,7 +1628,7 @@ findclient(const xcb_drawable_t *win)
 }
 
 void
-setfocus(struct client *client)// Set focus on window client.
+setfocus(struct client *client)
 {
 	long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };
 
@@ -1637,6 +1656,21 @@ setfocus(struct client *client)// Set focus on window client.
 
 	if (NULL != focuswin)
 		setunfocus(); /* Unset last focus. */
+
+
+
+	/* Send WM_TAKE_FOCUS if supported */
+	if (client->needs_take_focus) {
+		xcb_client_message_event_t ev = {0};
+
+		ev.response_type = XCB_CLIENT_MESSAGE;
+		ev.window = client->id;
+		ev.type = ewmh->WM_PROTOCOLS;
+		ev.format = 32;
+		ev.data.data32[0] = ATOM[wm_take_focus];
+		ev.data.data32[1] = XCB_CURRENT_TIME;
+		xcb_send_event(conn, false, client->id, XCB_EVENT_MASK_NO_EVENT, (char *)&ev);
+	}
 
 	xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
 			ewmh->_NET_WM_STATE, ewmh->_NET_WM_STATE, 32, 2, data);
@@ -3393,7 +3427,9 @@ twobwm_restart(void)
 		free(ewmh);
 
 	xcb_disconnect(conn);
-	execvp(TWOBWM_PATH, NULL);
+
+	char *argv[] = { TWOBWM_PATH, NULL };
+	execvp(TWOBWM_PATH, argv);
 }
 
 void
