@@ -168,7 +168,6 @@ Download and extract the tarball, then install it as a package:
     $ cd 2bwm
     $ makepkg
     # pacman -U 2bwm-*.pkg.tar.xz
-    $ cd src/2bwm/ && vim config.h
 
 CRUX
 ----
