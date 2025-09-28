@@ -537,6 +537,7 @@ changeworkspace_helper(const uint32_t ws)
 		setfocus(findclient(&pointer->child));
 		free(pointer);
 	}
+	xcb_flush(conn);
 }
 
 void
