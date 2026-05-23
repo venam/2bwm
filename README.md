@@ -169,6 +169,16 @@ Download and extract the tarball, then install it as a package:
     $ makepkg
     # pacman -U 2bwm-*.pkg.tar.xz
 
+Voidlinux
+----------
+
+Available in the official repositories:
+[2bwm](https://github.com/void-linux/void-packages/tree/master/srcpkgs/2bwm)
+
+Install it directly with XBPS:
+
+    # xbps-install -S 2bwm
+
 CRUX
 ----
 
