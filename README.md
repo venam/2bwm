@@ -174,8 +174,7 @@ Void
 
 Available in the official repositories:
 
-[2bwm](https://github.com/void-linux/void-packages/tree/master/srcpkgs/2bwm)
-	
+[2bwm](https://github.com/void-linux/void-packages/tree/master/srcpkgs/2bwm).	
 
 CRUX
 ----
