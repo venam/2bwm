@@ -169,6 +169,14 @@ Download and extract the tarball, then install it as a package:
     $ makepkg
     # pacman -U 2bwm-*.pkg.tar.xz
 
+Void 
+----
+
+Available in the official repositories:
+
+[2bwm](https://github.com/void-linux/void-packages/tree/master/srcpkgs/2bwm)
+	
+
 CRUX
 ----
 
