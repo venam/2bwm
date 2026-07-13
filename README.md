@@ -169,6 +169,15 @@ Download and extract the tarball, then install it as a package:
     $ makepkg
     # pacman -U 2bwm-*.pkg.tar.xz
 
+
+Slackware
+---------
+
+Available on SlackBuilds.org:
+
+[2bwm SlackBuild](https://slackbuilds.org/repository/15.0/desktop/2bwm/)
+
+
 Void 
 ----
 
