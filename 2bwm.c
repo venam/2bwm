@@ -3201,6 +3201,7 @@ run(void)
 				raisewindow(dock_win);
 
 			free(ev);
+			ev = NULL;
 		}
 	}
 	if (sigcode == SIGHUP) {
