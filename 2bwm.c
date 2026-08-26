@@ -82,30 +82,30 @@ static void maxhalf(const Arg *);
 static void teleport(const Arg *);
 static void changescreen(const Arg *);
 static void grabkeys(void);
-static void twobwm_restart();
-static void twobwm_exit();
+static void twobwm_restart(const Arg *arg);
+static void twobwm_exit(const Arg *arg);
 static void centerpointer(xcb_drawable_t, struct client *);
-static void always_on_top();
+static void always_on_top(const Arg *arg);
 static bool setup_keyboard(void);
 static bool setupscreen(void);
 static int  setuprandr(void);
 static void arrangewindows(void);
-static void prevworkspace();
-static void nextworkspace();
+static void prevworkspace(const Arg *arg);
+static void nextworkspace(const Arg *arg);
 static void getrandr(void);
 static void raise_current_window(void);
-static void raiseorlower();
+static void raiseorlower(const Arg *arg);
 static void setunfocus(void);
 static void maximize(const Arg *);
 static void fullscreen(const Arg *);
 static void unmaxwin(struct client *);
 static void maxwin(struct client *, uint8_t);
 static void maximize_helper(struct client *,uint16_t, uint16_t, uint16_t, uint16_t);
-static void hide();
+static void hide(const Arg *arg);
 static void clientmessage(xcb_generic_event_t *);
-static void deletewin();
-static void unkillable();
-static void fix();
+static void deletewin(const Arg *arg);
+static void unkillable(const Arg *arg);
+static void fix(const Arg *arg);
 static void check_name(struct client *);
 static void addtoclientlist(const xcb_drawable_t);
 static void configurerequest(xcb_generic_event_t *);
@@ -165,13 +165,13 @@ static void snapwindow(struct client *);
 
 ///---Function bodies---///
 void
-fix()
+fix(const Arg *arg)
 {
 	fixwindow(focuswin);
 }
 
 void
-unkillable()
+unkillable(const Arg *arg)
 {
 	unkillablewindow(focuswin);
 }
@@ -220,20 +220,20 @@ changeworkspace(const Arg *arg)
 }
 
 void
-nextworkspace()
+nextworkspace(const Arg *arg)
 {
 	curws == WORKSPACES - 1 ? changeworkspace_helper(0)
 		:changeworkspace_helper(curws+1);
 }
 
 void
-prevworkspace()
+prevworkspace(const Arg *arg)
 {
 	curws > 0 ? changeworkspace_helper(curws - 1)
 		: changeworkspace_helper(WORKSPACES-1);}
 
 void
-twobwm_exit()
+twobwm_exit(const Arg *arg)
 {
 	exit(EXIT_SUCCESS);
 }
@@ -541,7 +541,7 @@ changeworkspace_helper(const uint32_t ws)
 }
 
 void
-always_on_top()
+always_on_top(const Arg *arg)
 {
 	struct client *cl = NULL;
 
@@ -1493,7 +1493,7 @@ raisewindow(xcb_drawable_t win)
 /* Set window client to either top or bottom of stack depending on
  * where it is now. */
 void
-raiseorlower()
+raiseorlower(const Arg *arg)
 {
 	uint32_t values[] = { XCB_STACK_MODE_OPPOSITE };
 
@@ -2290,7 +2290,7 @@ maxhalf(const Arg *arg)
 }
 
 void
-hide(void)
+hide(const Arg *arg)
 {
 	if (focuswin==NULL)
 		return;
@@ -2422,7 +2422,7 @@ teleport(const Arg *arg)
 }
 
 void
-deletewin()
+deletewin(const Arg *arg)
 {
 	bool use_delete = false;
 	xcb_icccm_get_wm_protocols_reply_t protocols;
@@ -2933,7 +2933,7 @@ clientmessage(xcb_generic_event_t *ev)
 				setfocus(cl);
 				raisewindow(cl->id);
 			} else {
-				hide();
+				hide(NULL);
 			}
 
 			return;
@@ -3205,7 +3205,7 @@ run(void)
 	}
 	if (sigcode == SIGHUP) {
 		sigcode = 0;
-		twobwm_restart();
+		twobwm_restart(NULL);
 	}
 }
 
@@ -3418,7 +3418,7 @@ setup(int scrno)
 }
 
 void
-twobwm_restart(void)
+twobwm_restart(const Arg *arg)
 {
 	xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_POINTER_ROOT,
 			XCB_CURRENT_TIME);
