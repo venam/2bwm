@@ -516,6 +516,7 @@ changeworkspace_helper(const uint32_t ws)
 		item = item->next;
 		setborders(client,false);
 		if (!client->fixed){
+			client->ignore_unmap++;
 			xcb_unmap_window(conn, client->id);
 		}else{
 			// correct order is delete first add later.
@@ -981,6 +982,7 @@ setupwin(xcb_window_t win)
 
 	client->monitor       = NULL;
 	client->winitem       = item;
+	client->ignore_unmap  = 0;
 
 	/* Initialize workspace pointers. */
 	client->wsitem = NULL;
@@ -3110,7 +3112,21 @@ unmapnotify(xcb_generic_event_t *ev)
 	 * ignore UnmapNotify on them.
 	 */
 	client = findclient( & e->window);
-	if (NULL == client || client->ws != curws)
+	if (NULL == client)
+		return;
+	/*
+	 * If we unmapped the window ourselves (for example while changing
+	 * workspaces) the resulting UnmapNotify must not be mistaken for
+	 * the client withdrawing the window. This can otherwise happen when
+	 * switching workspaces back and forth quickly: a stale event for a
+	 * window we just mapped again would pass the workspace check below
+	 * and drop a live window from management.
+	 */
+	if (0 < client->ignore_unmap) {
+		client->ignore_unmap--;
+		return;
+	}
+	if (client->ws != curws)
 		return;
 	if (focuswin!=NULL && client->id == focuswin->id)
 		focuswin = NULL;
