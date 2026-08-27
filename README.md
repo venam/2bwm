@@ -340,8 +340,6 @@ Checkout the `3bwm` branch of the repo
 TODO:
 =====
 
-* Fix the race condition bug that happens when switching workspaces too fast.
-
 * Bug related to gtkfilechooser dialog in telegram-desktop - needs more information to debug
 
 * Use the `xcb_ewmh.h` functions instead of that ugly hardcoded ATOM enum for
