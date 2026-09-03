@@ -310,7 +310,7 @@ Testing
 The following features are currently being implemented. Feel free to try and
 test them. 
 
-Text based config file
+Text based config file (Deprecated)
 ----------------------
 
 ### CURRENT STATE ###
@@ -323,7 +323,7 @@ it.
 ### GET IT ###
 Checkout the `devel` branch of the repo.
 
-One border inside the other
+One border inside the other (Deprecated)
 --------------
 
 ### CURRENT STATE ###
@@ -332,31 +332,8 @@ Working
 ### DESCRIPTION ###
 Make the status border appear "within" the other border. This makes it look as if there were three borders.
 
-
 ### GET IT ###
 Checkout the `3bwm` branch of the repo
-
-
-TODO:
-=====
-
-* [x] Bug related to gtkfilechooser dialog in telegram-desktop
-  - Resolved transient and client leader window hierarchy lookup, coordinate translation, centering, and proper initial window stacking (`raisewindow`).
-
-* [x] Use `xcb_ewmh.h` functions instead of hardcoded ATOM manipulation
-  - Converted client list management (`xcb_ewmh_set_client_list`, `xcb_ewmh_set_client_list_stacking`), workspace hints (`xcb_ewmh_set_wm_desktop`, `xcb_ewmh_get_wm_desktop`), and active window tracking (`xcb_ewmh_set_active_window`).
-
-* [x] Toggable sticky workspace per monitor
-  - Implemented `toggle_monitor_sticky` (default keybind `MOD + CTRL + s`) allowing any monitor to hold its current workspace while switching workspaces on other monitors.
-
-* [x] Extended Window Manager Hints (EWMH)
-  - Implemented comprehensive `_NET_WM_STATE` handling using `xcb_ewmh` (`_NET_WM_STATE_STICKY`, `_NET_WM_STATE_MAXIMIZED_VERT`, `_NET_WM_STATE_MAXIMIZED_HORZ`, `_NET_WM_STATE_HIDDEN`, `_NET_WM_STATE_FULLSCREEN`, `_NET_WM_STATE_ABOVE`), separated ICCCM `WM_STATE`, added `_NET_CLOSE_WINDOW`, and updated `_NET_SUPPORTED`.
-
-* [x] A separate workspace list for every monitor. (CTRL+NUM)
-  - Implemented `changeworkspace_monitor` (`MOD + CTRL + NUM`) to switch workspaces independently on the current monitor.
-
-* [x] Check why the input focus doesn't work well with applications such as macopix
-  - Resolved No-Input focus model under ICCCM §4.1.7 by respecting `WM_HINTS.input` and `WM_TAKE_FOCUS`.
 
 Authors:
 =======
