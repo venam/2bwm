@@ -28,6 +28,7 @@
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_xrm.h>
 #include <X11/keysym.h>
+#include "khash.h"
 #include "list.h"
 #include "definitions.h"
 #include "types.h"
@@ -48,9 +49,11 @@ struct client *focuswin = NULL;            // Current focus window.
 struct client *lastwin[WORKSPACES];        // Last focused window.
 static xcb_drawable_t top_win=0;           // Window always on top.
 static xcb_drawable_t dock_win=0;          // A single dock always on top.
-static struct item *winlist = NULL;        // Global list of all client windows.
-static struct item *monlist = NULL;        // List of all physical monitor outputs.
 static struct item *wslist[WORKSPACES];
+KHASH_MAP_INIT_INT(clients, struct client *)
+KHASH_MAP_INIT_INT(monitors, struct monitor *)
+static khash_t(clients) *clientmap = NULL; // Client windows indexed by window id.
+static khash_t(monitors) *monitormap = NULL; // Physical outputs indexed by RANDR id.
 ///---Global configuration.---///
 static const char *atomnames[NB_ATOMS][1] = {
 	{"WM_DELETE_WINDOW"},
@@ -132,6 +135,9 @@ static xcb_screen_t *xcb_screen_of_display(xcb_connection_t *, int);
 static struct client *setupwin(xcb_window_t);
 static struct client create_back_win(void);
 static void cleanup(void);
+static bool addclientindex(struct client *);
+static void delclientindex(xcb_window_t);
+static struct monitor *anymonitor(const struct monitor *);
 static uint32_t getwmdesktop(xcb_drawable_t);
 static void addtoworkspace(struct client *, uint32_t);
 static void grabbuttons(struct client *);
@@ -144,6 +150,9 @@ static void forgetwin(xcb_window_t);
 static void fitonscreen(struct client *);
 static void getoutputs(xcb_randr_output_t *,const int, xcb_timestamp_t);
 static void arrbymon(struct monitor *);
+static bool addmonitorindex(struct monitor *);
+static void delmonitorindex(xcb_randr_output_t);
+static struct monitor *nextmonitor(struct monitor *, bool);
 static struct monitor *findmonitor(xcb_randr_output_t);
 static struct monitor *findclones(xcb_randr_output_t, const int16_t, const int16_t);
 static struct monitor *findmonbycoord(const int16_t, const int16_t);
@@ -189,13 +198,27 @@ unkillable(const Arg *arg)
 void
 delmonitor(struct monitor *mon)
 {
-	struct item *item;
-	for (item = winlist; item != NULL; item = item->next) {
-		struct client *client = item->data;
-		if (client != NULL && client->monitor == mon)
-			client->monitor = monlist != NULL ? monlist->data : NULL;
+	khiter_t k;
+	struct monitor *fallback;
+
+	if (NULL == mon)
+		return;
+
+	fallback = anymonitor(mon);
+	if (clientmap != NULL) {
+		for (k = kh_begin(clientmap); k != kh_end(clientmap); ++k) {
+			struct client *client;
+
+			if (!kh_exist(clientmap, k))
+				continue;
+
+			client = kh_value(clientmap, k);
+			if (client != NULL && client->monitor == mon)
+				client->monitor = fallback;
+		}
 	}
-	freeitem(&monlist, NULL, mon->item);
+	delmonitorindex(mon->id);
+	free(mon);
 }
 
 xcb_window_t
@@ -400,6 +423,7 @@ updateclientlist(void)
 	uint32_t len, i, count = 0;
 	xcb_window_t *children;
 	struct client *cl;
+	khiter_t k;
 
 	/* can only be called after the first window has been spawn */
 	xcb_query_tree_reply_t *reply = xcb_query_tree_reply(conn,
@@ -425,17 +449,19 @@ updateclientlist(void)
 		free(stack_wins);
 	}
 
-	count = 0;
-	for (struct item *item = winlist; item != NULL; item = item->next)
-		count++;
+	count = clientmap != NULL ? kh_size(clientmap) : 0;
 
 	xcb_window_t *map_wins = malloc(sizeof(xcb_window_t) * (count ? count : 1));
 	if (map_wins != NULL) {
 		count = 0;
-		for (struct item *item = winlist; item != NULL; item = item->next) {
-			cl = item->data;
-			if (cl != NULL)
-				map_wins[count++] = cl->id;
+		if (clientmap != NULL) {
+			for (k = kh_begin(clientmap); k != kh_end(clientmap); ++k) {
+				if (!kh_exist(clientmap, k))
+					continue;
+				cl = kh_value(clientmap, k);
+				if (cl != NULL)
+					map_wins[count++] = cl->id;
+			}
 		}
 		xcb_ewmh_set_client_list(ewmh, 0, count, map_wins);
 		free(map_wins);
@@ -475,9 +501,9 @@ movepointerback(const int16_t startx, const int16_t starty,
 void
 cleanup(void)
 {
+	khiter_t k;
+
     free(ev);
-    if(monlist)
-        delallitems(&monlist,NULL);
     struct item *curr,*wsitem;
     for(int i = 0; i < WORKSPACES; i++){
         if(!wslist[i])
@@ -489,9 +515,18 @@ cleanup(void)
             free(wsitem);
         }
     }
-    if(winlist){
-        delallitems(&winlist,NULL);
-    }
+	if (clientmap != NULL) {
+		for (k = kh_begin(clientmap); k != kh_end(clientmap); ++k)
+			if (kh_exist(clientmap, k))
+				free(kh_value(clientmap, k));
+		kh_destroy(clients, clientmap);
+	}
+	if (monitormap != NULL) {
+		for (k = kh_begin(monitormap); k != kh_end(monitormap); ++k)
+			if (kh_exist(monitormap, k))
+				free(kh_value(monitormap, k));
+		kh_destroy(monitors, monitormap);
+	}
     if (ewmh != NULL){
 	    xcb_ewmh_connection_wipe(ewmh);
 		free(ewmh);
@@ -505,17 +540,67 @@ cleanup(void)
 	xcb_disconnect(conn);
 }
 
+static struct monitor *
+anymonitor(const struct monitor *skip)
+{
+	khiter_t k;
+
+	if (NULL == monitormap)
+		return NULL;
+
+	for (k = kh_begin(monitormap); k != kh_end(monitormap); ++k)
+		if (kh_exist(monitormap, k) && kh_value(monitormap, k) != skip)
+			return kh_value(monitormap, k);
+
+	return NULL;
+}
+
+static bool
+addclientindex(struct client *client)
+{
+	int ret;
+	khiter_t k;
+
+	if (NULL == clientmap || NULL == client)
+		return false;
+
+	k = kh_put(clients, clientmap, client->id, &ret);
+	if (-1 == ret)
+		return false;
+
+	kh_value(clientmap, k) = client;
+	return true;
+}
+
+static void
+delclientindex(xcb_window_t win)
+{
+	khiter_t k;
+
+	if (NULL == clientmap)
+		return;
+
+	k = kh_get(clients, clientmap, win);
+	if (k != kh_end(clientmap))
+		kh_del(clients, clientmap, k);
+}
+
 /* Rearrange windows to fit new screen size. */
 void
 arrangewindows(void)
 {
 	struct client *client;
-	struct item *item;
+	khiter_t k;
 	/* Go through all windows and resize them appropriately to
 	 * fit the screen. */
 
-	for (item=winlist; item != NULL; item = item->next) {
-		client = item->data;
+	if (NULL == clientmap)
+		return;
+
+	for (k = kh_begin(clientmap); k != kh_end(clientmap); ++k) {
+		if (!kh_exist(clientmap, k))
+			continue;
+		client = kh_value(clientmap, k);
 		fitonscreen(client);
 	}
 }
@@ -634,6 +719,7 @@ changeworkspace_helper(const uint32_t ws)
 	xcb_query_pointer_reply_t *pointer;
 	struct client *client;
 	struct item *item;
+	khiter_t k;
 	if (ws == curws)
 		return;
 	xcb_ewmh_set_current_desktop(ewmh, 0, ws);
@@ -661,8 +747,13 @@ changeworkspace_helper(const uint32_t ws)
 		if (!client->fixed && !client->iconic)
 			xcb_map_window(conn, client->id);
 	}
-	for (struct item *mitem = monlist; mitem != NULL; mitem = mitem->next) {
-		struct monitor *mon = mitem->data;
+	for (k = kh_begin(monitormap); k != kh_end(monitormap); ++k) {
+		struct monitor *mon;
+
+		if (!kh_exist(monitormap, k))
+			continue;
+
+		mon = kh_value(monitormap, k);
 		if (!mon->is_sticky)
 			mon->curws = ws;
 	}
@@ -690,8 +781,8 @@ get_current_monitor(void)
 	if (NULL == mon && NULL != focuswin)
 		mon = focuswin->monitor;
 
-	if (NULL == mon && NULL != monlist)
-		mon = monlist->data;
+	if (NULL == mon)
+		mon = anymonitor(NULL);
 
 	return mon;
 }
@@ -891,8 +982,6 @@ getcolor(const char *hex)
 void
 forgetclient(struct client *client)
 {
-	uint32_t ws;
-
 	if (NULL == client)
 		return;
 	if (client->id == top_win)
@@ -902,8 +991,9 @@ forgetclient(struct client *client)
 	/* Delete client from the workspace list it belongs to. */
 	delfromworkspace(client);
 
-	/* Remove from global window list. */
-	freeitem(&winlist, NULL, client->winitem);
+	delclientindex(client->id);
+
+	free(client);
 }
 
 /* Forget everything about a client with client->id win. */
@@ -911,18 +1001,10 @@ void
 forgetwin(xcb_window_t win)
 {
 	struct client *client;
-	struct item *item;
 
-	for (item = winlist; item != NULL; item = item->next) {
-		/* Find this window in the global window list. */
-		client = item->data;
-		if (win == client->id) {
-			/* Forget it and free allocated data, it might
-			 * already be freed by handling an UnmapNotify. */
-			forgetclient(client);
-			return;
-		}
-	}
+	client = findclient(&win);
+	if (client != NULL)
+		forgetclient(client);
 }
 
 void
@@ -1120,10 +1202,10 @@ newwin(xcb_generic_event_t *ev)
 	/* Find the physical output this window will be on if RANDR is active */
 	if (-1 != randrbase) {
 		client->monitor = findmonbycoord(client->x, client->y);
-		if (NULL == client->monitor && NULL != monlist)
+		if (NULL == client->monitor)
 			/* Window coordinates are outside all physical monitors.
 			 * Choose the first screen.*/
-			client->monitor = monlist->data;
+			client->monitor = anymonitor(NULL);
 	}
 
 	fitonscreen(client);
@@ -1159,7 +1241,6 @@ setupwin(xcb_window_t win)
 	xcb_size_hints_t hints;
 	xcb_ewmh_get_atoms_reply_t win_type;
 	xcb_window_t prop;
-	struct item *item;
 	struct client *client;
 	xcb_get_property_cookie_t cookie;
 	xcb_icccm_get_wm_protocols_reply_t protocols;
@@ -1192,18 +1273,11 @@ setupwin(xcb_window_t win)
 	/* Add this window to the X Save Set. */
 	xcb_change_save_set(conn, XCB_SET_MODE_INSERT, win);
 
-	/* Remember window and store a few things about it. */
-	item = additem(&winlist);
-
-	if (NULL == item)
-		return NULL;
-
 	client = malloc(sizeof(struct client));
 
 	if (NULL == client)
 		return NULL;
 
-	item->data = client;
 	client->id = win;
 	client->x = client->y = client->width = client->height
 		= client->min_width = client->min_height = client->base_width
@@ -1218,12 +1292,16 @@ setupwin(xcb_window_t win)
 	client->input_focus   = true;
 
 	client->monitor       = NULL;
-	client->winitem       = item;
 	client->ignore_unmap  = 0;
 
 	/* Initialize workspace pointers. */
 	client->wsitem = NULL;
 	client->ws = -1;
+
+	if (!addclientindex(client)) {
+		free(client);
+		return NULL;
+	}
 
 	/* Get window geometry. */
 	getgeom(&client->id, &client->x, &client->y, &client->width,
@@ -1294,9 +1372,16 @@ setupwin(xcb_window_t win)
 	if (prop != XCB_NONE && prop != screen->root) {
 		parent_client = findclient(&prop);
 		if (!parent_client) {
+			khiter_t k;
+
 			/* Check if prop is client leader of an existing client */
-			for (struct item *it = winlist; it != NULL; it = it->next) {
-				struct client *c = it->data;
+			for (k = kh_begin(clientmap); k != kh_end(clientmap); ++k) {
+				struct client *c;
+
+				if (!kh_exist(clientmap, k))
+					continue;
+
+				c = kh_value(clientmap, k);
 				if (c && get_client_leader(c->id) == prop) {
 					parent_client = c;
 					break;
@@ -1327,8 +1412,15 @@ setupwin(xcb_window_t win)
 			if (focuswin && get_client_leader(focuswin->id) == my_leader) {
 				parent_client = focuswin;
 			} else {
-				for (struct item *it = winlist; it != NULL; it = it->next) {
-					struct client *c = it->data;
+				khiter_t k;
+
+				for (k = kh_begin(clientmap); k != kh_end(clientmap); ++k) {
+					struct client *c;
+
+					if (!kh_exist(clientmap, k))
+						continue;
+
+					c = kh_value(clientmap, k);
 					if (c && get_client_leader(c->id) == my_leader) {
 						parent_client = c;
 						break;
@@ -1606,15 +1698,11 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 		xcb_timestamp_t timestamp)
 {
 	int i;
-	int name_len;
-	char *name;
-
 	/* was at time timestamp. */
 	xcb_randr_get_crtc_info_cookie_t icookie;
 	xcb_randr_get_crtc_info_reply_t *crtc = NULL;
 	xcb_randr_get_output_info_reply_t *output;
 	struct monitor *mon, *clonemon;
-	struct item *item;
 	xcb_randr_get_output_info_cookie_t ocookie[len];
 
 	for (i = 0; i < len; i++)
@@ -1626,11 +1714,6 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 		if ((output = xcb_randr_get_output_info_reply(conn, ocookie[i],
 				NULL)) == NULL)
 			continue;
-
-	//name_len = MIN(16, xcb_randr_get_output_info_name_length(output));
-	//name = malloc(name_len+1);
-	//snprintf(name, name_len+1, "%.*s", name_len,
-	//		xcb_randr_get_output_info_name(output));
 
 	if (XCB_NONE != output->crtc) {
 		icookie = xcb_randr_get_crtc_info(conn, output->crtc,
@@ -1674,21 +1757,21 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 	} else {
 		/* Check if it was used before. If it was, do something. */
 		if ((mon = findmonitor(outputs[i]))) {
-			struct client *client;
-			for (item = winlist; item != NULL; item = item->next) {
+			khiter_t k;
+			struct monitor *fallback = anymonitor(mon);
+
+			for (k = kh_begin(clientmap); k != kh_end(clientmap); ++k) {
+				struct client *client;
+
+				if (!kh_exist(clientmap, k))
+					continue;
+
 				/* Check all windows on this monitor
-				 * and move them to the next or to the
-				 * first monitor if there is no next. */
-				client = item->data;
+				 * and move them to another monitor. */
+				client = kh_value(clientmap, k);
 
 				if (client->monitor == mon) {
-					if (NULL == client->monitor->item->next)
-						if (NULL == monlist)
-							client->monitor = NULL;
-						else
-							client->monitor = monlist->data;
-					else
-						client->monitor = client->monitor->item->next->data;
+					client->monitor = fallback;
 					fitonscreen(client);
 				}
 			}
@@ -1700,7 +1783,6 @@ getoutputs(xcb_randr_output_t *outputs, const int len,
 	if (NULL != output)
 		free(output);
 
-	free(name);
 	} /* for */
 }
 
@@ -1708,28 +1790,105 @@ void
 arrbymon(struct monitor *monitor)
 {
 	struct client *client;
-	struct item *item;
+	khiter_t k;
 
-	for (item = winlist; item != NULL; item = item->next) {
-		client = item->data;
+	if (NULL == clientmap)
+		return;
+
+	for (k = kh_begin(clientmap); k != kh_end(clientmap); ++k) {
+		if (!kh_exist(clientmap, k))
+			continue;
+
+		client = kh_value(clientmap, k);
 
 		if (client->monitor == monitor)
 			fitonscreen(client);
 	}
 }
 
+static bool
+addmonitorindex(struct monitor *mon)
+{
+	int ret;
+	khiter_t k;
+
+	if (NULL == monitormap || NULL == mon)
+		return false;
+
+	k = kh_put(monitors, monitormap, mon->id, &ret);
+	if (-1 == ret)
+		return false;
+
+	kh_value(monitormap, k) = mon;
+	return true;
+}
+
+static void
+delmonitorindex(xcb_randr_output_t id)
+{
+	khiter_t k;
+
+	if (NULL == monitormap)
+		return;
+
+	k = kh_get(monitors, monitormap, id);
+	if (k != kh_end(monitormap))
+		kh_del(monitors, monitormap, k);
+}
+
+static struct monitor *
+nextmonitor(struct monitor *monitor, bool next)
+{
+	struct monitor *mon, *best = NULL, *wrap = NULL;
+	int32_t bestdist = INT32_MAX;
+	int16_t pos, candidate;
+	khiter_t k;
+
+	if (NULL == monitormap || NULL == monitor)
+		return NULL;
+
+	pos = monitor->x;
+
+	for (k = kh_begin(monitormap); k != kh_end(monitormap); ++k) {
+		if (!kh_exist(monitormap, k))
+			continue;
+
+		mon = kh_value(monitormap, k);
+		if (mon == monitor)
+			continue;
+
+		candidate = mon->x;
+		if (next) {
+			if (candidate > pos && candidate - pos < bestdist) {
+				best = mon;
+				bestdist = candidate - pos;
+			}
+			if (wrap == NULL || candidate < wrap->x)
+				wrap = mon;
+		} else {
+			if (candidate < pos && pos - candidate < bestdist) {
+				best = mon;
+				bestdist = pos - candidate;
+			}
+			if (wrap == NULL || candidate > wrap->x)
+				wrap = mon;
+		}
+	}
+
+	return best != NULL ? best : wrap;
+}
+
 struct monitor *
 findmonitor(xcb_randr_output_t id)
 {
-	struct monitor *mon;
-	struct item *item;
+	khiter_t k;
 
-	for (item = monlist; item != NULL; item = item->next) {
-		mon = item->data;
+	if (NULL == monitormap)
+		return NULL;
 
-		if (id == mon->id)
-			return mon;
-	}
+	k = kh_get(monitors, monitormap, id);
+	if (k != kh_end(monitormap))
+		return kh_value(monitormap, k);
 
 	return NULL;
 }
@@ -1738,10 +1897,16 @@ struct monitor *
 findclones(xcb_randr_output_t id, const int16_t x, const int16_t y)
 {
 	struct monitor *clonemon;
-	struct item *item;
+	khiter_t k;
 
-	for (item = monlist; item != NULL; item = item->next) {
-		clonemon = item->data;
+	if (NULL == monitormap)
+		return NULL;
+
+	for (k = kh_begin(monitormap); k != kh_end(monitormap); ++k) {
+		if (!kh_exist(monitormap, k))
+			continue;
+
+		clonemon = kh_value(monitormap, k);
 
 		/* Check for same position. */
 		if (id != clonemon->id && clonemon->x == x && clonemon->y == y)
@@ -1755,10 +1920,16 @@ struct monitor *
 findmonbycoord(const int16_t x, const int16_t y)
 {
 	struct monitor *mon;
-	struct item *item;
+	khiter_t k;
 
-	for (item = monlist; item != NULL; item = item->next) {
-		mon = item->data;
+	if (NULL == monitormap)
+		return NULL;
+
+	for (k = kh_begin(monitormap); k != kh_end(monitormap); ++k) {
+		if (!kh_exist(monitormap, k))
+			continue;
+
+		mon = kh_value(monitormap, k);
 
 		if (x>=mon->x && x <= mon->x + mon->width && y >= mon->y && y
 				<= mon->y+mon->height)
@@ -1772,24 +1943,24 @@ struct monitor *
 addmonitor(xcb_randr_output_t id, const int16_t x, const int16_t y,
 		const uint16_t width,const uint16_t height)
 {
-	struct item *item;
-	struct monitor *mon = malloc(sizeof(struct monitor));
+	struct monitor *mon;
 
-	if (NULL == (item = additem(&monlist)))
-		return NULL;
-
+	mon = malloc(sizeof(struct monitor));
 	if (NULL == mon)
 		return NULL;
 
-	item->data  = mon;
 	mon->id     = id;
-	mon->item   = item;
 	mon->x      = x;
 	mon->y      = y;
 	mon->width  = width;
 	mon->height = height;
 	mon->curws  = curws;
 	mon->is_sticky = false;
+
+	if (!addmonitorindex(mon)) {
+		free(mon);
+		return NULL;
+	}
 
 	return mon;
 }
@@ -1931,16 +2102,14 @@ void setunfocus(void)
 struct client *
 findclient(const xcb_drawable_t *win)
 {
-	struct client *client;
-	struct item *item;
+	khiter_t k;
 
-	for (item = winlist; item != NULL; item = item->next) {
-		client = item->data;
+	if (NULL == clientmap || NULL == win)
+		return NULL;
 
-		if (*win == client->id){
-			return client;
-		}
-	}
+	k = kh_get(clients, clientmap, *win);
+	if (k != kh_end(clientmap))
+		return kh_value(clientmap, k);
 
 	return NULL;
 }
@@ -2779,18 +2948,15 @@ deletewin(const Arg *arg)
 void
 changescreen(const Arg *arg)
 {
-	struct item *item;
+	struct monitor *monitor;
 	float xpercentage, ypercentage;
 
 	if (NULL == focuswin || NULL == focuswin->monitor)
 		return;
 
-	if (arg->i == TWOBWM_NEXT_SCREEN)
-		item = focuswin->monitor->item->next;
-	else
-		item = focuswin->monitor->item->prev;
+	monitor = nextmonitor(focuswin->monitor, arg->i == TWOBWM_NEXT_SCREEN);
 
-	if (NULL == item)
+	if (NULL == monitor)
 		return;
 
 	xpercentage  = (float)((focuswin->x - focuswin->monitor->x)
@@ -2798,7 +2964,7 @@ changescreen(const Arg *arg)
 	ypercentage  = (float)((focuswin->y-focuswin->monitor->y)
 			/(focuswin->monitor->height));
 
-	focuswin->monitor = item->data;
+	focuswin->monitor = monitor;
 
 	focuswin->x = focuswin->monitor->width * xpercentage
 		+ focuswin->monitor->x + 0.5;
@@ -3727,6 +3893,11 @@ setup(int scrno)
 		| XCB_EVENT_MASK_PROPERTY_CHANGE
 		| XCB_EVENT_MASK_BUTTON_PRESS
 	};
+
+	clientmap = kh_init(clients);
+	monitormap = kh_init(monitors);
+	if (NULL == clientmap || NULL == monitormap)
+		return false;
 
 	screen = xcb_screen_of_display(conn, scrno);
 

@@ -3,7 +3,6 @@ struct monitor {
 	xcb_randr_output_t id;
 	int16_t y,x;                    // X and Y.
 	uint16_t width,height;          // Width/Height in pixels.
-	struct item *item;              // Pointer to our place in output list.
 	uint32_t curws;                 // Current workspace for this monitor.
 	bool is_sticky;                 // Sticky workspace for this monitor.
 };
@@ -38,7 +37,6 @@ struct client {                     // Everything we know about a window.
 	bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic,needs_take_focus,input_focus;
 	uint8_t ignore_unmap;           // UnmapNotify events we generated ourselves; ignore that many.
 	struct monitor *monitor;        // The physical output this window is on.
-	struct item *winitem;           // Pointer to our place in global windows list.
 	struct item *wsitem;            // Pointer to workspace window list.
 	int ws;                         // In which workspace this window belongs to.
 };
