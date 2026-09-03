@@ -4,6 +4,8 @@ struct monitor {
 	int16_t y,x;                    // X and Y.
 	uint16_t width,height;          // Width/Height in pixels.
 	struct item *item;              // Pointer to our place in output list.
+	uint32_t curws;                 // Current workspace for this monitor.
+	bool is_sticky;                 // Sticky workspace for this monitor.
 };
 typedef union {
 	const char** com;
@@ -33,7 +35,7 @@ struct client {                     // Everything we know about a window.
 	uint8_t  depth;                 // pixel depth
 	struct sizepos origsize;        // Original size if we're currently maxed.
 	uint16_t max_width, max_height,min_width, min_height, width_inc, height_inc,base_width, base_height;
-	bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic,needs_take_focus;
+	bool fixed,unkillable,vertmaxed,hormaxed,maxed,verthor,ignore_borders,iconic,needs_take_focus,input_focus;
 	uint8_t ignore_unmap;           // UnmapNotify events we generated ourselves; ignore that many.
 	struct monitor *monitor;        // The physical output this window is on.
 	struct item *winitem;           // Pointer to our place in global windows list.

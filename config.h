@@ -91,8 +91,9 @@ static void toggle_sloppy(const Arg *arg)
  *      DESKTOPCHANGE(     XK_agrave,                        9)*
  */
 #define DESKTOPCHANGE(K,N) \
-{  MOD ,             K,              changeworkspace, {.i=N}}, \
-{  MOD |SHIFT,       K,              sendtoworkspace, {.i=N}},
+{  MOD ,             K,              changeworkspace,         {.i=N}}, \
+{  MOD |SHIFT,       K,              sendtoworkspace,         {.i=N}}, \
+{  MOD |CONTROL,     K,              changeworkspace_monitor, {.i=N}},
 static key keys[] = {
     /* modifier           key            function           argument */
     // Focus to next/previous window
@@ -181,7 +182,9 @@ static key keys[] = {
     // Make the window appear always on top
     {  MOD,               XK_t,          always_on_top,     {}},
     // Make the window stay on all workspaces
-    {  MOD ,              XK_f,          fix,               {}},
+    {  MOD ,              XK_f,          fix,                   {}},
+    // Toggle sticky workspace per monitor
+    {  MOD |CONTROL,      XK_s,          toggle_monitor_sticky, {}},
     // Move the cursor
     {  MOD ,              XK_Up,         cursor_move,       {.i=TWOBWM_CURSOR_UP_SLOW}},
     {  MOD ,              XK_Down,       cursor_move,       {.i=TWOBWM_CURSOR_DOWN_SLOW}},

@@ -340,27 +340,23 @@ Checkout the `3bwm` branch of the repo
 TODO:
 =====
 
-* Bug related to gtkfilechooser dialog in telegram-desktop - needs more information to debug
+* [x] Bug related to gtkfilechooser dialog in telegram-desktop
+  - Resolved transient and client leader window hierarchy lookup, coordinate translation, centering, and proper initial window stacking (`raisewindow`).
 
-* Use the `xcb_ewmh.h` functions instead of that ugly hardcoded ATOM enum for
-  example instead of the `ATOM[atom_client_list]` we could use `xcb_ewmh_set_client_list`
+* [x] Use `xcb_ewmh.h` functions instead of hardcoded ATOM manipulation
+  - Converted client list management (`xcb_ewmh_set_client_list`, `xcb_ewmh_set_client_list_stacking`), workspace hints (`xcb_ewmh_set_wm_desktop`, `xcb_ewmh_get_wm_desktop`), and active window tracking (`xcb_ewmh_set_active_window`).
 
-* Toggable sticky workspace per monitor
+* [x] Toggable sticky workspace per monitor
+  - Implemented `toggle_monitor_sticky` (default keybind `MOD + CTRL + s`) allowing any monitor to hold its current workspace while switching workspaces on other monitors.
 
-* Extended Window Manager Hints (EWMH)
+* [x] Extended Window Manager Hints (EWMH)
+  - Implemented comprehensive `_NET_WM_STATE` handling using `xcb_ewmh` (`_NET_WM_STATE_STICKY`, `_NET_WM_STATE_MAXIMIZED_VERT`, `_NET_WM_STATE_MAXIMIZED_HORZ`, `_NET_WM_STATE_HIDDEN`, `_NET_WM_STATE_FULLSCREEN`, `_NET_WM_STATE_ABOVE`), separated ICCCM `WM_STATE`, added `_NET_CLOSE_WINDOW`, and updated `_NET_SUPPORTED`.
 
-  - Use the new xcb-ewmh for the EWMH hints.
-     _NET_WM_STATE, _NET_WM_STATE_STICKY,
-     _NET_WM_STATE_MAXIMIZED_VERT, [etc](https://standards.freedesktop.org/wm-spec/wm-spec-latest.html#idm140200472615568).
+* [x] A separate workspace list for every monitor. (CTRL+NUM)
+  - Implemented `changeworkspace_monitor` (`MOD + CTRL + NUM`) to switch workspaces independently on the current monitor.
 
-* A separate workspace list for every monitor. (CTRL+NUM)
-	* get the cursor position (on which monitor)
-	* unmap all window that are only on this monitor
-	* map window on the workspace NUM that are on this monitor
-	* problem with curws and remapping
-	* curws could be associated with the focuswin instead
-
-* Check why the input focus doesn't work well with applications such as macopix
+* [x] Check why the input focus doesn't work well with applications such as macopix
+  - Resolved No-Input focus model under ICCCM §4.1.7 by respecting `WM_HINTS.input` and `WM_TAKE_FOCUS`.
 
 Authors:
 =======

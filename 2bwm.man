@@ -45,6 +45,9 @@ go to workspace n, 0-9.
 .B shift+0\-9
 Move window to workspace.
 .IP \(bu 2
+.B ctrl+0\-9
+go to workspace n on current monitor.
+.IP \(bu 2
 .B Tab or shift+Tab
 go to next window in the current workspace window ring.
 .IP \(bu 2
@@ -167,6 +170,9 @@ Make a window stay on top.
 .IP \(bu 2
 .B f
 fix window so it is visible on all workspaces (toggles).
+.IP \(bu 2
+.B ctrl+s
+toggle sticky workspace per monitor.
 .IP \(bu 2
 .B arrows (+shift)
 Move the cursor (with shift fast).
